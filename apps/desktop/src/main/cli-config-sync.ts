@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -19,12 +19,21 @@ export async function syncCliSelfHostConfigPath(
 
   try {
     const raw = await readFile(configPath, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      existing = parsed as Record<string, unknown>;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        existing = parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Corrupted JSON is safely replaced with a fresh object
+      existing = {};
     }
-  } catch {
-    existing = {};
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException)?.code === "ENOENT") {
+      existing = {};
+    } else {
+      throw err;
+    }
   }
 
   if (existing.server_url === urls.apiUrl && existing.app_url === urls.appUrl) {
@@ -42,8 +51,13 @@ export async function syncCliSelfHostConfigPath(
   await mkdir(parentDir, { recursive: true });
 
   const tempPath = `${configPath}.tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  await writeFile(tempPath, formatted, "utf-8");
-  await rename(tempPath, configPath);
+  try {
+    await writeFile(tempPath, formatted, { encoding: "utf-8", mode: 0o600 });
+    await rename(tempPath, configPath);
+  } catch (err) {
+    await rm(tempPath, { force: true }).catch(() => {});
+    throw err;
+  }
 
   return true;
 }
