@@ -87,6 +87,14 @@ const (
 	// daemon puts on the agent's PATH has `issue comment add --steer`. The
 	// server tells a squad leader about steering only then.
 	DaemonCapabilityCLICommentSteerV1 = "cli-comment-steer-v1"
+	// DaemonCapabilityEnterpriseProtocolV1 advertises that the daemon
+	// understands the enterprise claim protocol: it presents an
+	// X-Enterprise-Lease token for enterprise tasks and honors the
+	// managed_mcp_status markers (failed_closed forbids local MCP fallback).
+	// Registered into the runtime metadata at register time and sent on every
+	// claim via X-Client-Capabilities; an enterprise task is never dispatched
+	// to a daemon lacking it (enterprise_protocol_required).
+	DaemonCapabilityEnterpriseProtocolV1 = "enterprise-protocol-v1"
 
 	TaskSupplementFailureTurnNotStarted   = "turn_not_started"
 	TaskSupplementFailureProviderRejected = "provider_rejected"
