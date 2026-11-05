@@ -38,7 +38,7 @@ export function checkCliOnPath(
   return new Promise((resolve) => {
     try {
       const cmd = process.platform === "win32" ? "where.exe" : "which";
-      execFile(cmd, [binName], (err) => {
+      execFile(cmd, [binName], { timeout: 5_000 }, (err) => {
         resolve(!err);
       });
     } catch {
