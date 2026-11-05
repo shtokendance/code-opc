@@ -1153,6 +1153,10 @@ if (!gotTheLock) {
     setupDaemonManager(
       () => mainWindows.mostRecent(),
       () => mainWindows.all(),
+      {
+        runtimeConfigGetter: () =>
+          runtimeConfigResult.ok ? runtimeConfigResult.config : null,
+      },
     );
     setupLocalDirectory(() => mainWindows.mostRecent());
 

@@ -62,6 +62,9 @@ import {
   planDaemonTokenSync,
   shouldRestartDaemonAfterUserSwitch,
 } from "./daemon-token-policy";
+import { syncCliSelfHostConfig } from "./cli-config-sync";
+import { ensureCliInPath } from "./cli-path-installer";
+import type { RuntimeConfig } from "../shared/runtime-config";
 
 const POLL_INTERVAL_MS = 5_000;
 const PREFS_PATH = join(homedir(), ".multica", "desktop_prefs.json");
@@ -92,6 +95,11 @@ interface ActiveProfile {
   name: string;
 }
 
+export interface SetupDaemonManagerOptions {
+  runtimeConfigGetter?: () => RuntimeConfig | null;
+}
+
+let getRuntimeConfig: (() => RuntimeConfig | null) | null = null;
 let statusPollTimer: ReturnType<typeof setInterval> | null = null;
 let logTailWatcher: { path: string; listener: StatsListener } | null = null;
 let logTailOwner: Electron.WebContents | null = null;
@@ -1302,6 +1310,33 @@ function startPolling(): void {
  * user-triggered `daemon:retry-install`.
  */
 async function bootstrapCli(): Promise<void> {
+  if (getRuntimeConfig) {
+    try {
+      const runtimeConfig = getRuntimeConfig();
+      if (runtimeConfig?.apiUrl && runtimeConfig?.appUrl) {
+        await syncCliSelfHostConfig({
+          apiUrl: runtimeConfig.apiUrl,
+          appUrl: runtimeConfig.appUrl,
+        });
+        if (targetApiBaseUrl !== runtimeConfig.apiUrl) {
+          targetApiBaseUrl = runtimeConfig.apiUrl;
+          invalidateActiveProfile();
+        }
+      }
+    } catch (err) {
+      console.warn("[daemon] failed to sync CLI self-host config:", err);
+    }
+  }
+
+  try {
+    const bundled = bundledCliPath();
+    if (existsSync(bundled)) {
+      await ensureCliInPath(bundled);
+    }
+  } catch (err) {
+    console.warn("[daemon] failed to ensure CLI in PATH:", err);
+  }
+
   const bin = await resolveCliBinary();
   if (!bin) {
     currentState = "cli_not_found";
@@ -1311,6 +1346,15 @@ async function bootstrapCli(): Promise<void> {
   currentState = "stopped";
   sendStatus({ state: "stopped" });
   startPolling();
+
+  const prefs = await loadPrefs();
+  if (prefs.autoStart && !quitting && !autoStartSuppressedAfterQuit) {
+    const health = await fetchHealth();
+    if (!daemonStatusAlive(health.state)) {
+      setDesiredDaemonRunning(true);
+      await startDaemon();
+    }
+  }
 }
 
 function stopPolling(): void {
@@ -1466,9 +1510,11 @@ export function setupDaemonManager(
     const window = windowGetter();
     return window ? [window] : [];
   },
+  options?: SetupDaemonManagerOptions,
 ): void {
   getMainWindow = windowGetter;
   getStatusWindows = statusWindowsGetter;
+  getRuntimeConfig = options?.runtimeConfigGetter ?? null;
 
   ipcMain.handle("daemon:set-target-api-url", async (_e, url: string) => {
     const normalized = url || null;
