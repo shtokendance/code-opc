@@ -169,6 +169,7 @@ describe("cli-path-installer", () => {
       expect(result).toEqual({
         installed: false,
         reason: "all_targets_failed",
+        error: expect.any(String),
       });
     });
   });
