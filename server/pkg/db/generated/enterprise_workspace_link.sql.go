@@ -25,6 +25,27 @@ func (q *Queries) DeleteEnterpriseWorkspaceLinksByWorkspace(ctx context.Context,
 	return err
 }
 
+const getEnterpriseWorkspaceLinkByPlatformWorkspaceID = `-- name: GetEnterpriseWorkspaceLinkByPlatformWorkspaceID :one
+SELECT id, user_id, workspace_id, platform_workspace_id, source, created_at, platform_tenant FROM enterprise_workspace_link
+WHERE platform_workspace_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetEnterpriseWorkspaceLinkByPlatformWorkspaceID(ctx context.Context, platformWorkspaceID string) (EnterpriseWorkspaceLink, error) {
+	row := q.db.QueryRow(ctx, getEnterpriseWorkspaceLinkByPlatformWorkspaceID, platformWorkspaceID)
+	var i EnterpriseWorkspaceLink
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.WorkspaceID,
+		&i.PlatformWorkspaceID,
+		&i.Source,
+		&i.CreatedAt,
+		&i.PlatformTenant,
+	)
+	return i, err
+}
+
 const getEnterpriseWorkspaceLinkByUserAndPlatform = `-- name: GetEnterpriseWorkspaceLinkByUserAndPlatform :one
 SELECT id, user_id, workspace_id, platform_workspace_id, source, created_at, platform_tenant FROM enterprise_workspace_link
 WHERE user_id = $1 AND platform_workspace_id = $2

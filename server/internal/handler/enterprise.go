@@ -53,15 +53,15 @@ func enterpriseLocalEmail(subject string) string {
 }
 
 // enterpriseWorkspaceName picks the display name for a workspace mirrored
-// from a platform space, preferring the tenant hint the platform attached.
+// from a platform space, preferring the display name the platform attached.
 func enterpriseWorkspaceName(space platform.Space, subject string) string {
-	if space.Tenant != "" {
-		return "enterprise-" + space.Tenant
+	if strings.TrimSpace(space.Name) != "" {
+		return strings.TrimSpace(space.Name)
 	}
-	if space.Name != "" {
-		return space.Name
+	if strings.TrimSpace(space.Tenant) != "" {
+		return "enterprise-" + strings.TrimSpace(space.Tenant)
 	}
-	return "enterprise-" + space.ID
+	return "enterprise-" + strings.TrimSpace(space.ID)
 }
 
 // enterpriseWorkspaceSlug derives a unique, deterministic-ish slug for a
@@ -209,8 +209,9 @@ func (h *Handler) upsertEnterpriseUser(ctx context.Context, ident platform.CodeE
 	if email == "" {
 		email = enterpriseLocalEmail(ident.Subject)
 	}
+	var user db.User
 	if existing, err := h.Queries.GetUserByEnterpriseSubject(ctx, pgtype.Text{String: ident.Subject, Valid: true}); err == nil {
-		return h.Queries.UpdateUserEnterpriseIdentity(ctx, db.UpdateUserEnterpriseIdentityParams{
+		user, err = h.Queries.UpdateUserEnterpriseIdentity(ctx, db.UpdateUserEnterpriseIdentityParams{
 			ID:                       existing.ID,
 			EnterpriseSubject:        pgtype.Text{String: ident.Subject, Valid: true},
 			EnterpriseIdentityLinkID: pgtype.Text{String: linkID, Valid: linkID != ""},
@@ -219,41 +220,51 @@ func (h *Handler) upsertEnterpriseUser(ctx context.Context, ident platform.CodeE
 			Column6:                  displayName,
 			Column7:                  email,
 		})
+		if err != nil {
+			return db.User{}, err
+		}
 	} else if !isNotFound(err) {
 		return db.User{}, err
+	} else {
+		// New identity: placeholder email names the origin; the unique subject
+		// index is what subsequent exchanges key on.
+		user, err = h.Queries.CreateEnterpriseUser(ctx, db.CreateEnterpriseUserParams{
+			Name:                     displayName,
+			Email:                    email,
+			EnterpriseSubject:        pgtype.Text{String: ident.Subject, Valid: true},
+			EnterpriseIdentityLinkID: pgtype.Text{String: linkID, Valid: linkID != ""},
+			EnterpriseAuthzVersion:   pgtype.Int8{Int64: ident.AuthzVersion, Valid: true},
+			EnterpriseSessionID:      pgtype.Text{String: sessionID, Valid: true},
+		})
+		if err != nil {
+			if !isUniqueViolation(err) {
+				return db.User{}, err
+			}
+			existing, err := h.Queries.GetUserByEnterpriseSubject(ctx, pgtype.Text{String: ident.Subject, Valid: true})
+			if err != nil {
+				return db.User{}, err
+			}
+			user, err = h.Queries.UpdateUserEnterpriseIdentity(ctx, db.UpdateUserEnterpriseIdentityParams{
+				ID:                       existing.ID,
+				EnterpriseSubject:        pgtype.Text{String: ident.Subject, Valid: true},
+				EnterpriseIdentityLinkID: pgtype.Text{String: linkID, Valid: linkID != ""},
+				EnterpriseAuthzVersion:   pgtype.Int8{Int64: ident.AuthzVersion, Valid: true},
+				EnterpriseSessionID:      pgtype.Text{String: sessionID, Valid: true},
+				Column6:                  displayName,
+				Column7:                  email,
+			})
+			if err != nil {
+				return db.User{}, err
+			}
+		}
 	}
 
-	// New identity: placeholder email names the origin; the unique subject
-	// index is what subsequent exchanges key on.
-	user, err := h.Queries.CreateEnterpriseUser(ctx, db.CreateEnterpriseUserParams{
-		Name:                     displayName,
-		Email:                    email,
-		EnterpriseSubject:        pgtype.Text{String: ident.Subject, Valid: true},
-		EnterpriseIdentityLinkID: pgtype.Text{String: linkID, Valid: linkID != ""},
-		EnterpriseAuthzVersion:   pgtype.Int8{Int64: ident.AuthzVersion, Valid: true},
-		EnterpriseSessionID:      pgtype.Text{String: sessionID, Valid: true},
-	})
-	if err == nil {
-		return user, nil
+	if !user.OnboardedAt.Valid {
+		if onboardedUser, err := h.Queries.MarkUserOnboarded(ctx, user.ID); err == nil {
+			user = onboardedUser
+		}
 	}
-	// The placeholder email can collide only if a row was created concurrently
-	// for the same subject; re-read by subject and refresh it instead.
-	if !isUniqueViolation(err) {
-		return db.User{}, err
-	}
-	existing, err := h.Queries.GetUserByEnterpriseSubject(ctx, pgtype.Text{String: ident.Subject, Valid: true})
-	if err != nil {
-		return db.User{}, err
-	}
-	return h.Queries.UpdateUserEnterpriseIdentity(ctx, db.UpdateUserEnterpriseIdentityParams{
-		ID:                       existing.ID,
-		EnterpriseSubject:        pgtype.Text{String: ident.Subject, Valid: true},
-		EnterpriseIdentityLinkID: pgtype.Text{String: linkID, Valid: linkID != ""},
-		EnterpriseAuthzVersion:   pgtype.Int8{Int64: ident.AuthzVersion, Valid: true},
-		EnterpriseSessionID:      pgtype.Text{String: sessionID, Valid: true},
-		Column6:                  displayName,
-		Column7:                  email,
-	})
+	return user, nil
 }
 
 // syncEnterpriseWorkspaceLinks mirrors the platform space list into local
@@ -311,6 +322,8 @@ func enterpriseMemberRole(platformRole string) string {
 // the next login instead of being frozen at first exchange.
 func (h *Handler) ensureEnterpriseWorkspaceLink(ctx context.Context, user db.User, subject string, space platform.Space) error {
 	memberRole := enterpriseMemberRole(space.Role)
+	name := enterpriseWorkspaceName(space, subject)
+
 	link, err := h.Queries.GetEnterpriseWorkspaceLinkByUserAndPlatform(ctx, db.GetEnterpriseWorkspaceLinkByUserAndPlatformParams{
 		UserID:              user.ID,
 		PlatformWorkspaceID: space.ID,
@@ -329,6 +342,14 @@ func (h *Handler) ensureEnterpriseWorkspaceLink(ctx context.Context, user db.Use
 				return err
 			}
 		}
+		if space.Name != "" {
+			if ws, err := h.Queries.GetWorkspace(ctx, link.WorkspaceID); err == nil && ws.Name != name {
+				_, _ = h.Queries.UpdateWorkspace(ctx, db.UpdateWorkspaceParams{
+					ID:   link.WorkspaceID,
+					Name: pgtype.Text{String: name, Valid: true},
+				})
+			}
+		}
 		return nil
 	} else if !isNotFound(err) {
 		return err
@@ -341,43 +362,62 @@ func (h *Handler) ensureEnterpriseWorkspaceLink(ctx context.Context, user db.Use
 	defer tx.Rollback(ctx)
 	qtx := h.Queries.WithTx(tx)
 
-	name := enterpriseWorkspaceName(space, subject)
-	slug := enterpriseWorkspaceSlug(space.ID)
-	var ws db.Workspace
-	for attempt := 0; attempt < 5; attempt++ {
-		candidate := slug
-		if attempt > 0 {
-			candidate = fmt.Sprintf("%s-%d", slug, attempt)
+	var targetWorkspaceID pgtype.UUID
+	existingWsLink, err := qtx.GetEnterpriseWorkspaceLinkByPlatformWorkspaceID(ctx, space.ID)
+	if err == nil {
+		targetWorkspaceID = existingWsLink.WorkspaceID
+		if space.Name != "" {
+			if ws, err := qtx.GetWorkspace(ctx, targetWorkspaceID); err == nil && ws.Name != name {
+				_, _ = qtx.UpdateWorkspace(ctx, db.UpdateWorkspaceParams{
+					ID:   targetWorkspaceID,
+					Name: pgtype.Text{String: name, Valid: true},
+				})
+			}
 		}
-		ws, err = qtx.CreateWorkspace(ctx, db.CreateWorkspaceParams{
-			Name:        name,
-			Slug:        candidate,
-			Description: pgtype.Text{String: "Enterprise workspace mirrored from the identity platform", Valid: true},
-			Context:     pgtype.Text{},
-			IssuePrefix: defaultIssuePrefixFromSlug(candidate),
-		})
-		if err == nil {
-			break
+	} else {
+		slug := enterpriseWorkspaceSlug(space.ID)
+		var ws db.Workspace
+		for attempt := 0; attempt < 5; attempt++ {
+			candidate := slug
+			if attempt > 0 {
+				candidate = fmt.Sprintf("%s-%d", slug, attempt)
+			}
+			ws, err = qtx.CreateWorkspace(ctx, db.CreateWorkspaceParams{
+				Name:        name,
+				Slug:        candidate,
+				Description: pgtype.Text{String: "Enterprise workspace mirrored from the identity platform", Valid: true},
+				Context:     pgtype.Text{},
+				IssuePrefix: defaultIssuePrefixFromSlug(candidate),
+			})
+			if err == nil {
+				break
+			}
+			if !isUniqueViolation(err) {
+				return err
+			}
 		}
-		if !isUniqueViolation(err) {
+		if err != nil {
 			return err
 		}
-	}
-	if err != nil {
-		return err
+		targetWorkspaceID = ws.ID
 	}
 
-	if _, err := qtx.CreateMember(ctx, db.CreateMemberParams{
-		WorkspaceID: ws.ID,
+	if _, err := qtx.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{
 		UserID:      user.ID,
-		Role:        memberRole,
+		WorkspaceID: targetWorkspaceID,
 	}); err != nil {
-		return err
+		if _, err := qtx.CreateMember(ctx, db.CreateMemberParams{
+			WorkspaceID: targetWorkspaceID,
+			UserID:      user.ID,
+			Role:        memberRole,
+		}); err != nil && !isUniqueViolation(err) {
+			return err
+		}
 	}
 
 	if _, err := qtx.UpsertEnterpriseWorkspaceLink(ctx, db.UpsertEnterpriseWorkspaceLinkParams{
 		UserID:              user.ID,
-		WorkspaceID:         ws.ID,
+		WorkspaceID:         targetWorkspaceID,
 		PlatformWorkspaceID: space.ID,
 		Source:              "enterprise_exchange",
 		PlatformTenant:      space.Tenant,

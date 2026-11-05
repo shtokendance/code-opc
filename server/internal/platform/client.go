@@ -180,6 +180,9 @@ func (s *Space) UnmarshalJSON(data []byte) error {
 	if s.Tenant == "" {
 		s.Tenant = wire.TenantID
 	}
+	if s.ID == "" {
+		s.ID = s.Tenant
+	}
 	return nil
 }
 
