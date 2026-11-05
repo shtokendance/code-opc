@@ -22,7 +22,7 @@ import {
   Shapes,
   Tag,
   X as XIcon,
-} from "lucide-react";
+} from "@multica/ui/icons";
 import { cn } from "@multica/ui/lib/utils";
 import { toast } from "sonner";
 import type {
@@ -48,7 +48,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@multica/ui/components/ui/dropdown-menu";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@multica/ui/components/ui/tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { Button } from "@multica/ui/components/ui/button";
 import { Switch } from "@multica/ui/components/ui/switch";
@@ -64,7 +64,7 @@ import { useActorName } from "@multica/core/workspace/hooks";
 import { useCurrentWorkspace, useWorkspacePaths } from "@multica/core/paths";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
-import { useProjectWorkflow, workflowAllowsStatus, workflowStep } from "@multica/core/issue-workflows";
+import { useProjectWithWorkflow, useProjectWorkflow, workflowAllowsStatus, workflowStep } from "@multica/core/issue-workflows";
 import { projectListOptions } from "@multica/core/projects/queries";
 import { stepHandlerActor, useStepHandlerLabel } from "../workflows/step-handler";
 import { useIssueDraftStore, type IssueCreateDraft } from "@multica/core/issues/stores/draft-store";
@@ -263,6 +263,7 @@ export function ManualCreatePanel({
   const setShared = useIssueDraftStore((s) => s.setShared);
   const setAgent = useIssueDraftStore((s) => s.setAgent);
   const setActiveMode = useIssueDraftStore((s) => s.setActiveMode);
+  const beginBatchContinuation = useIssueDraftStore((s) => s.beginBatchContinuation);
   const clearDraft = useIssueDraftStore((s) => s.clearDraft);
   const setLastAssignee = useIssueDraftStore((s) => s.setLastAssignee);
   const setLastMode = useCreateModeStore((s) => s.setLastMode);
@@ -315,8 +316,7 @@ export function ManualCreatePanel({
   const parentIssueLocked = anchorCommentId !== null
     && typeof data?.parent_issue_id === "string"
     && data.parent_issue_id.length > 0;
-  // Stage only applies to a sub-issue; kept local (not in the persisted draft)
-  // since it's a per-creation choice tied to the chosen parent.
+  // Stage belongs to this create session and only applies to a sub-issue.
   const [stage, setStage] = useState<number | null>(
     typeof data?.stage === "number" ? (data.stage as number) : null,
   );
@@ -411,9 +411,15 @@ export function ManualCreatePanel({
     setManual({ assigneeType: type, assigneeId: id });
   };
   const updateProject = (id?: string) => { setProjectId(id); setShared({ projectId: id }); };
-  // A project using a named workflow only accepts its columns: a status it
-  // does not list moves to todo, which every workflow keeps. (MUL-7420)
-  const createWorkflow = useProjectWorkflow(wsId, projectId);
+  const updateParent = (id?: string) => {
+    setParentIssueId(id);
+    setStage(null);
+  };
+  // An issue only takes its workflow's columns — its project's, or Default's
+  // outside a project: a status it does not list moves to todo, which every
+  // workflow keeps. (MUL-7420, MUL-8250)
+  const { workflow: projectWorkflow, defaultWorkflow: workspaceDefault } = useProjectWithWorkflow(wsId, projectId);
+  const createWorkflow = projectId ? projectWorkflow : workspaceDefault;
   useEffect(() => {
     if (createWorkflow && !workflowAllowsStatus(createWorkflow, status)) {
       setStatus("todo");
@@ -451,7 +457,7 @@ export function ManualCreatePanel({
   const attachLabelMutation = useAttachLabelToIssue();
   const resetForNextIssue = () => {
     setTitle("");
-    setStatus("todo");
+    setStatus(status);
     setPriority("none");
     setStartDate(null);
     setDueDate(null);
@@ -461,15 +467,13 @@ export function ManualCreatePanel({
     setPropertyErrorId(null);
     setUnavailablePropertyRemoved(false);
     setProjectId(undefined);
-    setParentIssueId(undefined);
-    setStage(null);
     setChildIssues([]);
-    // Keep the just-used assignee for the next issue in the batch; reset
-    // everything else across the manual + shared slots.
+    // Keep status and assignee in this batch. Parent and stage stay in local
+    // state, while other manual and shared fields reset for the next issue.
     setManual({
       title: "",
       description: "",
-      status: "todo",
+      status,
       assigneeType,
       assigneeId,
       startDate: null,
@@ -482,8 +486,14 @@ export function ManualCreatePanel({
       dueDate: null,
       attachments: [],
     });
+    // The reset above is a batch continuation, not user input: record it so a
+    // field the user actually changes afterwards (priority, a date, a label —
+    // anything `hasDraft` alone would not consider content) keeps the draft
+    // recoverable, while a continuation nobody touched is still discarded.
+    beginBatchContinuation();
     descEditorRef.current?.clearContent();
     setFormResetKey((key) => key + 1);
+    batchContinuationRef.current = true;
   };
 
   // Manual create runs through the shared await-then-render composer contract
@@ -497,10 +507,19 @@ export function ManualCreatePanel({
   // object identity at submit; success clears ONLY an untouched draft —
   // whether the edit came mid-flight or from a reopened dialog.
   const mountedRef = useRef(true);
+  const batchContinuationRef = useRef(false);
   useLayoutEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      // A keep-open form nobody edited is only a batch continuation. Ending it
+      // as the form closes drops the inherited batch status, so the next fresh
+      // dialog starts from todo, while a continuation the user did edit keeps
+      // its fields. The store action decides, and no-ops when a source-context
+      // wrapper already restored the ordinary draft.
+      if (batchContinuationRef.current) {
+        useIssueDraftStore.getState().endBatchContinuation();
+      }
     };
   }, []);
   const submittedDraftRef = useRef<IssueCreateDraft | null>(null);
@@ -790,8 +809,7 @@ export function ManualCreatePanel({
     }
   },
     onAccepted: () => {
-      // These preferences derive from the SUBMITTED values, not the live
-      // draft — an issue was created, so record them regardless of the guard.
+      // Only the assignee persists across independent create sessions.
       setLastAssignee(assigneeType, assigneeId);
       setLastMode("manual");
       // Success may only consume the draft it submitted (MUL-5181 P0): any
@@ -1234,7 +1252,7 @@ export function ManualCreatePanel({
                   <TooltipHint label={t(($) => $.create_issue.remove_parent_aria)}>
                     <button
                       type="button"
-                      onClick={() => setParentIssueId(undefined)}
+                      onClick={() => updateParent(undefined)}
                       className="p-1 pr-2 text-muted-foreground hover:text-foreground cursor-pointer"
                       aria-label={t(($) => $.create_issue.remove_parent_aria)}
                     >
@@ -1403,7 +1421,7 @@ export function ManualCreatePanel({
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => setParentIssueId(undefined)}
+                        onClick={() => updateParent(undefined)}
                       >
                         <XIcon className="h-3.5 w-3.5" />
                         {t(($) => $.create_issue.remove_parent)}
@@ -1432,7 +1450,7 @@ export function ManualCreatePanel({
                 ...(parentIssueId ? [parentIssueId] : []),
               ]}
               onSelect={(selected) => {
-                setParentIssueId(selected.id);
+                updateParent(selected.id);
               }}
             />
             <IssuePickerModal
@@ -1453,7 +1471,7 @@ export function ManualCreatePanel({
 
             {/* Footer — same 2x2-grid-on-phones / single-row-from-`sm` shape
                 as the agent panel; see the note on AgentCreatePanel's footer
-                for why (MUL-6236). TooltipProvider/Tooltip render no DOM and
+                for why (MUL-6236). Tooltip renders no DOM and
                 TooltipContent is portaled, so the Create button stays a direct
                 grid child in both branches below. */}
             <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2.5 border-t px-4 py-3 shrink-0 sm:flex sm:flex-wrap">
@@ -1487,15 +1505,13 @@ export function ManualCreatePanel({
                 {t(($) => $.create_issue.create_another)}
               </label>
               {submitState === "missing_title" ? (
-                <TooltipProvider delay={200}>
-                  <Tooltip>
-                    {/* No `<span>` wrapper needed now: aria-disabled leaves the
-                        button focusable and hoverable, so it can anchor its own
-                        tooltip. */}
-                    <TooltipTrigger render={createButton} />
-                    <TooltipContent side="top">{t(($) => $.create_issue.title_required)}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  {/* No `<span>` wrapper needed now: aria-disabled leaves the
+                      button focusable and hoverable, so it can anchor its own
+                      tooltip. */}
+                  <TooltipTrigger render={createButton} />
+                  <TooltipContent side="top">{t(($) => $.create_issue.title_required)}</TooltipContent>
+                </Tooltip>
               ) : (
                 createButton
               )}

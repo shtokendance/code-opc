@@ -14,7 +14,7 @@ import (
 const createEnterpriseUser = `-- name: CreateEnterpriseUser :one
 INSERT INTO "user" (name, email, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type CreateEnterpriseUserParams struct {
@@ -53,6 +53,7 @@ func (q *Queries) CreateEnterpriseUser(ctx context.Context, arg CreateEnterprise
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -64,7 +65,7 @@ func (q *Queries) CreateEnterpriseUser(ctx context.Context, arg CreateEnterprise
 const createUser = `-- name: CreateUser :one
 INSERT INTO "user" (name, email, avatar_url)
 VALUES ($1, $2, $3)
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type CreateUserParams struct {
@@ -91,6 +92,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -100,7 +102,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
+SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
 WHERE id = $1
 `
 
@@ -122,6 +124,7 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (User, error) {
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -131,7 +134,7 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
+SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
 WHERE email = $1
 `
 
@@ -153,6 +156,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -162,7 +166,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByEnterpriseSubject = `-- name: GetUserByEnterpriseSubject :one
-SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
+SELECT id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id FROM "user"
 WHERE enterprise_subject = $1
 `
 
@@ -186,6 +190,7 @@ func (q *Queries) GetUserByEnterpriseSubject(ctx context.Context, enterpriseSubj
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -240,7 +245,7 @@ UPDATE "user" SET
     cloud_waitlist_reason = $3,
     updated_at = now()
 WHERE id = $1
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type JoinCloudWaitlistParams struct {
@@ -270,6 +275,7 @@ func (q *Queries) JoinCloudWaitlist(ctx context.Context, arg JoinCloudWaitlistPa
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -283,7 +289,7 @@ UPDATE "user" SET
     onboarded_at = COALESCE(onboarded_at, now()),
     updated_at = now()
 WHERE id = $1
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 func (q *Queries) MarkUserOnboarded(ctx context.Context, id pgtype.UUID) (User, error) {
@@ -304,6 +310,7 @@ func (q *Queries) MarkUserOnboarded(ctx context.Context, id pgtype.UUID) (User, 
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -317,7 +324,7 @@ UPDATE "user" SET
     onboarding_questionnaire = COALESCE($1, onboarding_questionnaire),
     updated_at = now()
 WHERE id = $2
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type PatchUserOnboardingParams struct {
@@ -347,6 +354,7 @@ func (q *Queries) PatchUserOnboarding(ctx context.Context, arg PatchUserOnboardi
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -368,7 +376,7 @@ UPDATE "user" SET
     END,
     updated_at = now()
 WHERE id = $1
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type UpdateUserParams struct {
@@ -417,6 +425,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,
@@ -460,7 +469,7 @@ UPDATE "user" SET
     email = COALESCE(NULLIF($7::text, ''), email),
     updated_at = now()
 WHERE id = $1
-RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
 `
 
 type UpdateUserEnterpriseIdentityParams struct {
@@ -505,6 +514,51 @@ func (q *Queries) UpdateUserEnterpriseIdentity(ctx context.Context, arg UpdateUs
 		&i.Language,
 		&i.ProfileDescription,
 		&i.Timezone,
+		&i.WhatsNewSeenVersion,
+		&i.EnterpriseSubject,
+		&i.EnterpriseIdentityLinkID,
+		&i.EnterpriseAuthzVersion,
+		&i.EnterpriseSessionID,
+	)
+	return i, err
+}
+
+const advanceWhatsNewSeenVersion = `-- name: AdvanceWhatsNewSeenVersion :one
+UPDATE "user" SET
+    whats_new_seen_version = $1::text,
+    updated_at = now()
+WHERE id = $2
+  AND (
+    whats_new_seen_version IS NULL
+    OR string_to_array(whats_new_seen_version, '.')::int[] < string_to_array($1::text, '.')::int[]
+  )
+RETURNING id, name, email, avatar_url, created_at, updated_at, onboarded_at, onboarding_questionnaire, cloud_waitlist_email, cloud_waitlist_reason, starter_content_state, language, profile_description, timezone, whats_new_seen_version, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id
+`
+
+type AdvanceWhatsNewSeenVersionParams struct {
+	Version string      `json:"version"`
+	ID      pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) AdvanceWhatsNewSeenVersion(ctx context.Context, arg AdvanceWhatsNewSeenVersionParams) (User, error) {
+	row := q.db.QueryRow(ctx, advanceWhatsNewSeenVersion, arg.Version, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.AvatarUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.OnboardedAt,
+		&i.OnboardingQuestionnaire,
+		&i.CloudWaitlistEmail,
+		&i.CloudWaitlistReason,
+		&i.StarterContentState,
+		&i.Language,
+		&i.ProfileDescription,
+		&i.Timezone,
+		&i.WhatsNewSeenVersion,
 		&i.EnterpriseSubject,
 		&i.EnterpriseIdentityLinkID,
 		&i.EnterpriseAuthzVersion,

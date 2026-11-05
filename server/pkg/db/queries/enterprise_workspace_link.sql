@@ -17,6 +17,11 @@ SELECT * FROM enterprise_workspace_link
 WHERE workspace_id = $1
 LIMIT 1;
 
+-- name: GetEnterpriseWorkspaceLinkByPlatformWorkspaceID :one
+SELECT * FROM enterprise_workspace_link
+WHERE platform_workspace_id = $1
+LIMIT 1;
+
 -- name: GetEnterpriseWorkspaceLinkByUserAndPlatform :one
 SELECT * FROM enterprise_workspace_link
 WHERE user_id = $1 AND platform_workspace_id = $2;

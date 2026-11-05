@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import {useQuery} from "@tanstack/react-query";
+import {runtimeModelsOptions} from "@multica/core/runtimes";
+import {findModelCapabilityEntry,thinkingLevelRequiredForProvider} from "../components/inspector/model-capability";
 import {
   AGENT_DESCRIPTION_MAX_LENGTH,
   applyDraftModelChange,
@@ -158,6 +161,19 @@ export function AgentConfigurationPanel({
               />
             </div>
           </DraftFieldRow>
+          {conversationStartersSupported ? (
+            <DraftFieldRow
+              compact={compact}
+              align="start"
+              label={t(($) => $.conversation_starters.label)}
+              description={t(($) => $.conversation_starters.create_hint)}
+            >
+              <ConversationStartersEditor
+                value={draft.conversationStarters}
+                onChange={(value) => set("conversationStarters", value)}
+              />
+            </DraftFieldRow>
+          ) : null}
         </SettingsCard>
       </SettingsSection>
 
@@ -184,14 +200,6 @@ export function AgentConfigurationPanel({
               className="min-h-44 resize-y font-mono text-label leading-6"
             />
           </DraftFieldRow>
-          {conversationStartersSupported && !qoderRuntime ? (
-            <div className="px-4 py-4">
-              <ConversationStartersEditor
-                value={draft.conversationStarters}
-                onChange={(value) => set("conversationStarters", value)}
-              />
-            </div>
-          ) : null}
           {qoderRuntime ? (
             <p className="px-4 py-3 text-caption text-muted-foreground">
               {t(($) => $.creation_studio.cloud_fields_note)}
@@ -431,6 +439,15 @@ export function AgentExecutionOverrides({
 }) {
   const { t } = useT("agents");
   const runtimeOnline = runtime?.status === "online";
+  const modelsQuery = useQuery(runtimeModelsOptions(runtimeOnline && thinkingLevelRequiredForProvider(runtime?.provider ?? "") ? runtime?.id ?? null : null));
+  useEffect(() => {
+    if (disabled || !thinkingLevelRequiredForProvider(runtime?.provider ?? "")) return;
+    if (draft.thinkingLevel || !draft.model || !modelsQuery.isSuccess || !modelsQuery.data?.supported) return;
+    const entry = findModelCapabilityEntry(modelsQuery.data.models, draft.model, runtime?.provider ?? "");
+    const level = entry?.thinking?.default_level ?? entry?.thinking?.supported_levels[0]?.value;
+    if (level) onChange({ ...draft, thinkingLevel: level });
+  }, [disabled, draft, modelsQuery.data, modelsQuery.isSuccess, onChange, runtime?.provider]);
+
   return (
     <>
       <ThinkingSettingField
@@ -459,12 +476,14 @@ export function AgentExecutionOverrides({
 
 function DraftFieldRow({
   label,
+  description,
   children,
   compact = false,
   align = "center",
   htmlFor,
 }: {
   label: string;
+  description?: string;
   children: ReactNode;
   compact?: boolean;
   align?: "center" | "start";
@@ -480,13 +499,20 @@ function DraftFieldRow({
         !compact && (align === "center" ? "sm:items-center" : "sm:items-start"),
       )}
     >
-      {htmlFor ? (
-        <label htmlFor={htmlFor} className="text-body font-medium">
-          {label}
-        </label>
-      ) : (
-        <div className="text-body font-medium">{label}</div>
-      )}
+      <div className="min-w-0">
+        {htmlFor ? (
+          <label htmlFor={htmlFor} className="text-body font-medium">
+            {label}
+          </label>
+        ) : (
+          <div className="text-body font-medium">{label}</div>
+        )}
+        {description ? (
+          <p className="mt-0.5 text-caption leading-5 text-muted-foreground">
+            {description}
+          </p>
+        ) : null}
+      </div>
       <div className="min-w-0">{children}</div>
     </div>
   );

@@ -53,7 +53,10 @@ func TestCodeExchangeSuccess(t *testing.T) {
 			"knowledge_user_id": "ku-1",
 			"code_user_id":      "cu-1",
 			"authz_version":     42,
-			"spaces":            []map[string]any{{"id": "pw-1", "tenant": "acme", "tenant_id": "ignored"}},
+			"spaces": []map[string]any{
+				{"id": "pw-1", "tenant": "acme", "tenant_id": "ignored"},
+				{"tenant_id": "296492", "name": "技术交付中心", "role": "owner"},
+			},
 		})
 	}))
 	defer server.Close()
@@ -65,8 +68,11 @@ func TestCodeExchangeSuccess(t *testing.T) {
 	if out.Subject != "sub-1" || out.IdentityLinkID != "ilink-1" || out.AuthzVersion != 42 {
 		t.Fatalf("unexpected identity: %+v", out)
 	}
-	if len(out.Spaces) != 1 || out.Spaces[0].ID != "pw-1" || out.Spaces[0].Tenant != "acme" {
+	if len(out.Spaces) != 2 || out.Spaces[0].ID != "pw-1" || out.Spaces[0].Tenant != "acme" {
 		t.Fatalf("unexpected spaces: %+v", out.Spaces)
+	}
+	if out.Spaces[1].ID != "296492" || out.Spaces[1].Tenant != "296492" || out.Spaces[1].Name != "技术交付中心" || out.Spaces[1].Role != "owner" {
+		t.Fatalf("unexpected fallback space mapping: %+v", out.Spaces[1])
 	}
 }
 

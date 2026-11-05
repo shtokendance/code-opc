@@ -58,6 +58,10 @@ func TestClient_IdentityHeaders_PostJSON(t *testing.T) {
 			// Without it the server never hands this daemon the wakeups that
 			// waited for its run; they start runs of their own instead.
 			protocol.DaemonCapabilityJoinedWakeupsV1,
+			// Without it the server keeps adding the lines that override the
+			// built-in in_progress / in_review rules to [Project workflow],
+			// rules this daemon's brief no longer states (MUL-8145).
+			protocol.DaemonCapabilityWorkflowStatusRulesV1,
 			// The enterprise claim gate (TASK-C02) refuses to dispatch
 			// enterprise tasks to a daemon that does not advertise it
 			// (enterprise_protocol_required). Dropping it silently strands
