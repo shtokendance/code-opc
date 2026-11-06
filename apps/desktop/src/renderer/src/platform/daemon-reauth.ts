@@ -1,7 +1,7 @@
 import { useAuthStore } from "@multica/core/auth";
 import { toast } from "sonner";
 import type { DaemonTranslator } from "../components/daemon-i18n";
-import { isEnterpriseSession } from "./enterprise-session";
+import { isEnterpriseSession, getEnterpriseToken } from "./enterprise-session";
 
 /**
  * Re-establish the local daemon's credentials after it failed to authenticate
@@ -13,10 +13,6 @@ import { isEnterpriseSession } from "./enterprise-session";
  * merely restarting the app reuses the same bad PAT), so the main process drops
  * the cached token, mints a fresh one, and restarts the daemon.
  *
- * Enterprise sessions hold no daemon PAT (BND-161) — their daemon task claims
- * authenticate through platform task leases — so there is nothing here to
- * re-mint and a daemon-side auth failure must not sign the user out.
- *
  * Failure handling is deliberately conservative — we only force a full re-login
  * when the session token itself is rejected (a real 401). A transient failure
  * (mint 5xx, network blip, config write error, restart hiccup) keeps the user
@@ -27,14 +23,10 @@ import { isEnterpriseSession } from "./enterprise-session";
 export async function reauthenticateDaemon(
   t: DaemonTranslator,
 ): Promise<void> {
-  if (isEnterpriseSession()) {
-    // Nothing to re-mint: the daemon profile intentionally has no PAT for an
-    // enterprise session, and logging the user out over a daemon-side auth
-    // state would be wrong.
-    return;
-  }
   const user = useAuthStore.getState().user;
-  const token = localStorage.getItem("multica_token");
+  const token = isEnterpriseSession()
+    ? getEnterpriseToken()
+    : localStorage.getItem("multica_token");
   if (!user || !token) {
     // No usable session at all — the standard recovery is the login page.
     useAuthStore.getState().logout();

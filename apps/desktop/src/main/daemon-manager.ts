@@ -770,30 +770,23 @@ async function syncToken(
     enterprise: options.enterprise === true,
   });
 
-  if (plan.action === "enterprise_skip") {
-    if ("token" in config) {
-      delete config.token;
-      await writeProfileConfig(active.name, config);
-    }
+  let finalToken: string;
+  if (plan.action === "write") {
+    finalToken = plan.token;
   } else {
-    let finalToken: string;
-    if (plan.action === "write") {
-      finalToken = plan.token;
-    } else {
-      try {
-        finalToken = await mintPat(tokenFromRenderer);
-        console.log(
-          `[daemon] minted PAT for profile "${active.name}" (user_changed=${userChanged})`,
-        );
-      } catch (err) {
-        console.error("[daemon] failed to mint PAT:", err);
-        throw err;
-      }
+    try {
+      finalToken = await mintPat(tokenFromRenderer);
+      console.log(
+        `[daemon] minted PAT for profile "${active.name}" (user_changed=${userChanged})`,
+      );
+    } catch (err) {
+      console.error("[daemon] failed to mint PAT:", err);
+      throw err;
     }
-    config.token = finalToken;
-    if (targetApiBaseUrl) config.server_url = targetApiBaseUrl;
-    await writeProfileConfig(active.name, config);
   }
+  config.token = finalToken;
+  if (targetApiBaseUrl) config.server_url = targetApiBaseUrl;
+  await writeProfileConfig(active.name, config);
   await writeProfileUserId(active.name, userId);
 
   return { active, userChanged };

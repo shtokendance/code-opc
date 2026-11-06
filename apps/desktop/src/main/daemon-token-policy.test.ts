@@ -14,14 +14,14 @@ const PERSONAL = {
 };
 
 describe("planDaemonTokenSync", () => {
-  it("enterprise sessions never write a token, even a mul_ PAT", () => {
+  it("enterprise sessions mint or write a PAT like any session", () => {
     expect(
       planDaemonTokenSync({
         ...PERSONAL,
         tokenFromRenderer: "mul_passed_directly",
         enterprise: true,
       }),
-    ).toEqual({ action: "enterprise_skip" });
+    ).toEqual({ action: "write", token: "mul_passed_directly" });
     expect(
       planDaemonTokenSync({
         ...PERSONAL,
@@ -30,7 +30,17 @@ describe("planDaemonTokenSync", () => {
         userId: "u1",
         enterprise: true,
       }),
-    ).toEqual({ action: "enterprise_skip" });
+    ).toEqual({ action: "write", token: "mul_cached" });
+    expect(
+      planDaemonTokenSync({
+        ...PERSONAL,
+        tokenFromRenderer: "jwt.enterprise.session",
+        cachedToken: undefined,
+        previousUserId: null,
+        userId: "u1",
+        enterprise: true,
+      }),
+    ).toEqual({ action: "mint" });
   });
 
   it("passes a renderer-supplied mul_ PAT straight through", () => {

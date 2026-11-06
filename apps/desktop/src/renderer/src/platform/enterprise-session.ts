@@ -20,6 +20,10 @@ export function isEnterpriseSession(): boolean {
   return enterpriseToken !== null;
 }
 
+export function getEnterpriseToken(): string | null {
+  return enterpriseToken;
+}
+
 /**
  * Storage adapter that overlays `multica_token` with the in-memory enterprise
  * token while an enterprise session is active. The shared auth machinery —

@@ -27,6 +27,7 @@ import {
   clearEnterpriseSession,
   createEnterpriseStorage,
   establishEnterpriseSession,
+  getEnterpriseToken,
   isEnterpriseSession,
   restoreEnterpriseSession,
 } from "./enterprise-session";
@@ -96,6 +97,7 @@ describe("restoreEnterpriseSession", () => {
 
     expect(restoreEnterpriseSession()).toBe(true);
     expect(isEnterpriseSession()).toBe(true);
+    expect(getEnterpriseToken()).toBe("ent.jwt");
 
     const storage = createEnterpriseStorage();
     expect(storage.getItem("multica_token")).toBe("ent.jwt");

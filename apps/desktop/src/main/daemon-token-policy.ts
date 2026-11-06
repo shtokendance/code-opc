@@ -1,16 +1,14 @@
 /**
  * Pure decision logic for what the daemon profile's config.json may receive
- * during a token sync. Extracted from daemon-manager so the enterprise gate
- * (BND-161) is unit-testable without touching the filesystem or the network.
+ * during a token sync. Extracted from daemon-manager so the gate
+ * is unit-testable without touching the filesystem or the network.
  *
- * Enterprise sessions never write a PAT: daemon task claims authenticate
- * through platform task leases instead. Personal sessions keep the existing
- * behavior — pass a `mul_` token straight through, reuse the cached PAT only
- * for the same user, otherwise mint a fresh one.
+ * Both enterprise and personal sessions provision a daemon PAT via `POST /api/tokens`
+ * (or pass a `mul_` token straight through), reusing the cached PAT only for the
+ * same user, otherwise minting a fresh one on user switch or initial startup.
  */
 
 export type DaemonTokenPlan =
-  | { action: "enterprise_skip" }
   | { action: "write"; token: string }
   | { action: "mint" };
 
@@ -23,15 +21,13 @@ export interface PlanDaemonTokenInput {
   previousUserId: string | null;
   /** User the current session belongs to. */
   userId: string;
-  /** True when the active session is an enterprise (platform) session. */
-  enterprise: boolean;
+  /** Optional flag preserved for backward compatibility. */
+  enterprise?: boolean;
 }
 
 export function planDaemonTokenSync(
   input: PlanDaemonTokenInput,
 ): DaemonTokenPlan {
-  if (input.enterprise) return { action: "enterprise_skip" };
-
   if (input.tokenFromRenderer.startsWith("mul_")) {
     return { action: "write", token: input.tokenFromRenderer };
   }

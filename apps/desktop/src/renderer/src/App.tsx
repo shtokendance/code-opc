@@ -43,6 +43,7 @@ import {
 import {
   createEnterpriseStorage,
   isEnterpriseSession,
+  getEnterpriseToken,
   restoreEnterpriseSession,
   clearEnterpriseSession,
 } from "./platform/enterprise-session";
@@ -194,24 +195,9 @@ function AppContent() {
   // inside syncDaemonOnLogin is load-bearing — see that module.
   useEffect(() => {
     if (!user || !runtimeConfig) return;
-    if (isEnterpriseSession()) {
-      // BND-161: enterprise sessions never mint or write a daemon PAT.
-      // The sync below only clears any stale personal token from the daemon
-      // profile; enterprise daemon task claims authenticate through platform
-      // leases. Target URL is still pushed so the desktop profile resolves.
-      const userId = user.id;
-      (async () => {
-        try {
-          await window.daemonAPI.setTargetApiUrl(runtimeConfig.apiUrl);
-          await window.daemonAPI.syncToken("", userId, "enterprise");
-          await window.daemonAPI.autoStart();
-        } catch (err) {
-          console.error("Failed to sync daemon on enterprise login", err);
-        }
-      })();
-      return;
-    }
-    const token = localStorage.getItem("multica_token");
+    const token = isEnterpriseSession()
+      ? getEnterpriseToken()
+      : localStorage.getItem("multica_token");
     if (!token) return;
     const userId = user.id;
     (async () => {
