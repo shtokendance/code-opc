@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/testutil"
 	"github.com/spf13/cobra"
 )
@@ -227,6 +228,39 @@ func TestCallbackHostFlagValueReadsParentSetupFlag(t *testing.T) {
 	}
 	if got != "10.0.0.5" {
 		t.Fatalf("callback host = %q, want parent flag value", got)
+	}
+}
+
+func TestCallbackHostFlagValueReadsEnvAndConfig(t *testing.T) {
+	redirectTestHome(t, t.TempDir())
+
+	cmd := &cobra.Command{Use: "login"}
+	cmd.Flags().String(callbackHostFlag, "", "")
+
+	// 1. Neither flag, env, nor config set -> empty
+	if got := callbackHostFlagValue(cmd); got != "" {
+		t.Fatalf("expected empty, got %q", got)
+	}
+
+	// 2. Set config
+	cfg := cli.CLIConfig{CallbackHost: "127.0.0.1"}
+	if err := cli.SaveCLIConfig(cfg); err != nil {
+		t.Fatalf("SaveCLIConfig: %v", err)
+	}
+	if got := callbackHostFlagValue(cmd); got != "127.0.0.1" {
+		t.Fatalf("expected config value 127.0.0.1, got %q", got)
+	}
+
+	// 3. Env overrides config
+	t.Setenv("MULTICA_CALLBACK_HOST", "10.0.0.99")
+	if got := callbackHostFlagValue(cmd); got != "10.0.0.99" {
+		t.Fatalf("expected env value 10.0.0.99, got %q", got)
+	}
+
+	// 4. Flag overrides env
+	_ = cmd.Flags().Set(callbackHostFlag, "192.168.1.10")
+	if got := callbackHostFlagValue(cmd); got != "192.168.1.10" {
+		t.Fatalf("expected flag value 192.168.1.10, got %q", got)
 	}
 }
 

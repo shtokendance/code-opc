@@ -262,7 +262,11 @@ func runAuthLoginBrowser(cmd *cobra.Command) error {
 	flagHost := callbackHostFlagValue(cmd)
 	callbackHost, bindAddr, err := resolveCallbackBinding(flagHost, serverURL, appURL, detectOutboundIP)
 	if err != nil {
-		return err
+		if flagHost == "" && !runningInSSHSession() {
+			callbackHost, bindAddr, err = "127.0.0.1", "127.0.0.1", nil
+		} else {
+			return err
+		}
 	}
 
 	// Pin to "tcp4" — a bare "tcp" on macOS can produce an IPv6-only socket
@@ -403,6 +407,14 @@ func callbackHostFlagValue(cmd *cobra.Command) string {
 		if value := nonEmptyFlagValue(c.InheritedFlags(), callbackHostFlag); value != "" {
 			return value
 		}
+	}
+	if v := strings.TrimSpace(os.Getenv("MULTICA_CALLBACK_HOST")); v != "" {
+		return v
+	}
+	profile := resolveProfile(cmd)
+	cfg, err := cli.LoadCLIConfigForProfile(profile)
+	if err == nil && cfg.CallbackHost != "" {
+		return cfg.CallbackHost
 	}
 	return ""
 }

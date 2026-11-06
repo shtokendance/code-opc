@@ -18,6 +18,9 @@ export function defaultBinaryName(): string {
 export function defaultCandidateDirs(): string[] {
   const dirs: string[] = [];
   if (process.platform !== "win32") {
+    if (process.platform === "darwin" && existsSync("/opt/homebrew/bin")) {
+      dirs.push("/opt/homebrew/bin");
+    }
     dirs.push(join(homedir(), ".local", "bin"));
     dirs.push("/usr/local/bin");
   } else {

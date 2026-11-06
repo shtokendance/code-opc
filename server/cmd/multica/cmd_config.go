@@ -32,6 +32,7 @@ var configSetSupportedKeys = []string{
 	"server_url",
 	"app_url",
 	"workspace_id",
+	"callback_host",
 	"device_name",
 	"runtime_name",
 	"workspaces_root",
@@ -100,6 +101,7 @@ func runConfigShow(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "server_url:", valueOrDefault(cfg.ServerURL, "(not set)"))
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "app_url:", valueOrDefault(cfg.AppURL, "(not set)"))
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "workspace_id:", valueOrDefault(cfg.WorkspaceID, "(not set)"))
+	fmt.Fprintf(os.Stdout, "%-34s %s\n", "callback_host:", valueOrDefault(cfg.CallbackHost, "(not set)"))
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "device_name:", valueOrDefault(cfg.DeviceName, "(not set)"))
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "runtime_name:", valueOrDefault(cfg.RuntimeName, "(not set)"))
 	fmt.Fprintf(os.Stdout, "%-34s %s\n", "workspaces_root:", valueOrDefault(cfg.WorkspacesRoot, "(not set)"))
@@ -164,6 +166,12 @@ func applyConfigSet(cfg *cli.CLIConfig, key, value string) error {
 		cfg.AppURL = value
 	case "workspace_id":
 		cfg.WorkspaceID = value
+	case "callback_host":
+		value = strings.TrimSpace(value)
+		if value != "" && !isSupportedCallbackHost(value) {
+			return callbackHostError(value)
+		}
+		cfg.CallbackHost = value
 	case "device_name":
 		cfg.DeviceName = value
 	case "runtime_name":

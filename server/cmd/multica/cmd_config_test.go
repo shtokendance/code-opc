@@ -36,6 +36,9 @@ func TestRunConfigSetPersistsSupportedKeysInProfile(t *testing.T) {
 	if err := runConfigSet(cmd, []string{"workspace_id", "ws-123"}); err != nil {
 		t.Fatalf("runConfigSet workspace_id: %v", err)
 	}
+	if err := runConfigSet(cmd, []string{"callback_host", "127.0.0.1"}); err != nil {
+		t.Fatalf("runConfigSet callback_host: %v", err)
+	}
 	if err := runConfigSet(cmd, []string{"workspaces_root", workspacesRoot}); err != nil {
 		t.Fatalf("runConfigSet workspaces_root: %v", err)
 	}
@@ -45,7 +48,7 @@ func TestRunConfigSetPersistsSupportedKeysInProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadCLIConfigForProfile: %v", err)
 	}
-	if cfg.ServerURL != "http://127.0.0.1:8080" || cfg.AppURL != "http://127.0.0.1:3000" || cfg.WorkspaceID != "ws-123" || cfg.WorkspacesRoot != workspacesRoot {
+	if cfg.ServerURL != "http://127.0.0.1:8080" || cfg.AppURL != "http://127.0.0.1:3000" || cfg.WorkspaceID != "ws-123" || cfg.CallbackHost != "127.0.0.1" || cfg.WorkspacesRoot != workspacesRoot {
 		t.Fatalf("config = %#v, want persisted supported keys", cfg)
 	}
 }
@@ -66,6 +69,7 @@ func TestRunConfigShowIncludesProfileAndDefaults(t *testing.T) {
 		"server_url:",
 		"app_url:",
 		"workspace_id:",
+		"callback_host:",
 		"device_name:",
 		"runtime_name:",
 		"workspaces_root:",
