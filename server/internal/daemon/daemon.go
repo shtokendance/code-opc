@@ -840,6 +840,12 @@ func New(cfg Config, logger *slog.Logger) *Daemon {
 	return d
 }
 
+// DisableExecutionIsolation disables spawning an external subprocess helper
+// for environment preparation, running execenv.Prepare and Reuse directly in-process.
+func (d *Daemon) DisableExecutionIsolation() {
+	d.executionEnvironmentCommand = nil
+}
+
 // setAgentVersion records the detected CLI version for an agent provider so
 // later task-dispatch code (e.g. Codex sandbox policy) can read it.
 //
@@ -2073,16 +2079,21 @@ func (d *Daemon) clearWSHeartbeatAcks() {
 
 // Run starts the daemon: resolves auth, registers runtimes, then polls for tasks.
 func (d *Daemon) Run(ctx context.Context) error {
-	return d.run(ctx, nil)
+	return d.run(ctx, nil, true)
 }
 
 // RunWithHealthListener uses an already-bound loopback listener. The CLI keeps
 // that listener open while publishing its actual port for other processes.
 func (d *Daemon) RunWithHealthListener(ctx context.Context, healthLn net.Listener) error {
-	return d.run(ctx, healthLn)
+	return d.run(ctx, healthLn, true)
 }
 
-func (d *Daemon) run(ctx context.Context, healthLn net.Listener) error {
+// RunEmbedded runs the daemon in-process without binding a local HTTP health port.
+func (d *Daemon) RunEmbedded(ctx context.Context) error {
+	return d.run(ctx, nil, false)
+}
+
+func (d *Daemon) run(ctx context.Context, healthLn net.Listener, withHealthServer bool) error {
 	var err error
 	// Wrap context so handleUpdate can cancel the daemon for restart.
 	ctx, cancel := context.WithCancel(ctx)
@@ -2090,14 +2101,16 @@ func (d *Daemon) run(ctx context.Context, healthLn net.Listener) error {
 	d.setLifecycleCtx(ctx)
 	d.rootCtx = ctx
 
-	// Bind health port early to detect another running daemon.
-	if healthLn == nil {
-		healthLn, err = d.listenHealth()
-		if err != nil {
-			return err
+	// Bind health port early to detect another running daemon when running standalone.
+	if withHealthServer {
+		if healthLn == nil {
+			healthLn, err = d.listenHealth()
+			if err != nil {
+				return err
+			}
 		}
+		defer healthLn.Close()
 	}
-	defer healthLn.Close()
 
 	agentNames := make([]string, 0, len(d.agents()))
 	for name := range d.agents() {
@@ -2162,7 +2175,9 @@ func (d *Daemon) run(ctx context.Context, healthLn net.Listener) error {
 	// "starting" until d.ready is set after preflight, so a slow or *failing*
 	// preflight is never misreported as a started daemon. resolveAuth has
 	// already run, so a missing token still fails fast before we begin serving.
-	go d.serveHealth(ctx, healthLn, time.Now())
+	if withHealthServer && healthLn != nil {
+		go d.serveHealth(ctx, healthLn, time.Now())
+	}
 
 	// Renew the PAT before the first API call, then do the initial
 	// workspace sync. Both steps live in preflightAuth so the ordering
@@ -5953,7 +5968,14 @@ func (d *Daemon) handleTask(ctx context.Context, task Task, slot int) {
 		}
 	}()
 
-	result, err := d.runner.run(runCtx, task, provider, slot, taskLog)
+	var result TaskResult
+	var err error
+	if d.isInternalMikaTask(task) {
+		taskLog.Info("dispatching task to internal mika goroutine thread", "task_id", task.ID)
+		result, err = d.runMikaInternalThread(runCtx, task, taskLog)
+	} else {
+		result, err = d.runner.run(runCtx, task, provider, slot, taskLog)
+	}
 	if errors.Is(err, errStartClaimRejected) {
 		// The row belongs to another claim (or is terminal). A task-id-only
 		// failure callback from this stale delivery could kill its new owner.
@@ -8846,21 +8868,78 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			promptOptions = append(promptOptions, WithWorktreeCommitsAllLeftovers())
 		}
 	}
-	prompt := BuildPrompt(task, provider, promptOptions...)
-
-	// Pass task-scoped auth credentials and context so the spawned agent CLI
-	// can call the Multica API and the local daemon (e.g. `multica repo checkout`).
-	// MULTICA_TASK_SLOT is allocated from the daemon-wide concurrency pool, not
-	// per-agent. When one daemon hosts multiple agents, slots index shared
-	// daemon-level resources such as GPUs.
-	// MULTICA_TOKEN is bound to (agent, task) by the server. Never fall back
-	// to the daemon's own credential here: doing so lets agent CLI writes land
-	// as the runtime owner's member actor and can retrigger the same agent.
 	agentToken, err := taskScopedAuthToken(task)
 	if err != nil {
 		taskLog.Error("task auth token invalid; refusing to start agent", "error", err)
 		return TaskResult{}, err
 	}
+
+	var taskClient *cli.APIClient
+	var preloadedIssue *cli.Issue
+	if task.IssueID != "" && task.ChatSessionID == "" && task.QuickCreatePrompt == "" && d.cfg.ServerBaseURL != "" && agentToken != "" {
+		taskClient = cli.NewAPIClient(d.cfg.ServerBaseURL, task.WorkspaceID, agentToken)
+		preloadCtx, cancelPreload := context.WithTimeout(ctx, 30*time.Second)
+		issue, issueErr := taskClient.GetIssue(preloadCtx, task.IssueID)
+		comments, commentsErr := taskClient.ListIssueComments(preloadCtx, task.IssueID)
+		if issueErr == nil && issue != nil {
+			preloadedIssue = issue
+			preloaded := &PreloadedIssueContext{Issue: issue}
+			if commentsErr == nil {
+				preloaded.Comments = comments
+			}
+
+			// Download all issue & comment attachments into workdir/attachments/
+			var allAttachments []cli.AttachmentResponse
+			allAttachments = append(allAttachments, issue.Attachments...)
+			for _, c := range preloaded.Comments {
+				allAttachments = append(allAttachments, c.Attachments...)
+			}
+			if len(allAttachments) > 0 {
+				attachmentsDir := filepath.Join(env.WorkDir, "attachments")
+				_ = os.MkdirAll(attachmentsDir, 0o755)
+				seenAtt := make(map[string]bool)
+				for _, att := range allAttachments {
+					if att.ID == "" || seenAtt[att.ID] {
+						continue
+					}
+					seenAtt[att.ID] = true
+					dlURL := att.DownloadURL
+					if dlURL == "" {
+						dlURL = fmt.Sprintf("%s/api/attachments/%s/download", strings.TrimRight(d.cfg.ServerBaseURL, "/"), att.ID)
+					} else if strings.HasPrefix(dlURL, "/") {
+						dlURL = strings.TrimRight(d.cfg.ServerBaseURL, "/") + dlURL
+					}
+					data, dlErr := taskClient.DownloadFile(preloadCtx, dlURL)
+					if dlErr != nil || len(data) == 0 {
+						taskLog.Debug("preload attachment download failed (non-fatal)", "attachment_id", att.ID, "error", dlErr)
+						continue
+					}
+					safeName := filepath.Base(att.Filename)
+					if safeName == "" || safeName == "." || safeName == ".." {
+						safeName = att.ID
+					}
+					destPath := filepath.Join(attachmentsDir, safeName)
+					if writeErr := os.WriteFile(destPath, data, 0o644); writeErr == nil {
+						preloaded.LocalAttachments = append(preloaded.LocalAttachments, LocalAttachment{
+							Filename:  att.Filename,
+							LocalPath: "./attachments/" + safeName,
+						})
+					}
+				}
+			}
+
+			promptOptions = append(promptOptions, WithPreloadedIssueContext(preloaded))
+
+			if !taskCtx.HasProjectWorkflow && (issue.Status == "todo" || issue.Status == "backlog") {
+				if statusErr := taskClient.SetIssueStatus(ctx, task.IssueID, "in_progress"); statusErr != nil {
+					taskLog.Debug("auto set in_progress failed (non-fatal)", "error", statusErr)
+				}
+			}
+		}
+		cancelPreload()
+	}
+
+	prompt := BuildPrompt(task, provider, promptOptions...)
 	agentEnv := taskMulticaEnvironment(task, provider, agentName, agentToken, env.MulticaConfigRoot, d.cfg.WorkspacesRoot, d.cfg.ServerBaseURL, d.cfg.HealthPort, slot, taskTempDir)
 	if checkoutMode := repoCheckoutModeFor(provider, runtime.GOOS); checkoutMode != "" {
 		agentEnv[repoCheckoutModeEnv] = checkoutMode
@@ -9449,6 +9528,15 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			WorkDir:   env.WorkDir,
 			EnvRoot:   env.RootDir,
 			Usage:     usageEntries,
+		}
+		if taskClient != nil && preloadedIssue != nil && !taskCtx.HasProjectWorkflow {
+			if preloadedIssue.Status == "todo" || preloadedIssue.Status == "backlog" || preloadedIssue.Status == "in_progress" {
+				reviewCtx, cancelReview := context.WithTimeout(context.Background(), 5*time.Second)
+				if statusErr := taskClient.SetIssueStatus(reviewCtx, task.IssueID, "in_review"); statusErr != nil {
+					taskLog.Debug("auto set in_review failed (non-fatal)", "error", statusErr)
+				}
+				cancelReview()
+			}
 		}
 		return taskResult, nil
 	case "timeout":

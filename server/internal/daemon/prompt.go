@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/daemon/execenv"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
@@ -136,6 +137,20 @@ func buildJoinedWakeupsBlock(notes string) string {
 	return "[WAKEUP — joined this run]\n" + strings.TrimSpace(notes) + "\n\n"
 }
 
+// LocalAttachment records an attachment automatically downloaded into the task workdir.
+type LocalAttachment struct {
+	Filename  string
+	LocalPath string
+}
+
+// PreloadedIssueContext carries issue metadata and comment history fetched
+// directly in-process via Go SDK so external agents do not need to run CLI commands.
+type PreloadedIssueContext struct {
+	Issue            *cli.Issue
+	Comments         []cli.IssueComment
+	LocalAttachments []LocalAttachment
+}
+
 // promptOpts carries per-run facts the claimed Task does not: things only the
 // daemon's own execution context can answer. Kept behind PromptOption so the
 // common BuildPrompt(task, provider) call sites stay unchanged.
@@ -145,6 +160,14 @@ type promptOpts struct {
 	worktreeBranch              string
 	worktreeBase                string
 	worktreeCommitsAllLeftovers bool
+	preloadedIssue              *PreloadedIssueContext
+}
+
+// WithPreloadedIssueContext attaches preloaded issue and comment history to the prompt.
+func WithPreloadedIssueContext(ctx *PreloadedIssueContext) PromptOption {
+	return func(o *promptOpts) {
+		o.preloadedIssue = ctx
+	}
 }
 
 // PromptOption tunes per-turn prompt copy with run-scoped context.
@@ -333,6 +356,12 @@ func BuildPrompt(task Task, provider string, options ...PromptOption) string {
 		apply(&opts)
 	}
 	body := buildPromptBody(task, provider)
+	if preloaded := formatPreloadedIssueBlock(opts.preloadedIssue); preloaded != "" {
+		if !strings.HasSuffix(body, "\n\n") {
+			body += "\n"
+		}
+		body += preloaded
+	}
 	// Run-scoped context is appended, never prepended: everything ahead of it
 	// is stable across runs of a resumed session, and appending keeps it after
 	// the cached prefix (MUL-5377).
@@ -343,6 +372,53 @@ func BuildPrompt(task Task, provider string, options ...PromptOption) string {
 		body += blocks
 	}
 	return body
+}
+
+func formatPreloadedIssueBlock(ctx *PreloadedIssueContext) string {
+	if ctx == nil || ctx.Issue == nil {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n[Preloaded Issue Context]\n")
+	if ctx.Issue.Identifier != "" {
+		fmt.Fprintf(&b, "- Identifier: %s\n", ctx.Issue.Identifier)
+	}
+	fmt.Fprintf(&b, "- ID: %s\n", ctx.Issue.ID)
+	fmt.Fprintf(&b, "- Title: %s\n", ctx.Issue.Title)
+	if ctx.Issue.Status != "" {
+		fmt.Fprintf(&b, "- Status: %s\n", ctx.Issue.Status)
+	}
+	if ctx.Issue.Priority != "" {
+		fmt.Fprintf(&b, "- Priority: %s\n", ctx.Issue.Priority)
+	}
+	if ctx.Issue.Description != nil && strings.TrimSpace(*ctx.Issue.Description) != "" {
+		b.WriteString("\n### Issue Description\n")
+		b.WriteString(strings.TrimSpace(*ctx.Issue.Description))
+		b.WriteString("\n")
+	}
+	if len(ctx.Comments) > 0 {
+		b.WriteString("\n### Discussion History\n")
+		start := 0
+		if len(ctx.Comments) > 30 {
+			start = len(ctx.Comments) - 30
+			fmt.Fprintf(&b, "(Showing latest 30 of %d comments)\n\n", len(ctx.Comments))
+		}
+		for _, c := range ctx.Comments[start:] {
+			author := c.AuthorID
+			if c.AuthorType != "" {
+				author = c.AuthorType + ":" + author
+			}
+			fmt.Fprintf(&b, "- [%s] (%s): %s\n", c.CreatedAt, author, strings.TrimSpace(c.Content))
+		}
+	}
+	if len(ctx.LocalAttachments) > 0 {
+		b.WriteString("\n### Preloaded Attachments (Downloaded locally into your working directory)\n")
+		for _, att := range ctx.LocalAttachments {
+			fmt.Fprintf(&b, "- `%s` -> `%s`\n", att.Filename, att.LocalPath)
+		}
+	}
+	b.WriteString("\n")
+	return b.String()
 }
 
 func buildPromptBody(task Task, provider string) string {
@@ -386,12 +462,7 @@ func buildPromptBody(task Task, provider string) string {
 		}
 		b.WriteString("\n")
 	}
-	fmt.Fprintf(&b, "Start by running `multica issue get %s --output json` to understand your task, then complete it.\n", task.IssueID)
-	// Workflow step 2 owns the catch-up rule for every issue turn; this line
-	// only hands over the commands. It used to add "(assignment-triggered tasks
-	// treat the read as mandatory)", which read as if comment-triggered turns
-	// did not (MUL-6984).
-	fmt.Fprintf(&b, "For comment history, workflow step 2 applies. Scan the threads first with `multica issue comment list %s --roots-only --summary --compact --output json`, then expand only what matters with `--thread <thread-id> --tail 30`. For `--since` incremental polling, pagination, and folding, see `multica issue comment list --help`.\n", task.IssueID)
+	b.WriteString("The issue details and discussion history are preloaded in your context below by the Multica desktop client. Do NOT run any `multica` CLI commands in the terminal — status updates and final comment delivery are handled automatically by the desktop client. Complete the task and output your final deliverable directly in your response.\n")
 	return b.String()
 }
 
@@ -599,87 +670,12 @@ func buildCommentPrompt(task Task, provider string) string {
 			//     which is independent of where these ids sit.
 			// It is also not a precise fetch in the other direction: the window
 			// carries the trigger comment and unrelated comments too.
-			fmt.Fprintf(&b, "This run also covers %d earlier comment(s) posted before it started — you must read and address every one of them, not just the one above: %s. They may be in DIFFERENT threads, so do not assume they share the triggering thread.\n\n",
+			fmt.Fprintf(&b, "This run also covers %d earlier comment(s) posted before it started — you must read and address every one of them in the preloaded discussion history below, not just the one above: %s.\n\n",
 				len(task.CoalescedCommentIDs), strings.Join(task.CoalescedCommentIDs, ", "))
-			if task.NewCommentsSince != "" {
-				fmt.Fprintf(&b, "Start with `multica issue comment list %s --since %s --compact --output json`. Treat that as a candidate window, not a guarantee — it also carries unrelated comments, and a retried run can carry ids older than the window. Check every id above against the result.\n\n",
-					task.IssueID, task.NewCommentsSince)
-			}
-			fmt.Fprintf(&b, "Fetch each id you still need directly: `multica issue comment list %s --thread <comment-id> --tail 30 --compact --output json`. `--thread` accepts a reply id, not just a thread root, so you do not need to know which thread the comment lives in. If it is older than those 30 replies, page back with the `Next reply cursor` values (`--before` / `--before-id`) until it appears. Do not finish this turn until every id above is accounted for.\n\n",
-				task.IssueID)
 		}
 	}
-	// Issue-reading pointer (MUL-7344). Same gate as the comment hint below —
-	// `resumed` is computed once for both, so one turn can never claim the
-	// session is warm enough to skip the issue read while treating it as cold
-	// for comments. On anything but a real resume with a server-computed
-	// comparison this renders the unconditional read, byte for byte.
-	b.WriteString(execenv.BuildIssueStateHint(
-		task.IssueID, task.IssueStatus, task.IssueAssigneeType, task.IssueAssigneeID,
-		task.IssueChangedFields, task.IssueStateDeltaKnown, resumed,
-	))
-	// Comment-reading pointer. Which hint renders is decided by whether this
-	// run actually RESUMES a provider session, and only then by the new-comment
-	// delta — never by the delta alone.
-	//
-	// "Resumes" means the LATEST turn's context came back. Two states fail that
-	// and both must take the reconstruction path (the cold hint; the prompt
-	// makes no claim about the provider session, because in the second state
-	// the daemon does resume the older one). A run with no prior session is the
-	// obvious one. The other is PriorSessionResumeUnavailable: the server
-	// withheld a more recent Codex session whose rollout was missing and handed
-	// back an OLDER fallback session instead (MUL-5305), so PriorSessionID is
-	// non-empty while the memory this turn continues from is stale. Reading
-	// only PriorSessionID would call that a warm resume and could skip both the
-	// full trigger-thread read and the scan, on the strength of context the run
-	// does not have. It reconstructs instead, and the continuity notice
-	// perTurnContextBlocks renders says why (MUL-6984).
-	//
-	// Given a real resume, the delta decides:
-	//   - count > 0            → issue-wide count, the triggering thread's
-	//                            delta, and the scan as the wide read.
-	//   - computed and empty   → the trigger is already injected and the
-	//                            server looked at the rest of the issue and
-	//                            found nothing, which IS the scan's answer.
-	//   - not computed         → same session facts, no claim about the issue:
-	//                            the scan is handed over as a command. A zero
-	//                            count alone cannot be read as "nothing was
-	//                            said" — a failed read, a cold start and an old
-	//                            server all produce that same zero, and none of
-	//                            them looked (NewCommentsDeltaKnown).
-	//
-	// Whether the scan happens is never decided here — workflow step 2 owns
-	// that; these hints carry this turn's facts and exact commands. Final
-	// fallback (no trigger id, shouldn't happen here): plain read.
-	var hint string
-	if resumed {
-		hint = execenv.BuildNewCommentsHint(task.IssueID, task.TriggerCommentID, task.TriggerThreadID, task.NewCommentsSince, task.NewCommentCount)
-		if hint == "" {
-			if task.NewCommentsDeltaKnown {
-				hint = execenv.BuildResumedCommentsHint(task.IssueID, task.TriggerCommentID, task.TriggerThreadID)
-			} else {
-				hint = execenv.BuildResumedUnknownDeltaCommentsHint(task.IssueID, task.TriggerCommentID, task.TriggerThreadID)
-			}
-		}
-	}
-	if hint == "" {
-		hint = execenv.BuildColdCommentsHint(task.IssueID, task.TriggerCommentID, task.TriggerThreadID)
-	}
-	if hint != "" {
-		b.WriteString(hint)
-	} else {
-		fmt.Fprintf(&b, "Read the discussion: scan with `multica issue comment list %s --roots-only --summary --compact --output json`, then expand what matters with `--thread <thread-id> --tail 30`.\n\n", task.IssueID)
-	}
-	// Reply routing. When this run coalesced comments spanning MORE THAN ONE
-	// root thread, answer each thread in its own thread instead of dumping one
-	// merged comment (MUL-4348). Same-thread follow-ups collapse to a single
-	// group upstream, so they keep the ordinary single-parent path below and can
-	// never be split into duplicate replies.
-	if targets := commentReplyThreads(task); len(targets) >= 2 {
-		b.WriteString(execenv.BuildMultiThreadCommentReplyInstructions(task.IssueID, targets, taskIsSquadLeader(task)))
-	} else {
-		b.WriteString(execenv.BuildCommentReplyInstructions(provider, task.IssueID, task.TriggerCommentID, taskIsSquadLeader(task)))
-	}
+	b.WriteString("The issue details and discussion history are preloaded directly in your context below by the Multica desktop client. Do NOT run any `multica` CLI commands in the terminal (no `multica issue get`, `multica issue comment list`, `multica issue status`, or `multica issue comment add`). Status transitions and comment delivery are handled automatically by the desktop client.\n\n")
+	b.WriteString("Provide your complete, well-formatted final reply directly in your output — it will automatically be posted to the triggering comment thread.\n")
 	return b.String()
 }
 

@@ -352,71 +352,73 @@ const (
 	repoCheckoutRetryValueBusy  = "repo-busy"
 )
 
+// HealthSnapshot builds the current daemon health/status snapshot in memory.
+func (d *Daemon) HealthSnapshot(startedAt time.Time) HealthResponse {
+	d.mu.Lock()
+	var wsList []healthWorkspace
+	for id, ws := range d.workspaces {
+		wsList = append(wsList, healthWorkspace{
+			ID:       id,
+			Runtimes: ws.runtimeIDs,
+		})
+	}
+	d.mu.Unlock()
+
+	agents := make([]string, 0, len(d.agents()))
+	for name := range d.agents() {
+		agents = append(agents, name)
+	}
+
+	// "starting" until preflight (PAT renew + initial workspace sync +
+	// runtime registration) completes; "running" once the daemon can
+	// actually claim tasks.
+	status := "starting"
+	if d.ready.Load() {
+		status = "running"
+	}
+
+	resp := HealthResponse{
+		Status:                status,
+		PID:                   os.Getpid(),
+		OS:                    runtime.GOOS,
+		Uptime:                time.Since(startedAt).Truncate(time.Second).String(),
+		Profile:               d.cfg.Profile,
+		LaunchedBy:            d.cfg.LaunchedBy,
+		DaemonID:              d.cfg.DaemonID,
+		DeviceName:            d.cfg.DeviceName,
+		ServerURL:             d.cfg.ServerBaseURL,
+		CLIVersion:            d.cfg.CLIVersion,
+		CLICommit:             d.cfg.CLICommit,
+		ActiveTaskCount:       d.activeTasks.Load(),
+		RunningTaskCount:      d.runningTasks.Load(),
+		ResourceWaitTaskCount: d.resourceWaitTasks.Load(),
+		Agents:                agents,
+		SkippedAgents:         d.skippedAgentsSnapshot(),
+
+		ReloadPendingReason: d.reloadPending(),
+		Workspaces:          wsList,
+	}
+	if reporter, ok := d.repoCache.(interface{ Activity() repocache.Activity }); ok {
+		activity := reporter.Activity()
+		resp.RepoMaintenanceActive = activity.MaintenanceActive
+		resp.RepoCheckoutWaiters = activity.ForegroundWaiters
+	}
+	if stats, err := d.terminalReports.stats(); err != nil {
+		d.logger.Warn("health: scan terminal report queue", "error", err)
+	} else {
+		resp.PendingTerminalReportCount = stats.PendingCount
+		resp.PendingTerminalReportBytes = stats.PendingBytes
+		resp.FailedTerminalReportCount = stats.FailedCount
+		resp.FailedTerminalReportBytes = stats.FailedBytes
+	}
+	return resp
+}
+
 // healthHandler returns the /health HTTP handler. Extracted from serveHealth
 // so tests can exercise it without spinning up a listener.
 func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		d.mu.Lock()
-		var wsList []healthWorkspace
-		for id, ws := range d.workspaces {
-			wsList = append(wsList, healthWorkspace{
-				ID:       id,
-				Runtimes: ws.runtimeIDs,
-			})
-		}
-		d.mu.Unlock()
-
-		agents := make([]string, 0, len(d.agents()))
-		for name := range d.agents() {
-			agents = append(agents, name)
-		}
-
-		// "starting" until preflight (PAT renew + initial workspace sync +
-		// runtime registration) completes; "running" once the daemon can
-		// actually claim tasks. The health port is bound before preflight for
-		// liveness/diagnostics, so callers must not treat a reachable endpoint
-		// as ready — they gate on this status. Consumers that only know
-		// "running" (older CLI/desktop) safely treat "starting" as not-ready.
-		status := "starting"
-		if d.ready.Load() {
-			status = "running"
-		}
-
-		resp := HealthResponse{
-			Status:                status,
-			PID:                   os.Getpid(),
-			OS:                    runtime.GOOS,
-			Uptime:                time.Since(startedAt).Truncate(time.Second).String(),
-			Profile:               d.cfg.Profile,
-			LaunchedBy:            d.cfg.LaunchedBy,
-			DaemonID:              d.cfg.DaemonID,
-			DeviceName:            d.cfg.DeviceName,
-			ServerURL:             d.cfg.ServerBaseURL,
-			CLIVersion:            d.cfg.CLIVersion,
-			CLICommit:             d.cfg.CLICommit,
-			ActiveTaskCount:       d.activeTasks.Load(),
-			RunningTaskCount:      d.runningTasks.Load(),
-			ResourceWaitTaskCount: d.resourceWaitTasks.Load(),
-			Agents:                agents,
-			SkippedAgents:         d.skippedAgentsSnapshot(),
-
-			ReloadPendingReason: d.reloadPending(),
-			Workspaces:          wsList,
-		}
-		if reporter, ok := d.repoCache.(interface{ Activity() repocache.Activity }); ok {
-			activity := reporter.Activity()
-			resp.RepoMaintenanceActive = activity.MaintenanceActive
-			resp.RepoCheckoutWaiters = activity.ForegroundWaiters
-		}
-		if stats, err := d.terminalReports.stats(); err != nil {
-			d.logger.Warn("health: scan terminal report queue", "error", err)
-		} else {
-			resp.PendingTerminalReportCount = stats.PendingCount
-			resp.PendingTerminalReportBytes = stats.PendingBytes
-			resp.FailedTerminalReportCount = stats.FailedCount
-			resp.FailedTerminalReportBytes = stats.FailedBytes
-		}
-
+		resp := d.HealthSnapshot(startedAt)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}
