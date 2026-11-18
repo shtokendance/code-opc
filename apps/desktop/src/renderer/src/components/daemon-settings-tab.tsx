@@ -1,64 +1,26 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AlertCircle, Info, LogIn } from "@multica/ui/icons";
 import { Button } from "@multica/ui/components/ui/button";
 import { Switch } from "@multica/ui/components/ui/switch";
-import { cn } from "@multica/ui/lib/utils";
-import { TruncatedTooltip } from "@multica/ui/components/common/truncated-tooltip";
 import { toast } from "sonner";
 import {
   SettingsCard,
   SettingsRow,
-  SettingsSection,
   SettingsTab,
 } from "@multica/views/settings";
 import { useT } from "@multica/views/i18n";
 import { reauthenticateDaemon } from "../platform/daemon-reauth";
 import type { DaemonPrefs, DaemonStatus } from "../../../shared/daemon-types";
-import {
-  DAEMON_STATE_COLORS,
-  formatUptime,
-} from "../../../shared/daemon-types";
-import { daemonStateLabel } from "./daemon-i18n";
-
-// One row inside the diagnostics block. Values that are likely to be
-// long IDs / URLs render as monospaced + truncated with a tooltip.
-function DiagnosticsRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="grid grid-cols-[140px_minmax(0,1fr)] items-baseline gap-3 py-1.5">
-      <span className="text-caption text-muted-foreground">{label}</span>
-      <TruncatedTooltip content={typeof value === "string" ? value : undefined} focusable>
-        <span
-          className={cn(
-            "min-w-0 truncate text-body",
-            mono && "font-mono text-caption",
-          )}
-        >
-          {value}
-        </span>
-      </TruncatedTooltip>
-    </div>
-  );
-}
 
 export function DaemonSettingsTab() {
   const { t } = useT("settings");
   const [prefs, setPrefs] = useState<DaemonPrefs>({ autoStart: true, autoStop: false });
-  const [cliInstalled, setCliInstalled] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<DaemonStatus>({ state: "stopped" });
   const [reauthLoading, setReauthLoading] = useState(false);
 
   useEffect(() => {
     window.daemonAPI.getPrefs().then(setPrefs);
-    window.daemonAPI.isCliInstalled().then(setCliInstalled);
     window.daemonAPI.getStatus().then(setStatus);
     return window.daemonAPI.onStatusChange(setStatus);
   }, []);
@@ -159,94 +121,7 @@ export function DaemonSettingsTab() {
             disabled={saving || externallyManaged}
           />
         </SettingsRow>
-
-        <SettingsRow
-          label={t(($) => $.desktop.daemon.cli_status)}
-          description={
-            cliInstalled === null
-              ? t(($) => $.desktop.daemon.cli_checking)
-              : cliInstalled
-                ? t(($) => $.desktop.daemon.cli_installed)
-                : t(($) => $.desktop.daemon.cli_missing)
-          }
-        >
-          {cliInstalled === false && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                window.desktopAPI.openExternal(
-                  "https://github.com/multica-ai/multica#cli-installation",
-                )
-              }
-            >
-              {t(($) => $.desktop.daemon.installation_guide)}
-            </Button>
-          )}
-          {cliInstalled !== false && <span />}
-        </SettingsRow>
       </SettingsCard>
-
-      {/* Diagnostics — moved out of the logs panel so the panel can focus
-          on logs. These fields matter for support tickets and bug reports,
-          not for everyday use. */}
-      <SettingsSection
-        title={t(($) => $.desktop.daemon.diagnostics_title)}
-      >
-        <SettingsCard>
-          <div className="px-4 py-2">
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.state)}
-            value={
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className={cn(
-                    "size-1.5 rounded-full",
-                    DAEMON_STATE_COLORS[status.state],
-                  )}
-                />
-                {daemonStateLabel(status.state, t)}
-              </span>
-            }
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.uptime)}
-            value={status.uptime ? formatUptime(status.uptime) : "—"}
-          />
-          <DiagnosticsRow
-            label="PID"
-            value={status.pid ?? "—"}
-            mono={!!status.pid}
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.daemon_id)}
-            value={status.daemonId ?? "—"}
-            mono={!!status.daemonId}
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.profile)}
-            value={status.profile || "default"}
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.server_url)}
-            value={status.serverUrl ?? "—"}
-            mono={!!status.serverUrl}
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.device_name)}
-            value={status.deviceName ?? "—"}
-          />
-          <DiagnosticsRow
-            label={t(($) => $.desktop.daemon.workspaces)}
-            value={
-              typeof status.workspaceCount === "number"
-                ? status.workspaceCount
-                : "—"
-            }
-          />
-          </div>
-        </SettingsCard>
-      </SettingsSection>
     </SettingsTab>
   );
 }

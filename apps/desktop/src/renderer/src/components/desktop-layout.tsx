@@ -38,6 +38,7 @@ import {
   DesktopNavigationProvider,
   routeContentLinkPath,
 } from "@/platform/navigation";
+import { StaleRuntimeReconciler } from "@/platform/stale-runtime-reconciler";
 import { useRenderedRouteStore } from "@/stores/rendered-route-store";
 import { TabBar } from "./tab-bar";
 import { TabContent } from "./tab-content";
@@ -244,6 +245,7 @@ export function DesktopShell() {
           IndexRedirect, not a route. */}
       <WorkspaceSlugProvider slug={slug}>
         <DesktopInboxBridge />
+        <StaleRuntimeReconciler />
         <div className="flex h-screen">
           {/* The wrapper alone paints the frame: a second fill under it would
               double the frame's glass over a theme's backdrop.

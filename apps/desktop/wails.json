@@ -1,0 +1,19 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "multica",
+  "outputfilename": "multica",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build:wails",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "http://localhost:5173",
+  "author": {
+    "name": "Multica",
+    "email": "support@multica.ai"
+  },
+  "info": {
+    "companyName": "Multica",
+    "productName": "Multica",
+    "productVersion": "0.9.0",
+    "copyright": "Copyright Multica"
+  }
+}
