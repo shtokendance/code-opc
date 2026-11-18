@@ -1,5 +1,6 @@
 import ReactDOM from "react-dom/client";
 import { installUserTimingCap } from "@multica/core/diagnostics";
+import { registerEE } from "@multica/ee";
 import App from "./App";
 import { AppCrashBoundary } from "./components/app-crash-boundary";
 import { launchWorkspaceSlug } from "./platform/workspace-windows";
@@ -54,6 +55,7 @@ if (import.meta.env.DEV) installUserTimingCap();
 
 async function bootstrap() {
   await initWailsDesktopAPI();
+  registerEE();
 
   // A window opened for a workspace starts on it rather than on whichever
   // workspace was last active in any window.

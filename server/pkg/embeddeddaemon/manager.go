@@ -193,7 +193,7 @@ func (m *Manager) Start(ctx context.Context, opts DaemonOptions) error {
 	if opts.CLIVersion != "" {
 		cfg.CLIVersion = opts.CLIVersion
 	} else {
-		cfg.CLIVersion = "0.9.0"
+		cfg.CLIVersion = "0.11.0"
 	}
 	if opts.CLICommit != "" {
 		cfg.CLICommit = opts.CLICommit

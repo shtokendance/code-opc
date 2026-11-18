@@ -3,6 +3,7 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/multica-ai/multica/server/internal/cli"
@@ -156,6 +157,10 @@ type PreloadedIssueContext struct {
 // common BuildPrompt(task, provider) call sites stay unchanged.
 type promptOpts struct {
 	sharedLocalDirectory        bool
+	skillDirectories            map[string]string
+	omitChatMessage             bool
+	chatSkillRefs               []SlashSkillRef
+	triggerCommentStripped      bool
 	worktreeReplayConflicts     []string
 	worktreeBranch              string
 	worktreeBase                string
@@ -355,7 +360,7 @@ func BuildPrompt(task Task, provider string, options ...PromptOption) string {
 	for _, apply := range options {
 		apply(&opts)
 	}
-	body := buildPromptBody(task, provider)
+	body := buildPromptBodyWithOptions(task, provider, opts)
 	if preloaded := formatPreloadedIssueBlock(opts.preloadedIssue); preloaded != "" {
 		if !strings.HasSuffix(body, "\n\n") {
 			body += "\n"
@@ -422,6 +427,10 @@ func formatPreloadedIssueBlock(ctx *PreloadedIssueContext) string {
 }
 
 func buildPromptBody(task Task, provider string) string {
+	return buildPromptBodyWithOptions(task, provider, promptOpts{})
+}
+
+func buildPromptBodyWithOptions(task Task, provider string, opts promptOpts) string {
 	if task.WakeupID != "" {
 		var b strings.Builder
 		fmt.Fprintf(&b, "You are running as a local coding agent for a Multica workspace.\n\nYour assigned issue ID is: %s\n\n[WAKEUP]\n%s\n\n", task.IssueID, task.HandoffNote)
@@ -439,10 +448,10 @@ func buildPromptBody(task Task, provider string) string {
 		return b.String()
 	}
 	if task.ChatSessionID != "" {
-		return buildChatPrompt(task)
+		return buildChatPromptWithOptions(task, opts)
 	}
 	if task.TriggerCommentID != "" {
-		return buildCommentPrompt(task, provider)
+		return buildCommentPromptWithOptions(task, provider, opts)
 	}
 	if task.AutopilotRunID != "" {
 		return buildAutopilotPrompt(task)
@@ -564,13 +573,22 @@ func buildQuickCreatePrompt(task Task) string {
 // are re-emitted on every turn so resumed sessions cannot carry forward a
 // previous turn's --parent UUID.
 func buildCommentPrompt(task Task, provider string) string {
+	return buildCommentPromptWithOptions(task, provider, promptOpts{})
+}
+
+func buildCommentPromptWithOptions(task Task, provider string, opts promptOpts) string {
 	var b strings.Builder
 	b.WriteString("You are running as a local coding agent for a Multica workspace.\n\n")
 	fmt.Fprintf(&b, "Your assigned issue ID is: %s\n\n", task.IssueID)
 	// A real resume: the latest turn's session comes back. Shared by the
 	// edited-comment notes (MUL-8218) and the reading pointers below.
 	resumed := task.PriorSessionID != "" && !task.PriorSessionResumeUnavailable
-	if task.TriggerCommentContent != "" {
+	// An empty TriggerCommentContent normally means the server could not
+	// fetch the trigger body. triggerCommentStripped marks the other way it
+	// empties: the comment held only explicit skill links, consumed by the
+	// invocation below. The section must still render — headers, edit notes
+	// and every coalesced comment hang off it.
+	if task.TriggerCommentContent != "" || opts.triggerCommentStripped {
 		authorLabel := "A user"
 		if task.TriggerAuthorType == "system" {
 			authorLabel = "The platform"
@@ -591,7 +609,11 @@ func buildCommentPrompt(task Task, provider string) string {
 		} else {
 			fmt.Fprintf(&b, "[NEW COMMENT] %s just left a new comment. Focus on THIS comment — do not confuse it with previous ones:\n\n", authorLabel)
 		}
-		fmt.Fprintf(&b, "> %s\n\n", task.TriggerCommentContent)
+		quote := task.TriggerCommentContent
+		if quote == "" {
+			quote = "(explicit skill selection only — the selected link was consumed by the skill invocation)"
+		}
+		fmt.Fprintf(&b, "> %s\n\n", quote)
 		if editedSinceResume {
 			b.WriteString(buildEditedTriggerNote(task))
 		}
@@ -674,6 +696,9 @@ func buildCommentPrompt(task Task, provider string) string {
 				len(task.CoalescedCommentIDs), strings.Join(task.CoalescedCommentIDs, ", "))
 		}
 	}
+	if block := explicitSkillSelectionBlock(task, opts.chatSkillRefs, opts.skillDirectories); block != "" {
+		b.WriteString(block)
+	}
 	b.WriteString("The issue details and discussion history are preloaded directly in your context below by the Multica desktop client. Do NOT run any `multica` CLI commands in the terminal (no `multica issue get`, `multica issue comment list`, `multica issue status`, or `multica issue comment add`). Status transitions and comment delivery are handled automatically by the desktop client.\n\n")
 	b.WriteString("Provide your complete, well-formatted final reply directly in your output — it will automatically be posted to the triggering comment thread.\n")
 	return b.String()
@@ -742,6 +767,10 @@ func commentReplyThreads(task Task) []execenv.ThreadReplyTarget {
 
 // buildChatPrompt constructs a prompt for interactive chat tasks.
 func buildChatPrompt(task Task) string {
+	return buildChatPromptWithOptions(task, promptOpts{})
+}
+
+func buildChatPromptWithOptions(task Task, opts promptOpts) string {
 	// Legacy compatibility for historical proactive-introduction sessions.
 	// New agent creation no longer creates a chat or runs this prompt.
 	if task.ChatIntro {
@@ -832,38 +861,20 @@ func buildChatPrompt(task Task) string {
 		fmt.Fprintf(&b, "Reply to %s with the final outcome only. Do NOT narrate planned or in-progress steps (\"我先读取…\"); completed actions are part of the outcome.\n", platform)
 		b.WriteString("\n")
 	}
-	if task.Agent != nil && len(task.Agent.Skills) > 0 {
-		refs := ExtractSlashSkills(task.ChatMessage)
-		if len(refs) > 0 {
-			agentSkills := make(map[string]string, len(task.Agent.Skills))
-			for _, s := range task.Agent.Skills {
-				agentSkills[s.ID] = s.Name
-			}
-
-			selected := make([]string, 0, len(refs))
-			seen := make(map[string]struct{}, len(refs))
-			for _, ref := range refs {
-				name, ok := agentSkills[ref.ID]
-				if !ok {
-					continue
-				}
-				if _, ok := seen[ref.ID]; ok {
-					continue
-				}
-				seen[ref.ID] = struct{}{}
-				selected = append(selected, name)
-			}
-
-			if len(selected) > 0 {
-				b.WriteString("Explicitly selected skills:\n")
-				for _, name := range selected {
-					fmt.Fprintf(&b, "- %s\n", name)
-				}
-				b.WriteString("\n")
-			}
-		}
+	refs := opts.chatSkillRefs
+	if refs == nil {
+		refs = uniqueSlashSkillRefs(chatSkillMatches(task))
 	}
-	fmt.Fprintf(&b, "User message:\n%s\n", task.ChatMessage)
+	if block := explicitSkillSelectionBlock(task, refs, opts.skillDirectories); block != "" {
+		b.WriteString(block)
+	}
+	if !opts.omitChatMessage {
+		message := task.ChatMessage
+		if task.PriorSessionID != "" && task.ChatResumeMessage != nil {
+			message = *task.ChatResumeMessage
+		}
+		fmt.Fprintf(&b, "User message:\n%s\n", message)
+	}
 	// List attachments by id + filename so the agent can fetch them via
 	// the CLI. We deliberately do NOT inline the URL: chat attachments
 	// live behind a signed CDN with a short TTL, so by the time the agent
@@ -908,6 +919,49 @@ func buildChatPrompt(task Task) string {
 	default:
 		fmt.Fprintf(&b, "\nThis reply is delivered to %s as text. You cannot attach a file to it: `multica attachment upload` binds to a Multica chat reply, which this is not. If you produce a file, describe it in words — never write its local path as a link, and never upload it and then write as though it arrived.\n", channelDisplayName(task.ChatChannelType))
 	}
+	return b.String()
+}
+
+// explicitSkillSelectionBlock renders bound skill names for a turn prompt.
+// Shared by the chat and comment prompt builders so both surfaces name
+// skills identically, by materialized directory name when the
+// daemon recorded one and by the agent's skill name otherwise. A ref whose
+// skill is not bound to this agent renders nothing — an unknown id in user
+// text must not announce a skill.
+func explicitSkillSelectionBlock(task Task, refs []SlashSkillRef, directories map[string]string) string {
+	if task.Agent == nil || len(task.Agent.Skills) == 0 || len(refs) == 0 {
+		return ""
+	}
+	agentSkills := make(map[string]string, len(task.Agent.Skills))
+	for _, s := range task.Agent.Skills {
+		agentSkills[s.ID] = s.Name
+		if dir := directories[s.ID]; dir != "" {
+			agentSkills[s.ID] = filepath.Base(dir)
+		}
+	}
+
+	selected := make([]string, 0, len(refs))
+	seen := make(map[string]struct{}, len(refs))
+	for _, ref := range refs {
+		name, ok := agentSkills[ref.ID]
+		if !ok {
+			continue
+		}
+		if _, ok := seen[ref.ID]; ok {
+			continue
+		}
+		seen[ref.ID] = struct{}{}
+		selected = append(selected, name)
+	}
+	if len(selected) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("Explicitly selected skills:\n")
+	for _, name := range selected {
+		fmt.Fprintf(&b, "- %s\n", name)
+	}
+	b.WriteString("\n")
 	return b.String()
 }
 

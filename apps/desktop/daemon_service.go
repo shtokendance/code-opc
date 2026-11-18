@@ -132,7 +132,7 @@ func (d *DaemonService) StartDaemon(targetURL string) error {
 		Profile:    profile,
 		ServerURL:  targetURL,
 		LaunchedBy: "desktop",
-		CLIVersion: "0.9.0",
+		CLIVersion: "0.11.0",
 		CLICommit:  "wails-desktop",
 	}
 
@@ -172,7 +172,7 @@ func (d *DaemonService) RestartDaemon(targetURL string) error {
 		Profile:    profile,
 		ServerURL:  targetURL,
 		LaunchedBy: "desktop",
-		CLIVersion: "0.9.0",
+		CLIVersion: "0.11.0",
 		CLICommit:  "wails-desktop",
 	}
 

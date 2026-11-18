@@ -277,7 +277,7 @@ func (s *AppService) GetAppInfo() AppInfo {
 	}
 
 	return AppInfo{
-		Version: "0.9.0",
+		Version: "0.11.0",
 		OS:      osName,
 	}
 }
