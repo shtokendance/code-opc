@@ -163,7 +163,31 @@ export function AvatarUploadControl({
   const hasAvatar = !!emoji || hasImage;
   const emojiEnabled = !!onEmojiSelected;
 
-  const openFileDialog = () => fileInputRef.current?.click();
+  const processPickedFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t(($) => $.avatar_upload.select_image));
+      return;
+    }
+    setPreviewError(false);
+    setPickedFile(file);
+    setDialogOpen(true);
+  };
+
+  const openFileDialog = async () => {
+    const pickFiles = (
+      window as unknown as {
+        desktopAPI?: {
+          pickFiles?: (opts?: { multiple?: boolean; accept?: string }) => Promise<File[]>;
+        };
+      }
+    ).desktopAPI?.pickFiles;
+    if (pickFiles) {
+      const files = await pickFiles({ multiple: false, accept: "image/*" });
+      if (files[0]) processPickedFile(files[0]);
+      return;
+    }
+    fileInputRef.current?.click();
+  };
 
   const closePicker = () => {
     setPickerOpen(false);
@@ -179,13 +203,7 @@ export function AvatarUploadControl({
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-selecting the same file
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error(t(($) => $.avatar_upload.select_image));
-      return;
-    }
-    setPreviewError(false);
-    setPickedFile(file);
-    setDialogOpen(true);
+    processPickedFile(file);
   };
 
   const handleCropped = async (cropped: File) => {
@@ -385,7 +403,9 @@ export function AvatarUploadControl({
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={handlePick}
       />
 

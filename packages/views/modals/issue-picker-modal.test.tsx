@@ -7,9 +7,13 @@ import type { Issue } from "@multica/core/types";
 import { renderWithI18n } from "../test/i18n";
 
 const searchIssues = vi.fn();
+const listIssues = vi.fn();
 
 vi.mock("@multica/core/api", () => ({
-  api: { searchIssues: (params: unknown) => searchIssues(params) },
+  api: {
+    searchIssues: (params: unknown) => searchIssues(params),
+    listIssues: (params: unknown) => listIssues(params),
+  },
 }));
 vi.mock("@multica/core/hooks", () => ({
   useWorkspaceId: () => "workspace-1",
@@ -36,6 +40,7 @@ const DUPLICATE = issue({
 afterEach(() => {
   cleanup();
   searchIssues.mockReset();
+  listIssues.mockReset();
 });
 
 // The mark-as-duplicate picker must not offer an issue that is itself a
@@ -77,6 +82,24 @@ describe("IssuePickerModal isSelectable", () => {
 
     expect(screen.getByText("Recently viewed")).toBeTruthy();
     expect(screen.getByText("Tap targets too small")).toBeTruthy();
+    expect(screen.queryByText("Tap targets too small on iPhone")).toBeNull();
+  });
+
+  it("loads default workspace issues when opened without suggestions", async () => {
+    listIssues.mockResolvedValue({ issues: [ORIGINAL, DUPLICATE], total: 2 });
+    renderWithI18n(
+      <IssuePickerModal
+        open
+        onOpenChange={() => {}}
+        title="Set parent issue"
+        description="Search for an issue"
+        excludeIds={[DUPLICATE.id]}
+        onSelect={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(listIssues).toHaveBeenCalledWith({ limit: 20, include_closed: true }));
+    await screen.findByText("Tap targets too small");
     expect(screen.queryByText("Tap targets too small on iPhone")).toBeNull();
   });
 });

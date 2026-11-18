@@ -328,7 +328,9 @@ function useThemeImport(): ThemeImport {
     <input
       ref={ref}
       type="file"
-      className="hidden"
+      className="sr-only"
+      tabIndex={-1}
+      aria-hidden="true"
       onChange={(event) => {
         const files = Array.from(event.target.files ?? []);
         event.target.value = "";

@@ -298,4 +298,25 @@ describe("ProjectResourcesSection — local folders", () => {
 
     expect(await screen.findByText("daemon is too old for parallel runs")).toBeInTheDocument();
   });
+
+  it("re-validates the local folder when editing mode and disables parallel for non-git folders", async () => {
+    state.validateLocalDirectory.mockResolvedValueOnce({ ok: true, is_git_repo: false });
+    state.resources = [folder("game-client", "daemon-1", {
+      resource_ref: {
+        local_path: "/Users/dev/work/game-client",
+        daemon_id: "daemon-1",
+        label: "game-client",
+        execution_mode: "in_place",
+      },
+    })];
+    renderWithI18n(<ProjectResourcesSection projectId="p1" />);
+
+    fireEvent.click(screen.getByRole("button", { name: strings.mode_badge_in_place }));
+
+    await waitFor(() =>
+      expect(state.validateLocalDirectory).toHaveBeenCalledWith("/Users/dev/work/game-client"),
+    );
+    const [, parallel] = screen.getAllByRole("radio");
+    await waitFor(() => expect(parallel).toBeDisabled());
+  });
 });

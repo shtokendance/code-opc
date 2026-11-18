@@ -548,7 +548,14 @@ export function RuntimeLocalSkillImportPanel({
   const busy = importing || resolvingConflicts;
 
   useEffect(() => {
-    setSelectedRuntimeId((prev) => prev || localRuntimes[0]?.id || "");
+    setSelectedRuntimeId((prev) => {
+      if (prev && localRuntimes.some((r) => r.id === prev)) return prev;
+      return (
+        localRuntimes.find((r) => r.status === "online")?.id ??
+        localRuntimes[0]?.id ??
+        ""
+      );
+    });
   }, [localRuntimes]);
 
   useEffect(() => {

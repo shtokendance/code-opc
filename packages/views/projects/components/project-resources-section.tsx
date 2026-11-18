@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronRight,
@@ -832,6 +832,7 @@ function LocalFolderRow({
       <div className="pl-[1.375rem] pt-0.5">
         <ExecutionModeChip
           resource={resource}
+          current={current}
           serverValidatesWorktree={serverValidatesWorktree}
         />
       </div>
@@ -846,9 +847,11 @@ function LocalFolderRow({
  */
 function ExecutionModeChip({
   resource,
+  current,
   serverValidatesWorktree,
 }: {
   resource: LocalDirectoryResource;
+  current: boolean;
   serverValidatesWorktree: boolean;
 }) {
   const { t } = useT("projects");
@@ -861,11 +864,40 @@ function ExecutionModeChip({
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGitRepo, setIsGitRepo] = useState<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    if (!open || !current) return;
+    let cancelled = false;
+    Promise.resolve(validateLocalDirectory(ref.local_path))
+      .then((validation) => {
+        if (cancelled || !validation) return;
+        if (validation.ok) {
+          setIsGitRepo(validation.is_git_repo);
+          return;
+        }
+        if (validation.reason === "not_a_directory") {
+          setIsGitRepo(false);
+          setError(t(($) => $.resources.local_validate_not_a_directory));
+        } else {
+          setIsGitRepo(undefined);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setIsGitRepo(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, current, ref.local_path, t]);
 
   const handleOpenChange = (next: boolean) => {
     if (saving) return;
     setOpen(next);
-    if (next) setError(null);
+    if (next) {
+      setError(null);
+      setIsGitRepo(undefined);
+    }
   };
 
   const choose = async (next: LocalDirectoryExecutionMode) => {
@@ -913,13 +945,10 @@ function ExecutionModeChip({
         />
       </TooltipHint>
       <PopoverContent align="start" className="w-80 gap-2 p-2">
-        {/* The path is already saved, so there is nothing to re-validate from
-            the browser; unknown git status keeps the option available and the
-            daemon has the final say. */}
         <LocalDirectoryModeOptions
           value={mode}
           onChange={(next) => void choose(next)}
-          unavailableReason={worktreeUnavailableReason(undefined, serverValidatesWorktree)}
+          unavailableReason={worktreeUnavailableReason(isGitRepo, serverValidatesWorktree)}
         />
         {error && <InlineError message={error} />}
       </PopoverContent>
