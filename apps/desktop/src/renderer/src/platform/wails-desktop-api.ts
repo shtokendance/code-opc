@@ -37,6 +37,8 @@ declare global {
 // Synchronously mount window.updater immediately on script evaluation
 if (typeof window !== "undefined") {
   window.updater = window.updater || {
+    getDownloadState: async () => ({ status: "idle" as const }),
+    onDownloadState: (_callback: any) => () => {},
     onUpdateAvailable: (_callback: (info: { version: string; releaseNotes?: string }) => void) => () => {},
     onDownloadProgress: (_callback: (progress: { percent: number }) => void) => () => {},
     onUpdateDownloaded: (_callback: (info: { version: string; releaseNotes?: string }) => void) => () => {},
@@ -46,8 +48,8 @@ if (typeof window !== "undefined") {
     setAutomaticUpdates: async (enabled: boolean) => ({ automaticUpdates: enabled }),
     checkForUpdates: async () => ({
       ok: true as const,
-      currentVersion: "0.9.0",
-      latestVersion: "0.9.0",
+      currentVersion: "0.11.0",
+      latestVersion: "0.11.0",
       available: false,
     }),
   };
@@ -351,7 +353,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
     );
   }
 
-  let appInfo = { version: "0.9.0", os: "macos" as const };
+  let appInfo = { version: "0.11.0", os: "macos" as const };
   let runtimeConfig: RuntimeConfigResult = {
     ok: true,
     config: {

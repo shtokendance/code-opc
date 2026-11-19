@@ -6,7 +6,7 @@ DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_DIR="${DESKTOP_DIR}/dist"
 APP_NAME="Multica"
 BUNDLE_ID="ai.multica.desktop"
-VERSION="0.9.0"
+VERSION="$(node -p "require('${DESKTOP_DIR}/package.json').version")"
 ARCH="$(uname -m)"
 
 echo "==> [1/6] Building frontend assets..."
