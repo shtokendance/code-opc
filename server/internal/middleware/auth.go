@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/auth"
 	"github.com/multica-ai/multica/server/internal/util"
@@ -291,7 +292,19 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			if rejectTemporarilyDisabledUser(w, r, sub, email, "jwt") {
 				return
 			}
-			r.Header.Set("X-User-ID", sub)
+
+			resolvedUserID := sub
+			if queries != nil && email != "" {
+				if subUUID, parseErr := util.ParseUUID(sub); parseErr == nil {
+					if _, err := queries.GetUser(r.Context(), subUUID); errors.Is(err, pgx.ErrNoRows) {
+						if existingUser, err := queries.GetUserByEmail(r.Context(), email); err == nil {
+							resolvedUserID = uuidToString(existingUser.ID)
+						}
+					}
+				}
+			}
+
+			r.Header.Set("X-User-ID", resolvedUserID)
 			if email != "" {
 				r.Header.Set("X-User-Email", email)
 			}
