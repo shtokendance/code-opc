@@ -2908,6 +2908,19 @@ func (pr *patResolver) ResolveToken(ctx context.Context, token string) (string, 
 	return userID, true
 }
 
+func (pr *patResolver) ResolveUser(ctx context.Context, sub, email string) (string, bool) {
+	if email != "" && pr.queries != nil {
+		if subUUID, parseErr := util.ParseUUID(sub); parseErr == nil {
+			if _, err := pr.queries.GetUser(ctx, subUUID); errors.Is(err, pgx.ErrNoRows) {
+				if existingUser, err := pr.queries.GetUserByEmail(ctx, email); err == nil {
+					return util.UUIDToString(existingUser.ID), true
+				}
+			}
+		}
+	}
+	return sub, true
+}
+
 // parseUUID is a thin alias for util.MustParseUUID. Call sites here are all
 // internal round-trips of DB-sourced UUIDs (e.g. issue.ID, e.ActorID), so an
 // invalid value indicates a programming error and should panic loudly.

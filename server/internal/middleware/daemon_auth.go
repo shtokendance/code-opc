@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
@@ -338,7 +340,19 @@ func DaemonAuth(queries *db.Queries, patCache *auth.PATCache, daemonCache *auth.
 			if rejectTemporarilyDisabledUser(w, r, sub, email, DaemonAuthPathJWT) {
 				return
 			}
-			r.Header.Set("X-User-ID", sub)
+
+			resolvedUserID := sub
+			if queries != nil && email != "" {
+				if subUUID, parseErr := util.ParseUUID(sub); parseErr == nil {
+					if _, err := queries.GetUser(r.Context(), subUUID); errors.Is(err, pgx.ErrNoRows) {
+						if existingUser, err := queries.GetUserByEmail(r.Context(), email); err == nil {
+							resolvedUserID = uuidToString(existingUser.ID)
+						}
+					}
+				}
+			}
+
+			r.Header.Set("X-User-ID", resolvedUserID)
 			ctx := context.WithValue(r.Context(), ctxKeyDaemonAuthPath, DaemonAuthPathJWT)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

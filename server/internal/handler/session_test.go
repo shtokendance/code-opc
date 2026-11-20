@@ -167,7 +167,7 @@ func TestRefreshSession_DoesNotReviveExpiredSession(t *testing.T) {
 func TestRefreshSession_RejectsSubjectMismatch(t *testing.T) {
 	claims := jwt.MapClaims{
 		"sub":   "00000000-0000-0000-0000-00000000dead",
-		"email": handlerTestEmail,
+		"email": "forged@example.com",
 		"exp":   time.Now().Add(auth.AuthRenewThreshold() / 2).Unix(),
 	}
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(auth.JWTSecret())
@@ -177,6 +177,34 @@ func TestRefreshSession_RejectsSubjectMismatch(t *testing.T) {
 
 	testutil.Call(t, testHandler.RefreshSession, bearerRefreshRequest(t, signed)).
 		Want(http.StatusUnauthorized)
+}
+
+func TestRefreshSession_AllowsExternalProvisionedSubWithMatchingEmail(t *testing.T) {
+	claims := jwt.MapClaims{
+		"sub":   "1aac9dd7-8a04-536b-b53b-5190dc4129ac",
+		"email": handlerTestEmail,
+		"exp":   time.Now().Add(30 * 24 * time.Hour).Unix(),
+	}
+	signed, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(auth.JWTSecret())
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	var resp RefreshSessionResponse
+	testutil.Call(t, testHandler.RefreshSession, bearerRefreshRequest(t, signed)).
+		Want(http.StatusOK).JSON(&resp)
+
+	if !resp.Renewed || resp.Token == "" {
+		t.Fatalf("expected forced renewal for external sub, got %+v", resp)
+	}
+
+	parsed, err := auth.ParseSessionToken(resp.Token)
+	if err != nil {
+		t.Fatalf("parse renewed token: %v", err)
+	}
+	if parsed["sub"] != testUserID {
+		t.Errorf("renewed sub = %v, want %v", parsed["sub"], testUserID)
+	}
 }
 
 // A legacy session (no sid) refreshes and acquires one, which is how clients

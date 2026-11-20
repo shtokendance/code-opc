@@ -737,6 +737,13 @@ func authenticateToken(tokenStr string, pr PATResolver, ctx context.Context) (st
 	if auth.IsTemporarilyDisabledUser(uid, email) {
 		return "", `{"error":"account disabled"}`
 	}
+	if ur, ok := pr.(interface {
+		ResolveUser(ctx context.Context, sub, email string) (string, bool)
+	}); ok {
+		if resolved, ok := ur.ResolveUser(ctx, uid, email); ok {
+			uid = resolved
+		}
+	}
 	return uid, ""
 }
 

@@ -74,15 +74,27 @@ func (h *Handler) RefreshSession(w http.ResponseWriter, r *http.Request) {
 	// Defense in depth, mirroring RenewCurrentPersonalAccessToken: the
 	// middleware set X-User-ID from these very claims, so a mismatch means a
 	// header was forged past it. Refuse to mint a session for someone else.
+	forceRenew := false
 	if sub, _ := claims["sub"].(string); sub != userID {
-		writeError(w, http.StatusUnauthorized, "token does not belong to caller")
-		return
+		email, _ := claims["email"].(string)
+		matched := false
+		if email != "" && h.Queries != nil {
+			if u, err := h.Queries.GetUserByEmail(r.Context(), email); err == nil && uuidToString(u.ID) == userID {
+				matched = true
+				claims["sub"] = userID
+				forceRenew = true
+			}
+		}
+		if !matched {
+			writeError(w, http.StatusUnauthorized, "token does not belong to caller")
+			return
+		}
 	}
 
 	checkAgain := int(auth.SessionRenewCheckInterval().Seconds())
 	expiresAt := auth.SessionExpiry(claims)
 
-	if !auth.ShouldRenewSession(time.Now(), expiresAt) {
+	if !forceRenew && !auth.ShouldRenewSession(time.Now(), expiresAt) {
 		writeJSON(w, http.StatusOK, RefreshSessionResponse{
 			ExpiresAt:           formatSessionExpiry(expiresAt),
 			Renewed:             false,
