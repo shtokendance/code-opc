@@ -55,6 +55,8 @@ interface LoginPageProps {
   onTokenObtained?: () => void;
   /** Override Google login handler (e.g. desktop opens browser externally). When provided, renders the Google button even if `google` config is omitted. */
   onGoogleLogin?: () => void;
+  /** WeCom enterprise login handler */
+  onWeComLogin?: () => void;
   /** Slot rendered at the bottom of the sign-in card, below the
    *  Google button. The web shell uses it for a "Prefer the desktop
    *  app?" prompt; desktop omits it (a download prompt inside the app
@@ -100,6 +102,7 @@ export function LoginPage({
   cliCallback,
   onTokenObtained,
   onGoogleLogin,
+  onWeComLogin,
   extra,
 }: LoginPageProps) {
   const { t } = useT("auth");
@@ -485,6 +488,28 @@ export function LoginPage({
                 />
               </svg>
               {t(($) => $.signin.google)}
+            </Button>
+          )}
+          {onWeComLogin && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              size="lg"
+              onClick={onWeComLogin}
+              disabled={loading}
+            >
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M8.5 3C4.36 3 1 5.91 1 9.5c0 1.99 1.05 3.77 2.7 4.97L3 18l3.87-1.29c.52.14 1.06.21 1.63.21.2 0 .4-.01.6-.03-.26-.75-.4-1.55-.4-2.39 0-3.87 3.58-7 8-7 .27 0 .53.01.8.04C16.48 4.67 12.78 3 8.5 3z"
+                  fill="#07c160"
+                />
+                <path
+                  d="M16.5 8.5c-3.59 0-6.5 2.46-6.5 5.5 0 1.69.89 3.2 2.29 4.22L11.5 21l2.87-.96c.68.3 1.44.46 2.13.46 3.59 0 6.5-2.46 6.5-5.5s-2.91-5.5-6.5-5.5z"
+                  fill="#07c160"
+                />
+              </svg>
+              企业微信登录
             </Button>
           )}
           {extra && <div className="w-full pt-1 text-center">{extra}</div>}

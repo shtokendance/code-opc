@@ -219,9 +219,23 @@ function LoginPageContent() {
     );
   }
 
+  const handleWeComLogin = () => {
+    const platformUrl =
+      process.env.NEXT_PUBLIC_PLATFORM_URL || "https://shtokendance.benlai.com";
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`);
+    const state = [
+      platform === "desktop" ? "platform:desktop" : "platform:web",
+      nextUrl ? `next:${nextUrl}` : "",
+    ]
+      .filter(Boolean)
+      .join(",");
+    window.location.href = `${platformUrl}/wecom/login?client_id=code-web&redirect_uri=${redirectUri}&state=${encodeURIComponent(state)}`;
+  };
+
   return (
     <LoginPage
       onSuccess={handleSuccess}
+      onWeComLogin={handleWeComLogin}
       google={
         googleClientId
           ? {

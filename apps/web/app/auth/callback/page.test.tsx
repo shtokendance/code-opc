@@ -11,6 +11,7 @@ const {
   mockRouter,
   mockSearchParams,
   mockLoginWithGoogle,
+  mockLoginWithToken,
   mockListWorkspaces,
   mockListMyInvitations,
   mockSetQueryData,
@@ -23,6 +24,7 @@ const {
     mockRouter: { push: mockPush },
     mockSearchParams: new URLSearchParams(),
     mockLoginWithGoogle: vi.fn(),
+    mockLoginWithToken: vi.fn(),
     mockListWorkspaces: vi.fn(),
     mockListMyInvitations: vi.fn(),
     mockSetQueryData,
@@ -82,7 +84,10 @@ vi.mock("@multica/core/auth", async () => {
   return {
     ...actual,
     useAuthStore: (selector: (s: unknown) => unknown) =>
-      selector({ loginWithGoogle: mockLoginWithGoogle }),
+      selector({
+        loginWithGoogle: mockLoginWithGoogle,
+        loginWithToken: mockLoginWithToken,
+      }),
   };
 });
 
@@ -481,5 +486,75 @@ describe("CallbackPage", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith(paths.workspace("acme").issues());
     });
+  });
+
+  it("authenticates via direct token without exchanging code (Plan A 零换票)", async () => {
+    mockSearchParams.delete("code");
+    mockSearchParams.set("token", "direct-jwt-token");
+    mockLoginWithToken.mockResolvedValue(
+      makeUser({
+        onboarded_at: "2026-01-01T00:00:00Z",
+      }),
+    );
+    mockListWorkspaces.mockResolvedValue([
+      {
+        id: "ws-1",
+        name: "Acme",
+        slug: "acme",
+        description: null,
+        context: null,
+        settings: {},
+        repos: [],
+        issue_prefix: "ACME",
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+
+    renderCallback();
+
+    await waitFor(() => {
+      expect(mockLoginWithToken).toHaveBeenCalledWith("direct-jwt-token");
+      expect(mockLoginWithGoogle).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith(paths.workspace("acme").issues());
+    });
+  });
+
+  it("redirects direct token to deep link when platform:desktop is present in state", async () => {
+    const originalLocation = window.location;
+    let assignedHref = "";
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: "http://localhost:3000",
+        get href() {
+          return assignedHref;
+        },
+        set href(val: string) {
+          assignedHref = val;
+        },
+      },
+    });
+
+    try {
+      mockSearchParams.delete("code");
+      mockSearchParams.set("token", "desktop-jwt-token");
+      mockSearchParams.set("state", "platform:desktop");
+
+      renderCallback();
+
+      await waitFor(() => {
+        expect(window.location.href).toBe(
+          "multica://auth/callback?token=desktop-jwt-token",
+        );
+        expect(mockLoginWithToken).not.toHaveBeenCalled();
+      });
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 });

@@ -83,7 +83,7 @@ export function IssuePickerModal({
 
     let cancelled = false;
     setDefaultLoading(true);
-    Promise.resolve(api.listIssues({ limit: 20, include_closed: true }))
+    Promise.resolve(api.listIssues({ limit: 20 }))
       .then((res) => {
         if (!cancelled) {
           setDefaultIssues(res?.issues ?? []);

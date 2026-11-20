@@ -22,6 +22,15 @@ export function DesktopLoginPage() {
     );
   };
 
+  const handleWeComLogin = () => {
+    // Open platform WeCom login in the default browser.
+    // Platform directly issues the token and redirects via multica://auth/callback?token=...
+    const platformUrl = "https://shtokendance.benlai.com";
+    window.desktopAPI.openExternal(
+      `${platformUrl}/wecom/login?client_id=code-desktop&state=code-desktop`,
+    );
+  };
+
   return (
     <div className="flex h-screen flex-col">
       <DragStrip />
@@ -32,6 +41,7 @@ export function DesktopLoginPage() {
           // Initial workspace navigation happens in routes.tsx via IndexRedirect.
         }}
         onGoogleLogin={handleGoogleLogin}
+        onWeComLogin={handleWeComLogin}
       />
     </div>
   );

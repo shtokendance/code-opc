@@ -503,6 +503,26 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Queries.GetUser(r.Context(), parseUUID(userID))
 	if errors.Is(err, pgx.ErrNoRows) {
+		email := r.Header.Get("X-User-Email")
+		if email != "" {
+			name := email
+			if at := strings.Index(email, "@"); at > 0 {
+				name = email[:at]
+			}
+			created, createErr := h.Queries.CreateUserWithID(r.Context(), db.CreateUserWithIDParams{
+				ID:    parseUUID(userID),
+				Name:  name,
+				Email: email,
+			})
+			if createErr == nil {
+				writeJSON(w, http.StatusOK, h.userToResponse(created))
+				return
+			}
+			if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
+				writeJSON(w, http.StatusOK, h.userToResponse(existing))
+				return
+			}
+		}
 		// The credential no longer identifies an existing user. Return the
 		// same terminal status as an expired token so clients can sign in again.
 		writeError(w, http.StatusUnauthorized, "user not found")
