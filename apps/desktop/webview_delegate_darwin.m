@@ -2,6 +2,36 @@
 #import <WebKit/WebKit.h>
 #import "webview_delegate_darwin.h"
 
+extern void handleMacURL(const char *url);
+
+@interface MulticaURLHandler : NSObject
+- (void)handleGetURLEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)replyEvent;
+@end
+
+@implementation MulticaURLHandler
+- (void)handleGetURLEvent:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)replyEvent {
+    NSString *urlString = [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
+    if (urlString) {
+        handleMacURL([urlString UTF8String]);
+    }
+}
+@end
+
+static MulticaURLHandler *globalURLHandler = nil;
+
+void SetupDarwinURLHandler(void) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!globalURLHandler) {
+            globalURLHandler = [[MulticaURLHandler alloc] init];
+            [[NSAppleEventManager sharedAppleEventManager]
+                setEventHandler:globalURLHandler
+                andSelector:@selector(handleGetURLEvent:withReplyEvent:)
+                forEventClass:kInternetEventClass
+                andEventID:kAEGetURL];
+        }
+    });
+}
+
 @interface MulticaUIDelegate : NSObject <WKUIDelegate>
 @end
 

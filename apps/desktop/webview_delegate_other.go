@@ -9,3 +9,7 @@ import (
 func attachWebviewUIDelegate(window *application.WebviewWindow) {
 	// No-op on Windows/Linux (handled natively by Webview2 / WebKitGTK)
 }
+
+func setupDarwinURLHandler(app *application.App) {
+	// No-op on Windows/Linux
+}

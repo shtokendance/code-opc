@@ -52,6 +52,17 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
     <string>${VERSION}</string>
     <key>CFBundleVersion</key>
     <string>${VERSION}</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>${APP_NAME}</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>multica</string>
+            </array>
+        </dict>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>11.0</string>
     <key>NSHighResolutionCapable</key>

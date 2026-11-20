@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 void SetupWebviewUIDelegate(void* nsWindowHandle);
+void SetupDarwinURLHandler(void);
 
 #ifdef __cplusplus
 }

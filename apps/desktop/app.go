@@ -106,8 +106,8 @@ func resolveDefaultRuntimeEndpoints() (string, string) {
 		}
 	}
 
-	// 3. Default to official Multica cloud endpoints
-	return "https://api.multica.ai", "https://multica.ai"
+	// 3. Default to enterprise endpoints
+	return "http://10.101.102.116:3088", "http://10.101.102.116:3080"
 }
 
 type AppService struct {

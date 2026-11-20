@@ -59,6 +59,7 @@ func main() {
 	})
 
 	service.SetApp(app)
+	setupDarwinURLHandler(app)
 
 	// Clean shutdown on quit
 	app.OnShutdown(func() {
