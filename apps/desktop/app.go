@@ -229,17 +229,16 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 				s.mainWindow.EmitEvent("auth:token", token)
 			}
 
-			// Focus the client window
-			if s.mainWindow != nil {
-				s.mainWindow.Focus()
-			}
-			if s.app != nil {
-				s.app.Show()
-			}
+			// Focus the client window safely on the UI main thread
+			application.InvokeAsync(func() {
+				if s.mainWindow != nil {
+					s.mainWindow.Focus()
+				}
+			})
 
 			// Close the port once verification passes!
 			go func() {
-				time.Sleep(500 * time.Millisecond)
+				time.Sleep(3 * time.Second)
 				s.StopLoginOAuthServer()
 			}()
 			return

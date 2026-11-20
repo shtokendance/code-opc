@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "@multica/views/auth";
 import { DragStrip } from "@multica/views/platform";
 import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { useAuthStore } from "@multica/core/auth";
+import { api } from "@multica/core/api";
+import { workspaceKeys } from "@multica/core/workspace/queries";
 
 function requireRuntimeAppUrl(): string {
   const runtimeConfig = window.desktopAPI.runtimeConfig;
@@ -15,6 +18,7 @@ function requireRuntimeAppUrl(): string {
 }
 
 export function DesktopLoginPage() {
+  const qc = useQueryClient();
   const webUrl = requireRuntimeAppUrl();
   const [oauthPort, setOauthPort] = useState<number | null>(null);
 
@@ -32,25 +36,60 @@ export function DesktopLoginPage() {
         });
     }
 
-    const checkPendingToken = async () => {
-      if (window.desktopAPI?.getPendingOAuthToken) {
+    let isSubscribed = true;
+
+    const handleReceivedToken = async (tok: string) => {
+      const cleanToken = tok.trim();
+      if (!cleanToken || !isSubscribed) return;
+      console.log("[DesktopLoginPage] Processing received OAuth token");
+      try {
+        await useAuthStore.getState().loginWithToken(cleanToken);
         try {
-          const tok = await window.desktopAPI.getPendingOAuthToken();
-          if (tok && tok.trim()) {
-            console.log("[DesktopLoginPage] Retrieved pending OAuth token on window focus");
-            await useAuthStore.getState().loginWithToken(tok.trim());
-          }
-        } catch {
-          // ignore
+          const wsList = await api.listWorkspaces();
+          qc.setQueryData(workspaceKeys.list(), wsList);
+        } catch (wsErr) {
+          console.warn("[DesktopLoginPage] Failed to prefetch workspaces:", wsErr);
         }
+      } catch (err) {
+        console.error("[DesktopLoginPage] loginWithToken error:", err);
       }
     };
 
-    window.addEventListener("focus", checkPendingToken);
-    return () => {
-      window.removeEventListener("focus", checkPendingToken);
+    const tryConsumeToken = async () => {
+      if (!isSubscribed || !window.desktopAPI?.getPendingOAuthToken) return;
+      try {
+        const tok = await window.desktopAPI.getPendingOAuthToken();
+        if (tok && tok.trim() && isSubscribed) {
+          await handleReceivedToken(tok);
+        }
+      } catch (err) {
+        console.error("[DesktopLoginPage] Error consuming pending OAuth token:", err);
+      }
     };
-  }, []);
+
+    // 1. 每 800ms 主动轮询检查本地端口是否接收到了 Token（避免后台 WebView 事件挂起或被系统休眠截断）
+    const intervalId = setInterval(tryConsumeToken, 800);
+
+    // 2. 窗口重获焦点时立即检查
+    window.addEventListener("focus", tryConsumeToken);
+
+    // 3. 同时直接监听 Wails auth:token 事件
+    const unsubEvent = window.desktopAPI?.onAuthToken
+      ? window.desktopAPI.onAuthToken(async (token) => {
+          if (token && typeof token === "string" && token.trim() && isSubscribed) {
+            console.log("[DesktopLoginPage] onAuthToken event received in LoginPage");
+            await handleReceivedToken(token);
+          }
+        })
+      : () => {};
+
+    return () => {
+      isSubscribed = false;
+      clearInterval(intervalId);
+      window.removeEventListener("focus", tryConsumeToken);
+      unsubEvent();
+    };
+  }, [qc]);
 
   const handleGoogleLogin = () => {
     // Open web login page in the default browser with platform=desktop flag.
