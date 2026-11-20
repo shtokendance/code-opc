@@ -196,6 +196,64 @@ func TestAuth_ValidToken(t *testing.T) {
 	}
 }
 
+func TestAuth_ValidTokenWithDepartmentClaims(t *testing.T) {
+	var gotDeptCode, gotDeptName, gotIsDeptManager string
+	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotDeptCode = r.Header.Get("X-User-Dept-Code")
+		gotDeptName = r.Header.Get("X-User-Dept-Name")
+		gotIsDeptManager = r.Header.Get("X-User-Is-Dept-Manager")
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	claims := validClaims()
+	claims["dept_code"] = "1250300000000000000"
+	claims["dept_name"] = "BDE平台开发部"
+	claims["is_dept_manager"] = true
+	token := generateToken(claims, auth.JWTSecret())
+
+	req := httptest.NewRequest("GET", "/api/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if gotDeptCode != "1250300000000000000" {
+		t.Fatalf("expected X-User-Dept-Code '1250300000000000000', got %q", gotDeptCode)
+	}
+	if gotDeptName != "BDE平台开发部" {
+		t.Fatalf("expected X-User-Dept-Name 'BDE平台开发部', got %q", gotDeptName)
+	}
+	if gotIsDeptManager != "true" {
+		t.Fatalf("expected X-User-Is-Dept-Manager 'true', got %q", gotIsDeptManager)
+	}
+}
+
+func TestAuth_StripsClientDepartmentHeaders(t *testing.T) {
+	var gotDeptCode string
+	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotDeptCode = r.Header.Get("X-User-Dept-Code")
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	claims := validClaims() // No dept claims
+	token := generateToken(claims, auth.JWTSecret())
+
+	req := httptest.NewRequest("GET", "/api/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-User-Dept-Code", "spoofed-dept")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if gotDeptCode != "" {
+		t.Fatalf("expected X-User-Dept-Code to be stripped, got %q", gotDeptCode)
+	}
+}
+
 func TestAuth_TemporarilyDisabledJWTByUserID(t *testing.T) {
 	handler := authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("next handler should not be called")

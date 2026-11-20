@@ -82,6 +82,9 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			// fixed in #4313.
 			r.Header.Del("X-Agent-ID")
 			r.Header.Del("X-Task-ID")
+			r.Header.Del("X-User-Dept-Code")
+			r.Header.Del("X-User-Dept-Name")
+			r.Header.Del("X-User-Is-Dept-Manager")
 
 			tokenString, fromCookie := extractToken(r)
 			if tokenString == "" {
@@ -291,6 +294,15 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			r.Header.Set("X-User-ID", sub)
 			if email != "" {
 				r.Header.Set("X-User-Email", email)
+			}
+			if deptCode, ok := claims["dept_code"].(string); ok && deptCode != "" {
+				r.Header.Set("X-User-Dept-Code", deptCode)
+			}
+			if deptName, ok := claims["dept_name"].(string); ok && deptName != "" {
+				r.Header.Set("X-User-Dept-Name", deptName)
+			}
+			if isManager, ok := claims["is_dept_manager"].(bool); ok && isManager {
+				r.Header.Set("X-User-Is-Dept-Manager", "true")
 			}
 
 			// Sliding session: a browser that keeps using the app keeps its

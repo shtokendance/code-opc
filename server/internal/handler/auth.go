@@ -495,6 +495,107 @@ func (h *Handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func departmentWorkspaceSlug(deptCode string) string {
+	cleaned := strings.ToLower(strings.TrimSpace(deptCode))
+	var b strings.Builder
+	for _, r := range cleaned {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+		} else if r == '_' || r == ' ' {
+			b.WriteRune('-')
+		}
+	}
+	slugPart := strings.Trim(b.String(), "-")
+	if slugPart == "" {
+		slugPart = "default"
+	}
+	if strings.HasPrefix(slugPart, "dept-") {
+		return slugPart
+	}
+	return "dept-" + slugPart
+}
+
+func (h *Handler) ensureDepartmentWorkspace(ctx context.Context, user db.User, deptCode, deptName string, isDeptManager bool) error {
+	slug := departmentWorkspaceSlug(deptCode)
+	wsName := strings.TrimSpace(deptName)
+	if wsName == "" {
+		wsName = slug
+	}
+
+	ws, err := h.Queries.GetWorkspaceBySlug(ctx, slug)
+	if errors.Is(err, pgx.ErrNoRows) {
+		createdWs, createErr := h.Queries.CreateWorkspace(ctx, db.CreateWorkspaceParams{
+			Name:        wsName,
+			Slug:        slug,
+			IssuePrefix: "DP",
+		})
+		if createErr != nil {
+			var reloadErr error
+			ws, reloadErr = h.Queries.GetWorkspaceBySlug(ctx, slug)
+			if reloadErr != nil {
+				return fmt.Errorf("create workspace %s failed: %w (reload: %v)", slug, createErr, reloadErr)
+			}
+		} else {
+			ws = createdWs
+		}
+	} else if err != nil {
+		return fmt.Errorf("get workspace %s failed: %w", slug, err)
+	}
+
+	targetRole := "member"
+	if isDeptManager {
+		targetRole = "admin"
+	}
+
+	member, err := h.Queries.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{
+		UserID:      user.ID,
+		WorkspaceID: ws.ID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		if _, err := h.Queries.CreateMember(ctx, db.CreateMemberParams{
+			WorkspaceID: ws.ID,
+			UserID:      user.ID,
+			Role:        targetRole,
+		}); err != nil {
+			if m, reloadErr := h.Queries.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{
+				UserID:      user.ID,
+				WorkspaceID: ws.ID,
+			}); reloadErr == nil {
+				member = m
+				if isDeptManager && member.Role == "member" {
+					if _, err := h.Queries.UpdateMemberRole(ctx, db.UpdateMemberRoleParams{
+						ID:   member.ID,
+						Role: "admin",
+					}); err != nil {
+						return fmt.Errorf("upgrade member role failed: %w", err)
+					}
+				}
+			} else {
+				return fmt.Errorf("create member in %s failed: %w", slug, err)
+			}
+		}
+	} else if err != nil {
+		return fmt.Errorf("get member failed: %w", err)
+	} else {
+		if isDeptManager && member.Role == "member" {
+			if _, err := h.Queries.UpdateMemberRole(ctx, db.UpdateMemberRoleParams{
+				ID:   member.ID,
+				Role: "admin",
+			}); err != nil {
+				return fmt.Errorf("upgrade member role failed: %w", err)
+			}
+		}
+	}
+
+	if !user.OnboardedAt.Valid {
+		if _, err := h.Queries.MarkUserOnboarded(ctx, user.ID); err != nil {
+			return fmt.Errorf("mark user onboarded failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := requireUserID(w, r)
 	if !ok {
@@ -515,22 +616,34 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 				Email: email,
 			})
 			if createErr == nil {
-				writeJSON(w, http.StatusOK, h.userToResponse(created))
+				user = created
+			} else if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
+				user = existing
+			} else {
+				writeError(w, http.StatusUnauthorized, "user not found")
 				return
 			}
-			if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
-				writeJSON(w, http.StatusOK, h.userToResponse(existing))
-				return
-			}
+		} else {
+			writeError(w, http.StatusUnauthorized, "user not found")
+			return
 		}
-		// The credential no longer identifies an existing user. Return the
-		// same terminal status as an expired token so clients can sign in again.
-		writeError(w, http.StatusUnauthorized, "user not found")
-		return
-	}
-	if err != nil {
+	} else if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load user")
 		return
+	}
+
+	deptCode := strings.TrimSpace(r.Header.Get("X-User-Dept-Code"))
+	deptName := strings.TrimSpace(r.Header.Get("X-User-Dept-Name"))
+	isDeptManager := r.Header.Get("X-User-Is-Dept-Manager") == "true"
+
+	if deptCode != "" {
+		if err := h.ensureDepartmentWorkspace(r.Context(), user, deptCode, deptName, isDeptManager); err != nil {
+			slog.Error("failed to ensure department workspace", "error", err, "user_id", userID, "dept_code", deptCode)
+		} else if !user.OnboardedAt.Valid {
+			if reloaded, err := h.Queries.GetUser(r.Context(), user.ID); err == nil {
+				user = reloaded
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, h.userToResponse(user))
