@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/issuestatus"
 	"github.com/multica-ai/multica/server/internal/logger"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
@@ -541,6 +542,9 @@ func (h *Handler) ensureDepartmentWorkspace(ctx context.Context, user db.User, d
 	} else if err != nil {
 		return fmt.Errorf("get workspace %s failed: %w", slug, err)
 	}
+
+	// Ensure default issue statuses are populated for the workspace
+	_ = issuestatus.Ensure(ctx, h.Queries, ws.ID)
 
 	targetRole := "member"
 	if isDeptManager {
