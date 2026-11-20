@@ -34,7 +34,14 @@ const WebDevToolbar = dynamic(
 function hasLegacyToken(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return Boolean(window.localStorage.getItem("multica_token"));
+    const existing = window.localStorage.getItem("multica_token");
+    if (existing) return true;
+    const urlToken = new URLSearchParams(window.location.search).get("token");
+    if (urlToken && window.location.pathname.startsWith("/auth/callback")) {
+      window.localStorage.setItem("multica_token", urlToken);
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

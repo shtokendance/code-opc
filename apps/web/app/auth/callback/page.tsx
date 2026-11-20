@@ -66,6 +66,7 @@ function CallbackContent() {
       loginWithToken(token)
         .then(async (loggedInUser) => {
           setLoggedInCookie();
+          api.setToken?.(token);
           const wsList = await api.listWorkspaces();
           qc.setQueryData(workspaceKeys.list(), wsList);
           const onboarded = loggedInUser.onboarded_at != null;
@@ -203,7 +204,7 @@ function CallbackContent() {
           setError(callbackErrorFrom(err));
         });
     }
-  }, [searchParams, loginWithGoogle, router, qc]);
+  }, [searchParams, loginWithGoogle, loginWithToken, router, qc]);
 
   const errorDescription = (() => {
     if (!error) return null;

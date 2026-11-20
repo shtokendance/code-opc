@@ -291,6 +291,7 @@ export function AuthInitializer({
         retryTimer = undefined;
       }
       inFlight = true;
+      const credentialUsed = api.getToken?.() ?? null;
 
       try {
         const user = await api.getMe();
@@ -306,6 +307,14 @@ export function AuthInitializer({
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
+          if ((api.getToken?.() ?? null) !== credentialUsed) {
+            logger.info("ignoring 401 for a credential that has since been replaced");
+            return;
+          }
+          if (useAuthStore.getState().status === "authenticated") {
+            logger.info("ignoring 401 because session is already authenticated");
+            return;
+          }
           rejectSession();
           return;
         }
