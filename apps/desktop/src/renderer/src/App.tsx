@@ -157,7 +157,22 @@ function AppContent() {
   // daemonAPI.syncToken is handled separately by the [user] effect below, which
   // fires whenever a user logs in (deep link, session restore, account switch).
   useEffect(() => {
-    return window.desktopAPI.onAuthToken(async (token) => {
+    return window.desktopAPI.onAuthToken(async (tokenInput: any) => {
+      let token = "";
+      if (typeof tokenInput === "string") {
+        token = tokenInput;
+      } else if (Array.isArray(tokenInput) && typeof tokenInput[0] === "string") {
+        token = tokenInput[0];
+      } else if (tokenInput && typeof tokenInput === "object") {
+        if (typeof tokenInput.data === "string") token = tokenInput.data;
+        else if (Array.isArray(tokenInput.data) && typeof tokenInput.data[0] === "string") token = tokenInput.data[0];
+        else if (typeof tokenInput.token === "string") token = tokenInput.token;
+      }
+      token = token.trim();
+      if (!token) {
+        console.warn("Received empty or invalid auth token:", tokenInput);
+        return;
+      }
       setBootstrapping(true);
       try {
         await useAuthStore.getState().loginWithToken(token);
@@ -168,8 +183,8 @@ function AppContent() {
         // WorkspaceRouteLayout when the URL resolves.
         const wsList = await api.listWorkspaces();
         qc.setQueryData(workspaceKeys.list(), wsList);
-      } catch {
-        // Token invalid or expired — user stays on login page
+      } catch (err) {
+        console.error("Login with token failed:", err);
       } finally {
         setBootstrapping(false);
       }

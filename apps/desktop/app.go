@@ -121,8 +121,14 @@ type AppService struct {
 	openWindows   map[string]*application.WebviewWindow
 	proxyClient   *http.Client
 	wsProxyServer *http.Server
-	wsProxyPort   int
-	wsProxyTarget string
+	wsProxyPort       int
+	wsProxyTarget     string
+	mainWindow        *application.WebviewWindow
+	oauthServer       *http.Server
+	oauthPort         int
+	oauthPendingToken string
+	oauthCancel       context.CancelFunc
+	oauthMu           sync.Mutex
 }
 
 func NewAppService() *AppService {
@@ -139,6 +145,7 @@ func NewAppService() *AppService {
 }
 
 func (s *AppService) Shutdown() {
+	s.StopLoginOAuthServer()
 	if s.daemonService != nil && s.daemonService.manager != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		s.daemonService.manager.StopAll(ctx)
@@ -150,6 +157,149 @@ func (s *AppService) Shutdown() {
 		_ = s.wsProxyServer.Close()
 		s.wsProxyServer = nil
 	}
+}
+
+// StartLoginOAuthServer starts an ephemeral loopback HTTP server on 127.0.0.1
+// waiting for OAuth callback with token, and closes the port once token is received and verified.
+func (s *AppService) StartLoginOAuthServer() (int, error) {
+	s.oauthMu.Lock()
+	defer s.oauthMu.Unlock()
+
+	// If already running, return current port
+	if s.oauthServer != nil && s.oauthPort > 0 {
+		return s.oauthPort, nil
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, fmt.Errorf("failed to listen on loopback port: %w", err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	fmt.Printf("[OAuth Loopback] Server started on 127.0.0.1:%d\n", port)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s.oauthCancel = cancel
+	s.oauthPort = port
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		token := strings.TrimSpace(r.URL.Query().Get("token"))
+		fmt.Printf("[OAuth Loopback] /callback called with token len: %d\n", len(token))
+		if token != "" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>登录成功 - Multica</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f8fafc; color: #0f172a; }
+    .card { background: #ffffff; padding: 48px 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); text-align: center; max-width: 420px; width: 90%; border: 1px solid #e2e8f0; }
+    .icon { width: 56px; height: 56px; background: #ecfdf5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #10b981; font-size: 28px; line-height: 1; }
+    h2 { margin: 0 0 12px; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+    p { margin: 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✓</div>
+    <h2>登录成功</h2>
+    <p>您已成功登录 Multica，现在可以关闭此网页并返回桌面客户端。</p>
+  </div>
+  <script>
+    setTimeout(function() { try { window.close(); } catch(e) {} }, 1500);
+  </script>
+</body>
+</html>`))
+
+			// Store pending token for fallback retrieval
+			s.oauthMu.Lock()
+			s.oauthPendingToken = token
+			s.oauthMu.Unlock()
+
+			// Emit token to frontend via Wails event
+			if s.app != nil {
+				s.app.EmitEvent("auth:token", token)
+			}
+			if s.mainWindow != nil {
+				s.mainWindow.EmitEvent("auth:token", token)
+			}
+
+			// Focus the client window
+			if s.mainWindow != nil {
+				s.mainWindow.Focus()
+			}
+			if s.app != nil {
+				s.app.Show()
+			}
+
+			// Close the port once verification passes!
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				s.StopLoginOAuthServer()
+			}()
+			return
+		}
+
+		http.Error(w, "Bad Request: missing token", http.StatusBadRequest)
+	})
+
+	server := &http.Server{
+		Handler: mux,
+	}
+	s.oauthServer = server
+
+	go func() {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("[OAuth Loopback] server error: %v\n", err)
+		}
+	}()
+
+	// Auto cleanup after 5 minutes timeout if abandoned
+	go func() {
+		select {
+		case <-ctx.Done():
+		case <-time.After(5 * time.Minute):
+			s.StopLoginOAuthServer()
+		}
+	}()
+
+	return port, nil
+}
+
+// StopLoginOAuthServer stops the ephemeral loopback server and frees the port.
+func (s *AppService) StopLoginOAuthServer() {
+	s.oauthMu.Lock()
+	defer s.oauthMu.Unlock()
+
+	if s.oauthCancel != nil {
+		s.oauthCancel()
+		s.oauthCancel = nil
+	}
+	if s.oauthServer != nil {
+		_ = s.oauthServer.Close()
+		s.oauthServer = nil
+		s.oauthPort = 0
+	}
+}
+
+// GetPendingOAuthToken returns and clears any received OAuth token
+func (s *AppService) GetPendingOAuthToken() string {
+	s.oauthMu.Lock()
+	defer s.oauthMu.Unlock()
+	tok := s.oauthPendingToken
+	s.oauthPendingToken = ""
+	return tok
+}
+
+func (s *AppService) SetMainWindow(win *application.WebviewWindow) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.mainWindow = win
 }
 
 // ensureWSProxy starts or reuses a local loopback WebSocket proxy that connects

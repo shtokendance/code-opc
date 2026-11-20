@@ -379,9 +379,22 @@ export async function initWailsDesktopAPI(): Promise<void> {
     console.warn("Failed to fetch initial Wails v3 metadata:", err);
   }
 
+  const extractEventData = (evt: any): any => {
+    if (evt && typeof evt === "object" && "data" in evt) {
+      const data = evt.data;
+      if (Array.isArray(data) && data.length === 1) {
+        return data[0];
+      }
+      return data;
+    }
+    return evt;
+  };
+
   const wailsEventsOn = (event: string, callback: (...args: any[]) => void) => {
     if (window.wails?.Events?.On) {
-      return window.wails.Events.On(event, callback);
+      return window.wails.Events.On(event, (evt: any) => {
+        callback(extractEventData(evt));
+      });
     }
     return () => {};
   };
@@ -525,7 +538,35 @@ export async function initWailsDesktopAPI(): Promise<void> {
     reportAuthSession: (_userId: string | null) => {},
 
     onAuthToken: (callback: (token: string) => void) =>
-      wailsEventsOn("auth:token", callback),
+      wailsEventsOn("auth:token", (raw: any) => {
+        let tokenStr = "";
+        if (typeof raw === "string") {
+          tokenStr = raw;
+        } else if (Array.isArray(raw) && typeof raw[0] === "string") {
+          tokenStr = raw[0];
+        } else if (raw && typeof raw === "object") {
+          if (typeof raw.data === "string") tokenStr = raw.data;
+          else if (Array.isArray(raw.data) && typeof raw.data[0] === "string") tokenStr = raw.data[0];
+          else if (typeof raw.token === "string") tokenStr = raw.token;
+        }
+        if (tokenStr) {
+          callback(tokenStr.trim());
+        } else {
+          console.warn("wails-desktop-api: Unable to extract token string from auth:token event:", raw);
+        }
+      }),
+
+    startLoginOAuthServer: async (): Promise<number> => {
+      return await callAppService<number>("StartLoginOAuthServer");
+    },
+
+    stopLoginOAuthServer: async (): Promise<void> => {
+      return await callAppService<void>("StopLoginOAuthServer");
+    },
+
+    getPendingOAuthToken: async (): Promise<string> => {
+      return await callAppService<string>("GetPendingOAuthToken");
+    },
 
     onInviteOpen: (callback: (invitationId: string) => void) =>
       wailsEventsOn("invite:open", callback),

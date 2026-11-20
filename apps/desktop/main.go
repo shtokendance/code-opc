@@ -101,6 +101,7 @@ func main() {
 
 	mainWindow.Show()
 	attachWebviewUIDelegate(mainWindow)
+	service.SetMainWindow(mainWindow)
 
 	err := app.Run()
 	if err != nil {

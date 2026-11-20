@@ -64,6 +64,12 @@ interface DesktopAPI {
   reportAuthSession: (userId: string | null) => void;
   /** Listen for auth token delivered via deep link. Returns an unsubscribe function. */
   onAuthToken: (callback: (token: string) => void) => () => void;
+  /** Start a local loopback HTTP server to receive OAuth token from browser. */
+  startLoginOAuthServer?: () => Promise<number>;
+  /** Stop the local loopback HTTP server. */
+  stopLoginOAuthServer?: () => Promise<void>;
+  /** Get pending OAuth token if received. */
+  getPendingOAuthToken?: () => Promise<string>;
   /** Listen for invitation IDs delivered via deep link. Returns an unsubscribe function. */
   onInviteOpen: (callback: (invitationId: string) => void) => () => void;
   /** Listen for issue links from the web once authentication is ready. */
