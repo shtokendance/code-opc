@@ -1326,18 +1326,22 @@ func (h *Handler) loadInboxItemForUser(w http.ResponseWriter, r *http.Request, i
 	return item, true
 }
 
+const (
+	DefaultPlatformGatewayURL   = "http://10.101.102.116:3002"
+	DefaultPlatformServiceToken = "3a70ecbf6b0788041c3e6ab271053f737beff4ca94211bef9d5022b77b10786d"
+)
+
 func (h *Handler) getPlatformClient() *platformclient.Client {
 	if h.PlatformClient != nil {
 		return h.PlatformClient
 	}
 	gatewayURL := strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
 	if gatewayURL == "" {
-		gatewayURL = "http://10.101.102.116:3002"
+		gatewayURL = DefaultPlatformGatewayURL
 	}
 	serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
 	if serviceToken == "" {
-		serviceToken = "3a70ecbf6b0788041c3e6ab271053f737beff4ca94211bef9d5022b77b10786d"
+		serviceToken = DefaultPlatformServiceToken
 	}
-	h.PlatformClient = platformclient.NewClient(gatewayURL, serviceToken, 12*time.Second)
-	return h.PlatformClient
+	return platformclient.NewClient(gatewayURL, serviceToken, 12*time.Second)
 }

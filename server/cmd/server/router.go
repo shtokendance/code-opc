@@ -496,11 +496,11 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 	}
 	platformGatewayURL := strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
 	if platformGatewayURL == "" {
-		platformGatewayURL = "http://10.101.102.116:3002"
+		platformGatewayURL = handler.DefaultPlatformGatewayURL
 	}
 	platformServiceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
 	if platformServiceToken == "" {
-		platformServiceToken = "3a70ecbf6b0788041c3e6ab271053f737beff4ca94211bef9d5022b77b10786d"
+		platformServiceToken = handler.DefaultPlatformServiceToken
 	}
 	h.PlatformClient = platformclient.NewClient(platformGatewayURL, platformServiceToken, 12*time.Second)
 	if opts.BusinessMetrics != nil {

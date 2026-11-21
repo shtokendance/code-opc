@@ -461,6 +461,15 @@ func TestAgentMcpServerBinding_ResponseIsSecretFreeAndAgentActorsCannotWrite(t *
 	}
 }
 
+func TestResolveTenantFromDeptCode(t *testing.T) {
+	if got := ResolveTenantFromDeptCode("12503"); got != "32503" {
+		t.Errorf("expected 32503, got %s", got)
+	}
+	if got := ResolveTenantFromDeptCode("hr-custom"); got != "hr-custom" {
+		t.Errorf("expected hr-custom, got %s", got)
+	}
+}
+
 func TestListAgentMcpServers_EnterpriseAggregation(t *testing.T) {
 	if testHandler == nil {
 		t.Skip("database not available")

@@ -572,17 +572,20 @@ func (h *Handler) writeAgentMcpServers(w http.ResponseWriter, r *http.Request, a
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// ResolveTenantFromDeptCode maps a department code to an enterprise platform tenant ID.
+func ResolveTenantFromDeptCode(deptCode string) string {
+	if n, err := strconv.ParseInt(deptCode, 10, 64); err == nil {
+		return strconv.FormatInt(20000+n, 10)
+	}
+	return deptCode
+}
+
 func (h *Handler) appendEnterpriseMcpServers(ctx context.Context, workspace db.Workspace, resp []WorkspaceMcpServerResponse) []WorkspaceMcpServerResponse {
 	if !strings.HasPrefix(workspace.Slug, "dept-") {
 		return resp
 	}
 	deptCode := strings.TrimPrefix(workspace.Slug, "dept-")
-	var tenant string
-	if n, err := strconv.ParseInt(deptCode, 10, 64); err == nil {
-		tenant = strconv.FormatInt(20000+n, 10)
-	} else {
-		tenant = deptCode
-	}
+	tenant := ResolveTenantFromDeptCode(deptCode)
 
 	client := h.getPlatformClient()
 	if client == nil {
