@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -495,5 +497,144 @@ func TestStartTaskRemoteMCPBrokers_EnterpriseBypassesDiscovery(t *testing.T) {
 	}
 	if !strings.Contains(string(cfg), "enterprise-service-1") {
 		t.Errorf("expected config to contain enterprise-service-1, got %s", string(cfg))
+	}
+}
+
+func TestEnterpriseRemoteMCPProxy_ConcurrentGetPlatformClient_NoDataRace(t *testing.T) {
+	proxy := &remoteMCPProxy{
+		connection: remotemcp.Connection{
+			Endpoint: "http://127.0.0.1:9999",
+		},
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cli := proxy.getPlatformClient()
+			if cli == nil {
+				t.Error("expected non-nil platform client")
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+func TestEnterpriseRemoteMCPProxy_ToolsCall_TerminalStatuses(t *testing.T) {
+	for _, terminalStatus := range []string{"cancelled", "rejected", "failed"} {
+		t.Run(terminalStatus, func(t *testing.T) {
+			pollCount := 0
+			platformServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if r.Method == http.MethodPost && r.URL.Path == "/integration/v1/mcp/invoke-task" {
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"success":true,"data":{"invocation_id":"inv-term","status":"executing"}}`))
+					return
+				}
+				if r.Method == http.MethodGet && r.URL.Path == "/integration/v1/mcp/invocations/inv-term" {
+					pollCount++
+					w.WriteHeader(http.StatusOK)
+					_, _ = fmt.Fprintf(w, `{"success":true,"data":{"invocation_id":"inv-term","status":%q}}`, terminalStatus)
+					return
+				}
+				http.NotFound(w, r)
+			}))
+			defer platformServer.Close()
+
+			client := platformclient.NewClient(platformServer.URL, "test-token", 5*time.Second)
+			proxy := &remoteMCPProxy{
+				taskID: "task-term",
+				path:   "/enterprise",
+				connection: remotemcp.Connection{
+					ContributionID:  remotemcp.EnterpriseContributionPrefix + "service-1",
+					ContributionKey: "enterprise-service-1",
+					ApprovedTools:   []remotemcp.Tool{{Name: "kb_search"}},
+				},
+				platformClient: client,
+				pollInterval:   10 * time.Millisecond,
+				pollTimeout:    2 * time.Second,
+				semaphore:      make(chan struct{}, remoteMCPMaxConcurrency),
+			}
+
+			req := httptest.NewRequest(http.MethodPost, "/enterprise", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"kb_search","arguments":{}}}`))
+			w := httptest.NewRecorder()
+			proxy.ServeHTTP(w, req)
+
+			var callResp struct {
+				Result struct {
+					Content []struct {
+						Text string `json:"text"`
+					} `json:"content"`
+					IsError bool `json:"isError"`
+				} `json:"result"`
+			}
+			if err := json.Unmarshal(w.Body.Bytes(), &callResp); err != nil {
+				t.Fatalf("unmarshal response: %v", err)
+			}
+			if !callResp.Result.IsError {
+				t.Fatalf("expected isError=true for terminal status %s", terminalStatus)
+			}
+			expectedMsg := fmt.Sprintf("invocation ended with status %q", terminalStatus)
+			if !strings.Contains(callResp.Result.Content[0].Text, expectedMsg) {
+				t.Errorf("status=%s: expected error message %q, got: %s", terminalStatus, expectedMsg, callResp.Result.Content[0].Text)
+			}
+			if pollCount != 1 {
+				t.Errorf("status=%s: expected exactly 1 poll, got %d (should stop polling immediately on terminal status)", terminalStatus, pollCount)
+			}
+		})
+	}
+}
+
+func TestEnterpriseRemoteMCPProxy_ToolsCall_StatusRespError(t *testing.T) {
+	platformServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && r.URL.Path == "/integration/v1/mcp/invoke-task" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":true,"data":{"invocation_id":"inv-err","status":"executing"}}`))
+			return
+		}
+		if r.Method == http.MethodGet && r.URL.Path == "/integration/v1/mcp/invocations/inv-err" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":false,"data":{"invocation_id":"inv-err","status":"error"},"error":{"code":"UPSTREAM_UNAVAILABLE","message":"upstream cluster unreachable"}}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer platformServer.Close()
+
+	client := platformclient.NewClient(platformServer.URL, "test-token", 5*time.Second)
+	proxy := &remoteMCPProxy{
+		taskID: "task-err",
+		path:   "/enterprise",
+		connection: remotemcp.Connection{
+			ContributionID:  remotemcp.EnterpriseContributionPrefix + "service-1",
+			ContributionKey: "enterprise-service-1",
+			ApprovedTools:   []remotemcp.Tool{{Name: "kb_search"}},
+		},
+		platformClient: client,
+		pollInterval:   10 * time.Millisecond,
+		semaphore:      make(chan struct{}, remoteMCPMaxConcurrency),
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/enterprise", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"kb_search","arguments":{}}}`))
+	w := httptest.NewRecorder()
+	proxy.ServeHTTP(w, req)
+
+	var callResp struct {
+		Result struct {
+			Content []struct {
+				Text string `json:"text"`
+			} `json:"content"`
+			IsError bool `json:"isError"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &callResp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if !callResp.Result.IsError {
+		t.Fatalf("expected isError=true")
+	}
+	if !strings.Contains(callResp.Result.Content[0].Text, "[UPSTREAM_UNAVAILABLE] upstream cluster unreachable") {
+		t.Errorf("unexpected error text: %s", callResp.Result.Content[0].Text)
 	}
 }

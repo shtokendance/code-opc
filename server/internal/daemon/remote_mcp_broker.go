@@ -85,10 +85,29 @@ func startTaskRemoteMCPBrokers(setupCtx, lifetimeCtx context.Context, taskID, pr
 				return nil, diagnostics, nil, err
 			}
 			endpoint, _ := url.Parse(connection.Endpoint)
+			baseURL := ""
+			if endpoint != nil {
+				baseURL = endpoint.String()
+			}
+			if baseURL == "" {
+				baseURL = connection.Endpoint
+			}
+			if baseURL == "" {
+				baseURL = strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
+				if baseURL == "" {
+					baseURL = platformclient.DefaultPlatformGatewayURL
+				}
+			}
+			serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
+			if serviceToken == "" {
+				serviceToken = platformclient.DefaultPlatformServiceToken
+			}
+			platformCli := platformclient.NewClient(baseURL, serviceToken, 30*time.Second)
 			proxy := &remoteMCPProxy{
 				taskID: taskID, connection: connection, endpoint: endpoint,
-				path: "/" + pathToken,
-				semaphore: make(chan struct{}, remoteMCPMaxConcurrency), logger: logger,
+				platformClient: platformCli,
+				path:           "/" + pathToken,
+				semaphore:      make(chan struct{}, remoteMCPMaxConcurrency), logger: logger,
 			}
 			server := &http.Server{Handler: proxy, ReadHeaderTimeout: 5 * time.Second}
 			set.servers = append(set.servers, server)
@@ -249,6 +268,7 @@ type remoteMCPProxy struct {
 	endpoint          *url.URL
 	client            *http.Client
 	platformClient    *platformclient.Client
+	platformOnce      sync.Once
 	pollInterval      time.Duration
 	pollTimeout       time.Duration
 	credentialHeaders http.Header
@@ -397,27 +417,29 @@ func (proxy *remoteMCPProxy) ServeHTTP(w http.ResponseWriter, request *http.Requ
 }
 
 func (proxy *remoteMCPProxy) getPlatformClient() *platformclient.Client {
-	if proxy.platformClient != nil {
-		return proxy.platformClient
-	}
-	baseURL := ""
-	if proxy.endpoint != nil {
-		baseURL = proxy.endpoint.String()
-	}
-	if baseURL == "" {
-		baseURL = proxy.connection.Endpoint
-	}
-	if baseURL == "" {
-		baseURL = strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
-		if baseURL == "" {
-			baseURL = platformclient.DefaultPlatformGatewayURL
+	proxy.platformOnce.Do(func() {
+		if proxy.platformClient != nil {
+			return
 		}
-	}
-	serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
-	if serviceToken == "" {
-		serviceToken = platformclient.DefaultPlatformServiceToken
-	}
-	proxy.platformClient = platformclient.NewClient(baseURL, serviceToken, 30*time.Second)
+		baseURL := ""
+		if proxy.endpoint != nil {
+			baseURL = proxy.endpoint.String()
+		}
+		if baseURL == "" {
+			baseURL = proxy.connection.Endpoint
+		}
+		if baseURL == "" {
+			baseURL = strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
+			if baseURL == "" {
+				baseURL = platformclient.DefaultPlatformGatewayURL
+			}
+		}
+		serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
+		if serviceToken == "" {
+			serviceToken = platformclient.DefaultPlatformServiceToken
+		}
+		proxy.platformClient = platformclient.NewClient(baseURL, serviceToken, 30*time.Second)
+	})
 	return proxy.platformClient
 }
 
@@ -580,7 +602,8 @@ func (proxy *remoteMCPProxy) serveEnterpriseHTTP(w http.ResponseWriter, request 
 			if timeoutDur <= 0 {
 				timeoutDur = 60 * time.Second
 			}
-			timeout := time.After(timeoutDur)
+			timer := time.NewTimer(timeoutDur)
+			defer timer.Stop()
 
 			for {
 				select {
@@ -588,7 +611,7 @@ func (proxy *remoteMCPProxy) serveEnterpriseHTTP(w http.ResponseWriter, request 
 					*resultClass = "remote_error"
 					writeMCPToolCallResult(w, rpcRequest.ID, request.Context().Err().Error(), true)
 					return
-				case <-timeout:
+				case <-timer.C:
 					*resultClass = "remote_error"
 					writeMCPToolCallResult(w, rpcRequest.ID, "task invocation timed out waiting for completion", true)
 					return
@@ -599,23 +622,9 @@ func (proxy *remoteMCPProxy) serveEnterpriseHTTP(w http.ResponseWriter, request 
 						writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("failed to get invocation status: %v", err), true)
 						return
 					}
-					if statusResp.Error != nil {
-						*resultClass = "remote_error"
-						writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("[%s] %s", statusResp.Error.Code, statusResp.Error.Message), true)
-						return
-					}
-					if statusResp.Data.Status == "completed" {
+					if statusResp.Error != nil || (statusResp.Data.Status != "created" && statusResp.Data.Status != "executing") {
 						finalStatus = statusResp
 						break
-					}
-					if statusResp.Data.Status == "failed" || statusResp.Data.Status == "error" {
-						*resultClass = "remote_error"
-						errMsg := statusResp.Data.Error
-						if errMsg == "" {
-							errMsg = "invocation execution failed"
-						}
-						writeMCPToolCallResult(w, rpcRequest.ID, errMsg, true)
-						return
 					}
 				}
 				if finalStatus != nil {
@@ -630,6 +639,28 @@ func (proxy *remoteMCPProxy) serveEnterpriseHTTP(w http.ResponseWriter, request 
 				return
 			}
 			finalStatus = statusResp
+		}
+
+		if finalStatus == nil {
+			*resultClass = "remote_error"
+			writeMCPToolCallResult(w, rpcRequest.ID, "invocation finished without status", true)
+			return
+		}
+
+		if finalStatus.Error != nil {
+			*resultClass = "remote_error"
+			writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("[%s] %s", finalStatus.Error.Code, finalStatus.Error.Message), true)
+			return
+		}
+
+		if finalStatus.Data.Status != "completed" {
+			*resultClass = "remote_error"
+			errMsg := finalStatus.Data.Error
+			if errMsg == "" {
+				errMsg = fmt.Sprintf("invocation ended with status %q", finalStatus.Data.Status)
+			}
+			writeMCPToolCallResult(w, rpcRequest.ID, errMsg, true)
+			return
 		}
 
 		if finalStatus.Data.Error != "" {

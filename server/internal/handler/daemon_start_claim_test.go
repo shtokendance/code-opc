@@ -253,11 +253,15 @@ func TestBuildClaimedTaskResponse_EnterpriseMCP(t *testing.T) {
 	err := testPool.QueryRow(ctx, `
 		INSERT INTO workspace (name, slug, description, issue_prefix)
 		VALUES ('Dept 12500', 'dept-12500', '', 'DPT')
+		ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
 		RETURNING id
 	`).Scan(&deptWorkspaceID)
 	if err != nil {
 		t.Fatalf("failed to insert dept workspace: %v", err)
 	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, deptWorkspaceID)
+	})
 
 	runtimeID := handlerTestRuntimeID(t)
 	var agentID string
