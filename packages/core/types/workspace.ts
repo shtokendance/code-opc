@@ -31,6 +31,12 @@ export interface Workspace {
  * `enabled` is only present on an AGENT's assignment list, where it is the
  * per-agent toggle; the workspace library listing has no binding to report.
  */
+export interface WorkspaceMcpToolSummary {
+  name: string;
+  description?: string;
+  input_schema?: unknown;
+}
+
 export interface WorkspaceMcpServer {
   id: string;
   workspace_id: string;
@@ -42,6 +48,9 @@ export interface WorkspaceMcpServer {
    * carries it, and servers older than this field omit it.
    */
   agent_count?: number;
+  source?: "local" | "enterprise" | "plugin";
+  description?: string;
+  tools?: WorkspaceMcpToolSummary[];
   created_at: string;
   updated_at: string;
 }

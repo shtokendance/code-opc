@@ -4354,6 +4354,12 @@ export const EMPTY_SKILL_IMPORT_RESULT: SkillImportResult = {
  * `transport` stays a plain string (not an enum) so an unknown value from a
  * newer backend still parses — the UI has a default branch for it.
  */
+export const WorkspaceMcpToolSummarySchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  input_schema: z.unknown().optional(),
+});
+
 export const WorkspaceMcpServerSchema = z.object({
   id: z.string().default(""),
   workspace_id: z.string().default(""),
@@ -4363,6 +4369,9 @@ export const WorkspaceMcpServerSchema = z.object({
   // Older servers omit it; a malformed value drops to "unknown" rather than
   // failing the whole list.
   agent_count: z.number().int().nonnegative().optional().catch(undefined),
+  source: z.enum(["local", "enterprise", "plugin"]).optional(),
+  description: z.string().optional(),
+  tools: z.array(WorkspaceMcpToolSummarySchema).optional(),
   created_at: z.string().default(""),
   updated_at: z.string().default(""),
 });

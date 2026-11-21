@@ -21,17 +21,26 @@ import (
 //
 // `Enabled` is only meaningful on the agent-scoped list, where it reflects the
 // binding's toggle; it is omitted on the workspace library listing.
+type WorkspaceMcpToolSummary struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description,omitempty"`
+	InputSchema json.RawMessage `json:"input_schema,omitempty"`
+}
+
 type WorkspaceMcpServerResponse struct {
-	ID          string `json:"id"`
-	WorkspaceID string `json:"workspace_id"`
-	Name        string `json:"name"`
-	Transport   string `json:"transport"`
-	Enabled     *bool  `json:"enabled,omitempty"`
+	ID          string                    `json:"id"`
+	WorkspaceID string                    `json:"workspace_id"`
+	Name        string                    `json:"name"`
+	Transport   string                    `json:"transport"`
+	Enabled     *bool                     `json:"enabled,omitempty"`
 	// AgentCount is how many live agents the entry is assigned to. Only the
 	// workspace library listing reports it; per-agent responses omit it.
-	AgentCount *int64 `json:"agent_count,omitempty"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	AgentCount  *int64                    `json:"agent_count,omitempty"`
+	Source      string                    `json:"source,omitempty"`
+	Description string                    `json:"description,omitempty"`
+	Tools       []WorkspaceMcpToolSummary `json:"tools,omitempty"`
+	CreatedAt   string                    `json:"created_at"`
+	UpdatedAt   string                    `json:"updated_at"`
 }
 
 // mcpTransportOf classifies a server entry for display, and — because the
