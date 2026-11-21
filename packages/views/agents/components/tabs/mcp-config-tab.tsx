@@ -611,7 +611,7 @@ function McpWorkspaceServerRow({
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-body font-medium">{server.name}</span>
           {isEnterprise && (
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary">
               {t(($) => $.tab_body.mcp_config.workspace_enterprise_badge)}
             </Badge>
           )}
@@ -625,7 +625,10 @@ function McpWorkspaceServerRow({
           {server.description || mcpTransportLabel(server.transport)}
         </p>
         {toolsSummary && (
-          <p className="text-caption text-muted-foreground">
+          <p
+            className="line-clamp-2 break-words text-caption text-muted-foreground"
+            title={toolsSummary}
+          >
             {toolsSummary}
           </p>
         )}
