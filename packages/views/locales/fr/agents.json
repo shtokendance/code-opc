@@ -607,6 +607,8 @@
       "dialog_name_locked": "Le nom ne peut pas être modifié ici — le renommer ajouterait un second serveur et laisserait celui-ci en place. Retirez-le et rajoutez-le plutôt.",
       "workspace_overridden_badge": "Remplacé",
       "workspace_disabled_badge": "Désactivé",
+      "workspace_enterprise_badge": "Entreprise",
+      "workspace_tools_summary": "{{count}} outils : {{tools}}",
       "runtime_title": "Hérité du runtime",
       "runtime_title_named": "Hérité de {{runtime}}",
       "refresh_action": "Actualiser",

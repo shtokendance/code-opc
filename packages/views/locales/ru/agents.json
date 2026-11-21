@@ -643,6 +643,8 @@
       "dialog_name_locked": "Имя нельзя изменить здесь — переименование добавило бы второй сервер, оставив этот без изменений. Вместо этого удалите его и добавьте заново.",
       "workspace_overridden_badge": "Переопределён",
       "workspace_disabled_badge": "Отключён",
+      "workspace_enterprise_badge": "Корпоративный",
+      "workspace_tools_summary": "Инструментов ({{count}}): {{tools}}",
       "runtime_title": "Унаследовано от среды выполнения",
       "runtime_title_named": "Унаследовано от {{runtime}}",
       "refresh_action": "Обновить",

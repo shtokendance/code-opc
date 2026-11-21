@@ -598,7 +598,10 @@ function McpWorkspaceServerRow({
   const isEnterprise = server.source === "enterprise";
   const hasTools = Boolean(server.tools && server.tools.length > 0);
   const toolsSummary = hasTools
-    ? `${server.tools!.length} 个工具: ${server.tools!.map((tool) => tool.name).filter(Boolean).join(", ")}`
+    ? t(($) => $.tab_body.mcp_config.workspace_tools_summary, {
+        count: server.tools!.length,
+        tools: server.tools!.map((tool) => tool.name).filter(Boolean).join(", "),
+      })
     : null;
 
   return (
@@ -609,7 +612,7 @@ function McpWorkspaceServerRow({
           <span className="truncate text-body font-medium">{server.name}</span>
           {isEnterprise && (
             <Badge variant="secondary" className="text-xs">
-              企业
+              {t(($) => $.tab_body.mcp_config.workspace_enterprise_badge)}
             </Badge>
           )}
           {overridden && (

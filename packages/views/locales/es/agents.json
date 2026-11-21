@@ -589,6 +589,8 @@
       "dialog_name_locked": "El nombre no se puede cambiar aquí: renombrarlo añadiría un segundo servidor y dejaría este atrás. Quítalo y vuelve a añadirlo.",
       "workspace_overridden_badge": "Sobreescrito",
       "workspace_disabled_badge": "Desactivado",
+      "workspace_enterprise_badge": "Empresarial",
+      "workspace_tools_summary": "{{count}} herramientas: {{tools}}",
       "runtime_title": "Heredado del runtime",
       "runtime_title_named": "Heredado de {{runtime}}",
       "refresh_action": "Actualizar",

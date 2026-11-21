@@ -607,6 +607,8 @@
       "dialog_name_locked": "The name cannot be changed here — renaming would add a second server and leave this one behind. Remove and re-add it instead.",
       "workspace_overridden_badge": "Overridden",
       "workspace_disabled_badge": "Disabled",
+      "workspace_enterprise_badge": "Enterprise",
+      "workspace_tools_summary": "{{count}} tools: {{tools}}",
       "runtime_title": "Inherited from runtime",
       "runtime_title_named": "Inherited from {{runtime}}",
       "refresh_action": "Refresh",

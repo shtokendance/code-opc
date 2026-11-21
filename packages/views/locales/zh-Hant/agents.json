@@ -589,6 +589,8 @@
       "dialog_name_locked": "儲存時不能修改名稱。如需重新命名，請刪除後重新新增。",
       "workspace_overridden_badge": "已覆蓋",
       "workspace_disabled_badge": "已禁用",
+      "workspace_enterprise_badge": "企業",
+      "workspace_tools_summary": "{{count}} 個工具: {{tools}}",
       "runtime_title": "從執行時繼承",
       "runtime_title_named": "從 {{runtime}} 繼承",
       "refresh_action": "重新整理",

@@ -895,12 +895,12 @@ describe("McpConfigTab workspace servers", () => {
     const row = (await screen.findByText("enterprise-kb")).closest("li")!;
 
     // 1. 正确渲染「企业」徽章
-    expect(within(row).getByText("企业")).toBeInTheDocument();
+    expect(within(row).getByText("Enterprise")).toBeInTheDocument();
 
     // 2. 正确展示描述与工具信息
     expect(within(row).getByText("企业知识库服务")).toBeInTheDocument();
     expect(
-      within(row).getByText("2 个工具: search_docs, query_database"),
+      within(row).getByText("2 tools: search_docs, query_database"),
     ).toBeInTheDocument();
 
     // 3. 渲染启用/停用开关并支持切换
@@ -939,9 +939,9 @@ describe("McpConfigTab workspace servers", () => {
     renderTab({ mcp_config: null });
 
     const row = (await screen.findByText("enterprise-tools")).closest("li")!;
-    expect(within(row).getByText("企业")).toBeInTheDocument();
+    expect(within(row).getByText("Enterprise")).toBeInTheDocument();
     expect(within(row).getByText("remote_bridge")).toBeInTheDocument();
-    expect(within(row).getByText("1 个工具: tool1")).toBeInTheDocument();
+    expect(within(row).getByText("1 tools: tool1")).toBeInTheDocument();
     expect(
       within(row).queryByRole("button", { name: /Remove enterprise-tools/i }),
     ).not.toBeInTheDocument();
