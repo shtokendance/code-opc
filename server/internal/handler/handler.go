@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"net/netip"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/featureflag"
 	"github.com/multica-ai/multica/server/pkg/llm"
+	"github.com/multica-ai/multica/server/pkg/platformclient"
 )
 
 // randomID returns a random 16-byte hex string used as a request ID for
@@ -324,6 +326,8 @@ type Handler struct {
 	// ConnectedApps serves agents' app calls through the MCP gateway (MUL-8516).
 	// Wired together with Composio; nil when Composio is.
 	ConnectedApps *connectedapps.Service
+	// PlatformClient connects to the enterprise MCP platform gateway.
+	PlatformClient *platformclient.Client
 	// ChannelSupervisor owns the per-installation supervisor goroutines
 	// that hold the §4.4 WS lease and drive each channel.Channel
 	// (MUL-3620 generalized the Feishu-only Hub into this channel-agnostic
@@ -1320,4 +1324,20 @@ func (h *Handler) loadInboxItemForUser(w http.ResponseWriter, r *http.Request, i
 		return db.InboxItem{}, false
 	}
 	return item, true
+}
+
+func (h *Handler) getPlatformClient() *platformclient.Client {
+	if h.PlatformClient != nil {
+		return h.PlatformClient
+	}
+	gatewayURL := strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
+	if gatewayURL == "" {
+		gatewayURL = "http://10.101.102.116:3002"
+	}
+	serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
+	if serviceToken == "" {
+		serviceToken = "3a70ecbf6b0788041c3e6ab271053f737beff4ca94211bef9d5022b77b10786d"
+	}
+	h.PlatformClient = platformclient.NewClient(gatewayURL, serviceToken, 12*time.Second)
+	return h.PlatformClient
 }

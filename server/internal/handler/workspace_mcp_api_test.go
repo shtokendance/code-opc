@@ -7,6 +7,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/multica-ai/multica/server/pkg/platformclient"
 )
 
 const workspaceMcpTestSecret = "sk-live-workspace-should-never-be-echoed"
@@ -455,5 +458,285 @@ func TestAgentMcpServerBinding_ResponseIsSecretFreeAndAgentActorsCannotWrite(t *
 	testHandler.AddAgentMcpServer(w, req)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for an agent actor, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestListAgentMcpServers_EnterpriseAggregation(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+	ctx := context.Background()
+
+	// Create a department workspace with slug 'dept-12345'
+	var deptWorkspaceID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO workspace (name, slug, description, issue_prefix)
+		VALUES ('Dept 12345', 'dept-12345', '', 'DPT')
+		RETURNING id
+	`).Scan(&deptWorkspaceID); err != nil {
+		t.Fatalf("create dept workspace: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, deptWorkspaceID)
+	})
+
+	// Add member
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO member (workspace_id, user_id, role)
+		VALUES ($1, $2, 'owner')
+		ON CONFLICT DO NOTHING
+	`, deptWorkspaceID, testUserID); err != nil {
+		t.Fatalf("create dept member: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM member WHERE workspace_id = $1`, deptWorkspaceID)
+	})
+
+	// Create an agent in this department workspace
+	var agentID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, description, runtime_mode, runtime_config,
+			runtime_id, visibility, max_concurrent_tasks, owner_id,
+			instructions, custom_env, custom_args
+		)
+		VALUES ($1, 'dept-test-agent', '', 'cloud', '{}'::jsonb,
+		        $2, 'workspace', 1, $3, '', '{}'::jsonb, '[]'::jsonb)
+		RETURNING id
+	`, deptWorkspaceID, handlerTestRuntimeID(t), testUserID).Scan(&agentID); err != nil {
+		t.Fatalf("create dept agent: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent WHERE id = $1`, agentID)
+	})
+
+	// Mock server
+	var return502 bool
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if return502 {
+			w.WriteHeader(http.StatusBadGateway)
+			w.Write([]byte("502 Bad Gateway"))
+			return
+		}
+		tenant := r.URL.Query().Get("tenant")
+		if tenant != "32345" {
+			t.Errorf("expected tenant 32345 (20000+12345), got %q", tenant)
+		}
+		includeSchema := r.URL.Query().Get("include_schema")
+		if includeSchema != "true" {
+			t.Errorf("expected include_schema=true, got %q", includeSchema)
+		}
+
+		resp := platformclient.ListServicesResponse{
+			Services: []platformclient.EnterpriseMcpService{
+				{
+					ServiceID: "kb-search",
+					Tools: []platformclient.ToolDefinition{
+						{
+							Name:        "query_kb",
+							Description: "Search enterprise knowledge base",
+							InputSchema: json.RawMessage(`{"type":"object"}`),
+						},
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	origClient := testHandler.PlatformClient
+	testHandler.PlatformClient = platformclient.NewClient(ts.URL, "test", time.Second)
+	t.Cleanup(func() {
+		testHandler.PlatformClient = origClient
+	})
+
+	// 1. Verify successful enterprise services aggregation
+	req := newRequest(http.MethodGet, "/api/agents/"+agentID+"/mcp-servers", nil)
+	req = withURLParam(req, "id", agentID)
+	req.Header.Set("X-Workspace-ID", deptWorkspaceID)
+	w := httptest.NewRecorder()
+	testHandler.ListAgentMcpServers(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp []WorkspaceMcpServerResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	var foundEnterprise bool
+	for _, s := range resp {
+		if s.Source == "enterprise" {
+			foundEnterprise = true
+			if s.ID != "enterprise-kb-search" {
+				t.Errorf("expected ID enterprise-kb-search, got %q", s.ID)
+			}
+			if s.WorkspaceID != deptWorkspaceID {
+				t.Errorf("expected WorkspaceID %q, got %q", deptWorkspaceID, s.WorkspaceID)
+			}
+			if s.Name != "kb-search" {
+				t.Errorf("expected Name kb-search, got %q", s.Name)
+			}
+			if s.Transport != "remote_bridge" {
+				t.Errorf("expected Transport remote_bridge, got %q", s.Transport)
+			}
+			if s.Enabled == nil || !*s.Enabled {
+				t.Errorf("expected Enabled to be true, got %v", s.Enabled)
+			}
+			if len(s.Tools) != 1 || s.Tools[0].Name != "query_kb" {
+				t.Errorf("expected Tools to contain query_kb, got %+v", s.Tools)
+			}
+			if s.Tools[0].Description != "Search enterprise knowledge base" {
+				t.Errorf("expected Tool description, got %q", s.Tools[0].Description)
+			}
+		}
+	}
+	if !foundEnterprise {
+		t.Fatalf("expected enterprise service in response, got %+v", resp)
+	}
+
+	// 2. Verify graceful degradation when mock server returns 502
+	return502 = true
+	w = httptest.NewRecorder()
+	req = newRequest(http.MethodGet, "/api/agents/"+agentID+"/mcp-servers", nil)
+	req = withURLParam(req, "id", agentID)
+	req.Header.Set("X-Workspace-ID", deptWorkspaceID)
+	testHandler.ListAgentMcpServers(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 on 502 error, got %d: %s", w.Code, w.Body.String())
+	}
+	var respAfterError []WorkspaceMcpServerResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &respAfterError); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	for _, s := range respAfterError {
+		if s.Source == "enterprise" {
+			t.Errorf("did not expect enterprise service when gateway is 502, got %+v", s)
+		}
+	}
+}
+
+func TestListWorkspaceMcpServers_EnterpriseAggregation(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+	ctx := context.Background()
+
+	// Create a department workspace with slug 'dept-23456'
+	var deptWorkspaceID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO workspace (name, slug, description, issue_prefix)
+		VALUES ('Dept 23456', 'dept-23456', '', 'DPT')
+		RETURNING id
+	`).Scan(&deptWorkspaceID); err != nil {
+		t.Fatalf("create dept workspace: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, deptWorkspaceID)
+	})
+
+	// Add member
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO member (workspace_id, user_id, role)
+		VALUES ($1, $2, 'owner')
+		ON CONFLICT DO NOTHING
+	`, deptWorkspaceID, testUserID); err != nil {
+		t.Fatalf("create dept member: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM member WHERE workspace_id = $1`, deptWorkspaceID)
+	})
+
+	// Mock server
+	var return502 bool
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if return502 {
+			w.WriteHeader(http.StatusBadGateway)
+			w.Write([]byte("502 Bad Gateway"))
+			return
+		}
+		tenant := r.URL.Query().Get("tenant")
+		if tenant != "43456" {
+			t.Errorf("expected tenant 43456 (20000+23456), got %q", tenant)
+		}
+		resp := platformclient.ListServicesResponse{
+			Services: []platformclient.EnterpriseMcpService{
+				{
+					ServiceID: "corp-hr",
+					Tools: []platformclient.ToolDefinition{
+						{
+							Name:        "get_employee_info",
+							Description: "Query employee information",
+							InputSchema: json.RawMessage(`{"type":"object"}`),
+						},
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	origClient := testHandler.PlatformClient
+	testHandler.PlatformClient = platformclient.NewClient(ts.URL, "test", time.Second)
+	t.Cleanup(func() {
+		testHandler.PlatformClient = origClient
+	})
+
+	// 1. Verify successful enterprise services aggregation on ListWorkspaceMcpServers
+	req := newRequest(http.MethodGet, "/api/workspaces/"+deptWorkspaceID+"/mcp-servers", nil)
+	req = withURLParam(req, "id", deptWorkspaceID)
+	w := httptest.NewRecorder()
+	testHandler.ListWorkspaceMcpServers(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp []WorkspaceMcpServerResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	var foundEnterprise bool
+	for _, s := range resp {
+		if s.Source == "enterprise" {
+			foundEnterprise = true
+			if s.ID != "enterprise-corp-hr" {
+				t.Errorf("expected ID enterprise-corp-hr, got %q", s.ID)
+			}
+			if s.WorkspaceID != deptWorkspaceID {
+				t.Errorf("expected WorkspaceID %q, got %q", deptWorkspaceID, s.WorkspaceID)
+			}
+			if s.Name != "corp-hr" {
+				t.Errorf("expected Name corp-hr, got %q", s.Name)
+			}
+			if s.Transport != "remote_bridge" {
+				t.Errorf("expected Transport remote_bridge, got %q", s.Transport)
+			}
+			if len(s.Tools) != 1 || s.Tools[0].Name != "get_employee_info" {
+				t.Errorf("expected Tools to contain get_employee_info, got %+v", s.Tools)
+			}
+		}
+	}
+	if !foundEnterprise {
+		t.Fatalf("expected enterprise service in response, got %+v", resp)
+	}
+
+	// 2. Verify graceful degradation when mock server returns 502
+	return502 = true
+	w = httptest.NewRecorder()
+	req = newRequest(http.MethodGet, "/api/workspaces/"+deptWorkspaceID+"/mcp-servers", nil)
+	req = withURLParam(req, "id", deptWorkspaceID)
+	testHandler.ListWorkspaceMcpServers(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 on 502 error, got %d: %s", w.Code, w.Body.String())
 	}
 }

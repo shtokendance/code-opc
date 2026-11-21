@@ -54,6 +54,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/featureflag"
 	"github.com/multica-ai/multica/server/pkg/llm"
+	"github.com/multica-ai/multica/server/pkg/platformclient"
 	publicapiv1 "github.com/multica-ai/multica/server/pkg/publicapi/v1"
 )
 
@@ -493,6 +494,15 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 	if seatcapacity.CanRunWorker(h.SeatCapacity) {
 		h.SeatCapacityWorker = seatcapacity.NewWorker(queries, h.SeatCapacity, capacityLocker, seatcapacity.WorkerConfig{})
 	}
+	platformGatewayURL := strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
+	if platformGatewayURL == "" {
+		platformGatewayURL = "http://10.101.102.116:3002"
+	}
+	platformServiceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
+	if platformServiceToken == "" {
+		platformServiceToken = "3a70ecbf6b0788041c3e6ab271053f737beff4ca94211bef9d5022b77b10786d"
+	}
+	h.PlatformClient = platformclient.NewClient(platformGatewayURL, platformServiceToken, 12*time.Second)
 	if opts.BusinessMetrics != nil {
 		// Wire the BusinessMetrics receiver into the cloud runtime client
 		// so every outbound Fleet/Gateway request feeds the

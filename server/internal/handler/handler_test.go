@@ -44,6 +44,22 @@ const (
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		for _, envPath := range []string{".env", "../.env", "../../.env", "../../../.env"} {
+			if envBytes, err := os.ReadFile(envPath); err == nil {
+				for _, line := range strings.Split(string(envBytes), "\n") {
+					line = strings.TrimSpace(line)
+					if strings.HasPrefix(line, "DATABASE_URL=") {
+						dbURL = strings.Trim(strings.TrimPrefix(line, "DATABASE_URL="), `"'`)
+						break
+					}
+				}
+				if dbURL != "" {
+					break
+				}
+			}
+		}
+	}
 	dbConfigured := dbURL != ""
 	if !dbConfigured {
 		dbURL = "postgres://multica:multica@localhost:5432/multica?sslmode=disable"

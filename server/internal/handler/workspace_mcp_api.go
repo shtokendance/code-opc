@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -125,6 +127,12 @@ func (h *Handler) ListWorkspaceMcpServers(w http.ResponseWriter, r *http.Request
 		count := agentCounts[item.ID]
 		item.AgentCount = &count
 		resp = append(resp, item)
+	}
+	ws, err := h.Queries.GetWorkspace(r.Context(), idUUID)
+	if err != nil {
+		slog.Warn("failed to load workspace for workspace mcp aggregation", "workspace_id", workspaceID, "error", err)
+	} else {
+		resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -367,6 +375,12 @@ func (h *Handler) ListAgentMcpServers(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:   timestampToString(row.UpdatedAt),
 		})
 	}
+	ws, err := h.Queries.GetWorkspace(r.Context(), agent.WorkspaceID)
+	if err != nil {
+		slog.Warn("failed to load workspace for agent mcp aggregation", "workspace_id", uuidToString(agent.WorkspaceID), "error", err)
+	} else {
+		resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -550,5 +564,61 @@ func (h *Handler) writeAgentMcpServers(w http.ResponseWriter, r *http.Request, a
 			UpdatedAt:   timestampToString(row.UpdatedAt),
 		})
 	}
+	if agent, err := h.Queries.GetAgent(r.Context(), agentID); err == nil {
+		if ws, err := h.Queries.GetWorkspace(r.Context(), agent.WorkspaceID); err == nil {
+			resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
+		}
+	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) appendEnterpriseMcpServers(ctx context.Context, workspace db.Workspace, resp []WorkspaceMcpServerResponse) []WorkspaceMcpServerResponse {
+	if !strings.HasPrefix(workspace.Slug, "dept-") {
+		return resp
+	}
+	deptCode := strings.TrimPrefix(workspace.Slug, "dept-")
+	var tenant string
+	if n, err := strconv.ParseInt(deptCode, 10, 64); err == nil {
+		tenant = strconv.FormatInt(20000+n, 10)
+	} else {
+		tenant = deptCode
+	}
+
+	client := h.getPlatformClient()
+	if client == nil {
+		return resp
+	}
+	services, err := client.ListServices(ctx, tenant, true)
+	if err != nil {
+		slog.Warn("failed to fetch enterprise mcp services",
+			"workspace_id", uuidToString(workspace.ID),
+			"slug", workspace.Slug,
+			"tenant", tenant,
+			"error", err,
+		)
+		return resp
+	}
+
+	trueVal := true
+	for _, s := range services {
+		tools := make([]WorkspaceMcpToolSummary, len(s.Tools))
+		for i, t := range s.Tools {
+			tools[i] = WorkspaceMcpToolSummary{
+				Name:        t.Name,
+				Description: t.Description,
+				InputSchema: t.InputSchema,
+			}
+		}
+		item := WorkspaceMcpServerResponse{
+			ID:          "enterprise-" + s.ServiceID,
+			WorkspaceID: uuidToString(workspace.ID),
+			Name:        s.ServiceID,
+			Transport:   "remote_bridge",
+			Source:      "enterprise",
+			Enabled:     &trueVal,
+			Tools:       tools,
+		}
+		resp = append(resp, item)
+	}
+	return resp
 }
