@@ -873,6 +873,79 @@ describe("McpConfigTab workspace servers", () => {
       await screen.findByText(/no MCP servers to assign yet/i),
     ).toBeInTheDocument();
   });
+
+  it("renders enterprise badge, description, tool info and hides delete button for enterprise servers", async () => {
+    const user = userEvent.setup();
+    workspaceMcp.assigned = [
+      wsServer({
+        id: "srv-enterprise",
+        name: "enterprise-kb",
+        transport: "remote_bridge",
+        source: "enterprise",
+        description: "企业知识库服务",
+        tools: [
+          { name: "search_docs", description: "搜索内部知识库" },
+          { name: "query_database", description: "执行安全只读查询" },
+        ],
+        enabled: true,
+      }),
+    ];
+    renderTab({ mcp_config: null });
+
+    const row = (await screen.findByText("enterprise-kb")).closest("li")!;
+
+    // 1. 正确渲染「企业」徽章
+    expect(within(row).getByText("企业")).toBeInTheDocument();
+
+    // 2. 正确展示描述与工具信息
+    expect(within(row).getByText("企业知识库服务")).toBeInTheDocument();
+    expect(
+      within(row).getByText("2 个工具: search_docs, query_database"),
+    ).toBeInTheDocument();
+
+    // 3. 渲染启用/停用开关并支持切换
+    const toggle = within(row).getByRole("switch", {
+      name: /Enable enterprise-kb/i,
+    });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toBeChecked();
+
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(mockSetEnabled).toHaveBeenCalledWith({
+        serverId: "srv-enterprise",
+        enabled: false,
+      }),
+    );
+
+    // 4. 不渲染删除按钮（workspace_remove_aria）
+    expect(
+      within(row).queryByRole("button", { name: /Remove enterprise-kb/i }),
+    ).not.toBeInTheDocument();
+    expect(mockRemoveServer).not.toHaveBeenCalled();
+  });
+
+  it("falls back to transport label when description is omitted on enterprise servers", async () => {
+    workspaceMcp.assigned = [
+      wsServer({
+        id: "srv-enterprise-no-desc",
+        name: "enterprise-tools",
+        transport: "remote_bridge",
+        source: "enterprise",
+        tools: [{ name: "tool1" }],
+        enabled: true,
+      }),
+    ];
+    renderTab({ mcp_config: null });
+
+    const row = (await screen.findByText("enterprise-tools")).closest("li")!;
+    expect(within(row).getByText("企业")).toBeInTheDocument();
+    expect(within(row).getByText("remote_bridge")).toBeInTheDocument();
+    expect(within(row).getByText("1 个工具: tool1")).toBeInTheDocument();
+    expect(
+      within(row).queryByRole("button", { name: /Remove enterprise-tools/i }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 // The runtime section's Overridden badge has to reflect the REAL precedence:

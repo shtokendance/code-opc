@@ -595,12 +595,23 @@ function McpWorkspaceServerRow({
 }) {
   const { t } = useT("agents");
   const enabled = server.enabled !== false;
+  const isEnterprise = server.source === "enterprise";
+  const hasTools = Boolean(server.tools && server.tools.length > 0);
+  const toolsSummary = hasTools
+    ? `${server.tools!.length} 个工具: ${server.tools!.map((tool) => tool.name).filter(Boolean).join(", ")}`
+    : null;
+
   return (
     <li className="group flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30">
       <McpTransportIcon transport={server.transport} />
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-body font-medium">{server.name}</span>
+          {isEnterprise && (
+            <Badge variant="secondary" className="text-xs">
+              企业
+            </Badge>
+          )}
           {overridden && (
             <Badge variant="secondary">
               {t(($) => $.tab_body.mcp_config.workspace_overridden_badge)}
@@ -608,8 +619,13 @@ function McpWorkspaceServerRow({
           )}
         </div>
         <p className="text-caption text-muted-foreground">
-          {mcpTransportLabel(server.transport)}
+          {server.description || mcpTransportLabel(server.transport)}
         </p>
+        {toolsSummary && (
+          <p className="text-caption text-muted-foreground">
+            {toolsSummary}
+          </p>
+        )}
       </div>
       {canEdit && (
         <div className="flex shrink-0 items-center gap-0.5 text-muted-foreground">
@@ -621,15 +637,19 @@ function McpWorkspaceServerRow({
               name: server.name,
             })}
           />
-          <div className="mx-1 h-4 w-px bg-surface-border" aria-hidden="true" />
-          <McpRemoveButton
-            disabled={busy}
-            onClick={onRemove}
-            ariaLabel={t(($) => $.tab_body.mcp_config.workspace_remove_aria, {
-              name: server.name,
-            })}
-            tooltipLabel={t(($) => $.tab_body.mcp_config.workspace_remove_action)}
-          />
+          {!isEnterprise && (
+            <>
+              <div className="mx-1 h-4 w-px bg-surface-border" aria-hidden="true" />
+              <McpRemoveButton
+                disabled={busy}
+                onClick={onRemove}
+                ariaLabel={t(($) => $.tab_body.mcp_config.workspace_remove_aria, {
+                  name: server.name,
+                })}
+                tooltipLabel={t(($) => $.tab_body.mcp_config.workspace_remove_action)}
+              />
+            </>
+          )}
         </div>
       )}
       {!canEdit && !enabled && (
