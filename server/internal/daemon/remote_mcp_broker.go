@@ -14,12 +14,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/multica-ai/multica/server/pkg/platformclient"
 	"github.com/multica-ai/multica/server/pkg/remotemcp"
 )
 
@@ -69,6 +71,39 @@ func startTaskRemoteMCPBrokers(setupCtx, lifetimeCtx context.Context, taskID, pr
 			}
 			set.Close()
 			return nil, diagnostics, nil, errors.New(message)
+		}
+		if strings.HasPrefix(connection.ContributionID, remotemcp.EnterpriseContributionPrefix) {
+			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			if err != nil {
+				set.Close()
+				return nil, diagnostics, nil, fmt.Errorf("listen for Remote MCP broker: %w", err)
+			}
+			pathToken, err := randomBrokerToken()
+			if err != nil {
+				_ = listener.Close()
+				set.Close()
+				return nil, diagnostics, nil, err
+			}
+			endpoint, _ := url.Parse(connection.Endpoint)
+			proxy := &remoteMCPProxy{
+				taskID: taskID, connection: connection, endpoint: endpoint,
+				path: "/" + pathToken,
+				semaphore: make(chan struct{}, remoteMCPMaxConcurrency), logger: logger,
+			}
+			server := &http.Server{Handler: proxy, ReadHeaderTimeout: 5 * time.Second}
+			set.servers = append(set.servers, server)
+			set.listeners = append(set.listeners, listener)
+			go func() {
+				if serveErr := server.Serve(listener); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) && logger != nil {
+					logger.Warn("Remote MCP broker stopped unexpectedly", "task_id", taskID, "contribution", connection.ContributionKey, "error", serveErr)
+				}
+			}()
+			name := remoteMCPServerName(connection)
+			servers[name] = map[string]any{
+				"type": "http",
+				"url":  "http://" + listener.Addr().String() + proxy.path,
+			}
+			continue
 		}
 		headers := make(http.Header)
 		if connection.CredentialHeader != "" && resolveCredential != nil {
@@ -202,6 +237,9 @@ func remoteMCPServerName(connection remotemcp.Connection) string {
 	// identity so the provider name is safe and different installations stay distinct.
 	digest := sha256.Sum256([]byte(connection.ContributionID))
 	suffix := hex.EncodeToString(digest[:8])
+	if strings.HasPrefix(connection.ContributionID, remotemcp.EnterpriseContributionPrefix) {
+		return "enterprise-" + name + "-" + suffix
+	}
 	return "plugin-" + name + "-" + suffix
 }
 
@@ -210,6 +248,9 @@ type remoteMCPProxy struct {
 	connection        remotemcp.Connection
 	endpoint          *url.URL
 	client            *http.Client
+	platformClient    *platformclient.Client
+	pollInterval      time.Duration
+	pollTimeout       time.Duration
 	credentialHeaders http.Header
 	resolveCredential remoteMCPCredentialResolver
 	path              string
@@ -268,6 +309,10 @@ func (proxy *remoteMCPProxy) ServeHTTP(w http.ResponseWriter, request *http.Requ
 	}
 	if !allowedRemoteMCPMethod(rpcRequest.Method) {
 		writeRemoteMCPError(w, rpcRequest.ID, -32601, "Only approved Remote MCP tools are available")
+		return
+	}
+	if strings.HasPrefix(proxy.connection.ContributionID, remotemcp.EnterpriseContributionPrefix) {
+		proxy.serveEnterpriseHTTP(w, request, rpcRequest, raw, &resultClass, &toolName)
 		return
 	}
 	if rpcRequest.Method == "tools/call" {
@@ -349,6 +394,265 @@ func (proxy *remoteMCPProxy) ServeHTTP(w http.ResponseWriter, request *http.Requ
 	w.WriteHeader(response.StatusCode)
 	_, _ = w.Write(responseBody)
 	resultClass = "success"
+}
+
+func (proxy *remoteMCPProxy) getPlatformClient() *platformclient.Client {
+	if proxy.platformClient != nil {
+		return proxy.platformClient
+	}
+	baseURL := ""
+	if proxy.endpoint != nil {
+		baseURL = proxy.endpoint.String()
+	}
+	if baseURL == "" {
+		baseURL = proxy.connection.Endpoint
+	}
+	if baseURL == "" {
+		baseURL = strings.TrimSpace(os.Getenv("PLATFORM_GATEWAY_URL"))
+		if baseURL == "" {
+			baseURL = platformclient.DefaultPlatformGatewayURL
+		}
+	}
+	serviceToken := strings.TrimSpace(os.Getenv("PLATFORM_SERVICE_TOKEN"))
+	if serviceToken == "" {
+		serviceToken = platformclient.DefaultPlatformServiceToken
+	}
+	proxy.platformClient = platformclient.NewClient(baseURL, serviceToken, 30*time.Second)
+	return proxy.platformClient
+}
+
+func writeMCPToolCallResult(w http.ResponseWriter, id json.RawMessage, text string, isError bool) {
+	if len(id) == 0 {
+		id = json.RawMessage("null")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      id,
+		"result": map[string]any{
+			"content": []map[string]any{
+				{
+					"type": "text",
+					"text": text,
+				},
+			},
+			"isError": isError,
+		},
+	})
+}
+
+func (proxy *remoteMCPProxy) serveEnterpriseHTTP(w http.ResponseWriter, request *http.Request, rpcRequest remoteMCPRequest, raw []byte, resultClass *string, toolName *string) {
+	switch rpcRequest.Method {
+	case "initialize":
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      rpcRequest.ID,
+			"result": map[string]any{
+				"protocolVersion": "2024-11-05",
+				"capabilities": map[string]any{
+					"tools": map[string]any{},
+				},
+				"serverInfo": map[string]any{
+					"name":    "enterprise-mcp",
+					"version": "1.0.0",
+				},
+			},
+		})
+		*resultClass = "success"
+
+	case "notifications/initialized", "notifications/cancelled":
+		w.WriteHeader(http.StatusOK)
+		*resultClass = "success"
+
+	case "ping":
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      rpcRequest.ID,
+			"result":  map[string]any{},
+		})
+		*resultClass = "success"
+
+	case "tools/list":
+		tools := make([]map[string]any, 0, len(proxy.connection.ApprovedTools))
+		for _, tool := range proxy.connection.ApprovedTools {
+			item := map[string]any{
+				"name": tool.Name,
+			}
+			if tool.Description != "" {
+				item["description"] = tool.Description
+			}
+			if len(tool.InputSchema) > 0 {
+				var schema any
+				if err := json.Unmarshal(tool.InputSchema, &schema); err == nil {
+					item["inputSchema"] = schema
+				} else {
+					item["inputSchema"] = tool.InputSchema
+				}
+			} else {
+				item["inputSchema"] = map[string]any{
+					"type": "object",
+				}
+			}
+			tools = append(tools, item)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      rpcRequest.ID,
+			"result": map[string]any{
+				"tools": tools,
+			},
+		})
+		*resultClass = "success"
+
+	case "tools/call":
+		var params struct {
+			Name      string          `json:"name"`
+			Arguments json.RawMessage `json:"arguments"`
+		}
+		if err := json.Unmarshal(rpcRequest.Params, &params); err != nil || !proxy.toolApproved(params.Name) {
+			writeRemoteMCPError(w, rpcRequest.ID, -32602, "Remote MCP tool is not approved")
+			return
+		}
+		*toolName = params.Name
+
+		var publicConfig struct {
+			Subject   string `json:"subject"`
+			TenantID  string `json:"tenant_id"`
+			DeviceID  string `json:"device_id"`
+			ServiceID string `json:"service_id"`
+			TaskID    string `json:"task_id"`
+		}
+		if len(proxy.connection.PublicConfig) > 0 {
+			_ = json.Unmarshal(proxy.connection.PublicConfig, &publicConfig)
+		}
+		taskID := publicConfig.TaskID
+		if taskID == "" {
+			taskID = proxy.taskID
+		}
+		serviceID := publicConfig.ServiceID
+		if serviceID == "" {
+			serviceID = strings.TrimPrefix(proxy.connection.ContributionID, remotemcp.EnterpriseContributionPrefix)
+		}
+
+		client := proxy.getPlatformClient()
+		invokeReq := platformclient.TaskInvocationRequest{
+			Subject:   publicConfig.Subject,
+			TenantID:  publicConfig.TenantID,
+			ServiceID: serviceID,
+			ToolName:  params.Name,
+			Arguments: params.Arguments,
+			TaskID:    taskID,
+			Device:    publicConfig.DeviceID,
+		}
+
+		invokeResp, err := client.InvokeTask(request.Context(), invokeReq)
+		if err != nil {
+			*resultClass = "remote_error"
+			writeMCPToolCallResult(w, rpcRequest.ID, err.Error(), true)
+			return
+		}
+		if invokeResp.Error != nil {
+			*resultClass = "remote_error"
+			writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("[%s] %s", invokeResp.Error.Code, invokeResp.Error.Message), true)
+			return
+		}
+
+		invocationID := invokeResp.Data.InvocationID
+		status := invokeResp.Data.Status
+		var finalStatus *platformclient.InvocationStatusResponse
+
+		if status == "created" || status == "executing" {
+			interval := proxy.pollInterval
+			if interval <= 0 {
+				interval = 500 * time.Millisecond
+			}
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+
+			timeoutDur := proxy.pollTimeout
+			if timeoutDur <= 0 {
+				timeoutDur = 60 * time.Second
+			}
+			timeout := time.After(timeoutDur)
+
+			for {
+				select {
+				case <-request.Context().Done():
+					*resultClass = "remote_error"
+					writeMCPToolCallResult(w, rpcRequest.ID, request.Context().Err().Error(), true)
+					return
+				case <-timeout:
+					*resultClass = "remote_error"
+					writeMCPToolCallResult(w, rpcRequest.ID, "task invocation timed out waiting for completion", true)
+					return
+				case <-ticker.C:
+					statusResp, err := client.GetInvocation(request.Context(), invocationID, publicConfig.Subject, publicConfig.TenantID, taskID, publicConfig.DeviceID)
+					if err != nil {
+						*resultClass = "remote_error"
+						writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("failed to get invocation status: %v", err), true)
+						return
+					}
+					if statusResp.Error != nil {
+						*resultClass = "remote_error"
+						writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("[%s] %s", statusResp.Error.Code, statusResp.Error.Message), true)
+						return
+					}
+					if statusResp.Data.Status == "completed" {
+						finalStatus = statusResp
+						break
+					}
+					if statusResp.Data.Status == "failed" || statusResp.Data.Status == "error" {
+						*resultClass = "remote_error"
+						errMsg := statusResp.Data.Error
+						if errMsg == "" {
+							errMsg = "invocation execution failed"
+						}
+						writeMCPToolCallResult(w, rpcRequest.ID, errMsg, true)
+						return
+					}
+				}
+				if finalStatus != nil {
+					break
+				}
+			}
+		} else {
+			statusResp, err := client.GetInvocation(request.Context(), invocationID, publicConfig.Subject, publicConfig.TenantID, taskID, publicConfig.DeviceID)
+			if err != nil {
+				*resultClass = "remote_error"
+				writeMCPToolCallResult(w, rpcRequest.ID, fmt.Sprintf("failed to get invocation status: %v", err), true)
+				return
+			}
+			finalStatus = statusResp
+		}
+
+		if finalStatus.Data.Error != "" {
+			*resultClass = "remote_error"
+			writeMCPToolCallResult(w, rpcRequest.ID, finalStatus.Data.Error, true)
+			return
+		}
+
+		resultText := ""
+		if len(finalStatus.Data.ResultRef) > 0 {
+			var strVal string
+			if err := json.Unmarshal(finalStatus.Data.ResultRef, &strVal); err == nil {
+				resultText = strVal
+			} else {
+				resultText = string(finalStatus.Data.ResultRef)
+			}
+		}
+		*resultClass = "success"
+		writeMCPToolCallResult(w, rpcRequest.ID, resultText, false)
+
+	default:
+		writeRemoteMCPError(w, rpcRequest.ID, -32601, "Only approved Remote MCP tools are available")
+	}
 }
 
 func decodeRemoteMCPSSEData(contentType string, raw []byte) ([]byte, error) {

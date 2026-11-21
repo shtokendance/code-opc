@@ -46,7 +46,10 @@ type Connection struct {
 // say which kind it is — inferring it from the string's shape would make a
 // cloud-issued id that happened to contain a colon resolve against the plugin
 // route.
-const PluginContributionPrefix = "plugin:"
+const (
+	PluginContributionPrefix     = "plugin:"
+	EnterpriseContributionPrefix = "enterprise:"
+)
 
 // DigestBytes is the content digest used to pin approved tool schemas.
 func DigestBytes(content []byte) string {

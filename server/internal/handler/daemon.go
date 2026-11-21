@@ -38,6 +38,7 @@ import (
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/dbid"
 	"github.com/multica-ai/multica/server/pkg/protocol"
+	"github.com/multica-ai/multica/server/pkg/remotemcp"
 	"github.com/multica-ai/multica/server/pkg/redact"
 	"github.com/multica-ai/multica/server/pkg/skillbundle"
 	"github.com/multica-ai/multica/server/pkg/taskfailure"
@@ -2753,6 +2754,16 @@ func remoteMCPDaemonTokenForClaim(resp AgentTaskResponse, runtime db.AgentRuntim
 	if len(resp.RemoteMCPConnections) == 0 {
 		return "", nil, nil
 	}
+	needsDaemonToken := false
+	for _, conn := range resp.RemoteMCPConnections {
+		if !strings.HasPrefix(conn.ContributionID, remotemcp.EnterpriseContributionPrefix) {
+			needsDaemonToken = true
+			break
+		}
+	}
+	if !needsDaemonToken {
+		return "", nil, nil
+	}
 	if !runtime.DaemonID.Valid || strings.TrimSpace(runtime.DaemonID.String) == "" {
 		return "", nil, errors.New("runtime daemon_id is required for Remote MCP")
 	}
@@ -4236,6 +4247,67 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 		}
 		if ws.Context.Valid {
 			resp.WorkspaceContext = ws.Context.String
+		}
+		if strings.HasPrefix(ws.Slug, "dept-") {
+			tenantID := ResolveTenantFromDeptCode(strings.TrimPrefix(ws.Slug, "dept-"))
+			client := h.getPlatformClient()
+			if client != nil {
+				services, err := client.ListServices(r.Context(), tenantID, true)
+				if err != nil {
+					slog.Warn("daemon claim: failed to list enterprise mcp services",
+						"task_id", uuidToString(task.ID),
+						"workspace_id", resp.WorkspaceID,
+						"tenant_id", tenantID,
+						"error", err,
+					)
+				} else {
+					subject := ""
+					if task.InitiatorUserID.Valid {
+						subject = uuidToString(task.InitiatorUserID)
+					} else if task.OriginatorUserID.Valid {
+						subject = uuidToString(task.OriginatorUserID)
+					} else if runtime.OwnerID.Valid {
+						subject = uuidToString(runtime.OwnerID)
+					}
+					deviceID := ""
+					if runtime.DaemonID.Valid && strings.TrimSpace(runtime.DaemonID.String) != "" {
+						deviceID = strings.TrimSpace(runtime.DaemonID.String)
+					} else {
+						deviceID = uuidToString(runtime.ID)
+					}
+
+					for _, s := range services {
+						approvedTools := make([]remotemcp.Tool, len(s.Tools))
+						for i, tool := range s.Tools {
+							approvedTools[i] = remotemcp.Tool{
+								Name:         tool.Name,
+								Description:  tool.Description,
+								InputSchema:  tool.InputSchema,
+								SchemaDigest: remotemcp.DigestBytes(tool.InputSchema),
+								Risk:         tool.Risk,
+							}
+						}
+						publicConfigBytes, _ := json.Marshal(map[string]string{
+							"subject":    subject,
+							"tenant_id":  tenantID,
+							"device_id":  deviceID,
+							"service_id": s.ServiceID,
+							"task_id":    uuidToString(task.ID),
+						})
+						resp.RemoteMCPConnections = append(resp.RemoteMCPConnections, remotemcp.Connection{
+							InstallationID:   "enterprise",
+							ContributionID:   remotemcp.EnterpriseContributionPrefix + s.ServiceID,
+							ContributionKey:  "enterprise-" + s.ServiceID,
+							Endpoint:         client.BaseURL(),
+							Transport:        "remote_bridge",
+							ProtocolVersions: []string{"2024-11-05"},
+							FailurePolicy:    "optional",
+							PublicConfig:     publicConfigBytes,
+							ApprovedTools:    approvedTools,
+						})
+					}
+				}
+			}
 		}
 	} else {
 		slog.Warn("task claim: failed to load workspace for context injection",

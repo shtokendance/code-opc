@@ -12,6 +12,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/testutil"
+	"github.com/multica-ai/multica/server/pkg/platformclient"
+	"github.com/multica-ai/multica/server/pkg/remotemcp"
 )
 
 func startClaimFixture(t *testing.T, status string) (string, string, time.Time) {
@@ -208,5 +210,134 @@ func TestStartClaimWirePrecision(t *testing.T) {
 				t.Fatalf("claim timestamp = %q, want canonical UTC with microseconds %q", *resp.DispatchedAt, want)
 			}
 		})
+	}
+}
+
+func TestBuildClaimedTaskResponse_EnterpriseMCP(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("PostgreSQL is required")
+	}
+	ctx := context.Background()
+
+	// Mock platform-opc gateway
+	mockPlatform := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/integration/v1/mcp/services" && r.URL.Query().Get("tenant") == "32500" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"services": [
+					{
+						"service_id": "weknora-kb",
+						"tools": [
+							{
+								"name": "kb_search",
+								"description": "Search knowledge base",
+								"input_schema": {"type": "object", "properties": {"q": {"type": "string"}}}
+							}
+						]
+					}
+				]
+			}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer mockPlatform.Close()
+
+	origPlatformClient := testHandler.PlatformClient
+	testHandler.PlatformClient = platformclient.NewClient(mockPlatform.URL, "test-token", 5*time.Second)
+	defer func() { testHandler.PlatformClient = origPlatformClient }()
+
+	// Create department workspace dept-12500
+	var deptWorkspaceID string
+	err := testPool.QueryRow(ctx, `
+		INSERT INTO workspace (name, slug, description, issue_prefix)
+		VALUES ('Dept 12500', 'dept-12500', '', 'DPT')
+		RETURNING id
+	`).Scan(&deptWorkspaceID)
+	if err != nil {
+		t.Fatalf("failed to insert dept workspace: %v", err)
+	}
+
+	runtimeID := handlerTestRuntimeID(t)
+	var agentID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO agent (
+			workspace_id, name, description, runtime_mode, runtime_config,
+			runtime_id, visibility, max_concurrent_tasks, owner_id,
+			instructions, custom_env, custom_args
+		)
+		VALUES ($1, 'dept-test-agent', '', 'cloud', '{}'::jsonb,
+		        $2, 'workspace', 1, $3, '', '{}'::jsonb, '[]'::jsonb)
+		RETURNING id
+	`, deptWorkspaceID, runtimeID, testUserID).Scan(&agentID); err != nil {
+		t.Fatalf("create dept agent: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM agent WHERE id = $1`, agentID)
+	})
+
+	taskID := insertHandlerTestTask(t, agentID)
+
+	taskRow, err := testHandler.Queries.GetAgentTask(ctx, parseUUID(taskID))
+	if err != nil {
+		t.Fatalf("failed to get task: %v", err)
+	}
+
+	runtime, err := testHandler.Queries.GetAgentRuntime(ctx, parseUUID(runtimeID))
+	if err != nil {
+		t.Fatalf("failed to get runtime: %v", err)
+	}
+
+	req := newOwnerDaemonRequest("POST", "/claim", nil)
+	resp, _, _, _, _, failure := testHandler.buildClaimedTaskResponse(req, &taskRow, runtime, runtimeID, deptWorkspaceID)
+	if failure != nil {
+		t.Fatalf("buildClaimedTaskResponse failed: %+v", failure)
+	}
+
+	if len(resp.RemoteMCPConnections) != 1 {
+		t.Fatalf("expected 1 remote mcp connection, got %d", len(resp.RemoteMCPConnections))
+	}
+	conn := resp.RemoteMCPConnections[0]
+	if conn.ContributionID != remotemcp.EnterpriseContributionPrefix+"weknora-kb" {
+		t.Errorf("unexpected ContributionID: %s", conn.ContributionID)
+	}
+	if conn.ContributionKey != "enterprise-weknora-kb" {
+		t.Errorf("unexpected ContributionKey: %s", conn.ContributionKey)
+	}
+	if conn.Transport != "remote_bridge" {
+		t.Errorf("unexpected Transport: %s", conn.Transport)
+	}
+	if conn.Endpoint != mockPlatform.URL {
+		t.Errorf("unexpected Endpoint: %s", conn.Endpoint)
+	}
+	if len(conn.ApprovedTools) != 1 || conn.ApprovedTools[0].Name != "kb_search" {
+		t.Errorf("unexpected ApprovedTools: %+v", conn.ApprovedTools)
+	}
+	if conn.ApprovedTools[0].SchemaDigest == "" {
+		t.Errorf("expected non-empty SchemaDigest")
+	}
+
+	var pubCfg struct {
+		TenantID  string `json:"tenant_id"`
+		ServiceID string `json:"service_id"`
+		TaskID    string `json:"task_id"`
+	}
+	if err := json.Unmarshal(conn.PublicConfig, &pubCfg); err != nil {
+		t.Fatalf("unmarshal public config: %v", err)
+	}
+	if pubCfg.TenantID != "32500" || pubCfg.ServiceID != "weknora-kb" || pubCfg.TaskID != taskID {
+		t.Errorf("unexpected public config: %+v", pubCfg)
+	}
+
+	// Test remoteMCPDaemonTokenForClaim does not require runtime.DaemonID for enterprise connections
+	runtimeWithoutDaemon := runtime
+	runtimeWithoutDaemon.DaemonID = pgtype.Text{Valid: false}
+	token, daemonTokens, err := remoteMCPDaemonTokenForClaim(resp, runtimeWithoutDaemon)
+	if err != nil {
+		t.Errorf("remoteMCPDaemonTokenForClaim should not fail for enterprise connections: %v", err)
+	}
+	if token != "" || len(daemonTokens) != 0 {
+		t.Errorf("expected empty token and daemonTokens for pure enterprise connections, got token=%s, count=%d", token, len(daemonTokens))
 	}
 }
