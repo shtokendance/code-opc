@@ -42,7 +42,10 @@ func (c *Client) ListServices(ctx context.Context, tenant string, includeSchema 
 	if includeSchema {
 		q.Set("include_schema", "true")
 	}
-	fullURL := endpoint + "?" + q.Encode()
+	fullURL := endpoint
+	if qStr := q.Encode(); qStr != "" {
+		fullURL += "?" + qStr
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
 	if err != nil {
@@ -60,7 +63,7 @@ func (c *Client) ListServices(ctx context.Context, tenant string, includeSchema 
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return nil, fmt.Errorf("list services failed with status %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("list services failed with status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
 	var res ListServicesResponse
