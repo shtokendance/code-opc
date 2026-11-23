@@ -105,7 +105,7 @@ function LoginPageContent() {
         .issueCliToken()
         .then(({ token }) => {
           setDesktopToken(token);
-          window.location.href = `multica://auth/callback?token=${encodeURIComponent(token)}`;
+          window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(token)}`;
         })
         .catch((err) => {
           setDesktopError(
@@ -205,7 +205,7 @@ function LoginPageContent() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  window.location.href = `multica://auth/callback?token=${encodeURIComponent(desktopToken)}`;
+                  window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(desktopToken)}`;
                 }}
               >
                 {t(($) => $.web.desktop_handoff.open_button)}
@@ -219,9 +219,24 @@ function LoginPageContent() {
     );
   }
 
+  const handleWeComLogin = () => {
+    const platformUrl =
+      process.env.NEXT_PUBLIC_PLATFORM_URL || "https://shtokendance.benlai.com";
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/callback`);
+    const state = [
+      platform === "desktop" ? "platform:desktop" : "platform:web",
+      nextUrl ? `next:${nextUrl}` : "",
+    ]
+      .filter(Boolean)
+      .join(",");
+    window.location.href = `${platformUrl}/wecom/login?client_id=code-web&redirect_uri=${redirectUri}&state=${encodeURIComponent(state)}`;
+  };
+
   return (
     <LoginPage
       onSuccess={handleSuccess}
+      onWeComLogin={handleWeComLogin}
+      hideEmailInput={true}
       google={
         googleClientId
           ? {
@@ -237,17 +252,6 @@ function LoginPageContent() {
           : undefined
       }
       onTokenObtained={setLoggedInCookie}
-      extra={
-        <span className="text-caption text-muted-foreground">
-          {t(($) => $.web.prefer_desktop)}{" "}
-          <Link
-            href="/download"
-            className="font-medium text-foreground underline decoration-foreground/30 underline-offset-4 hover:decoration-foreground/70"
-          >
-            {t(($) => $.web.download)}
-          </Link>
-        </span>
-      }
     />
   );
 }

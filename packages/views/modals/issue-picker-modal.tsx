@@ -1,5 +1,6 @@
 "use client";
 
+import { api } from "@multica/core/api";
 import { issueStatusCategory } from "@multica/core/issues";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useIssueStatuses } from "@multica/core/issue-statuses/hooks";
@@ -53,6 +54,8 @@ export function IssuePickerModal({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Issue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultIssues, setDefaultIssues] = useState<Issue[]>([]);
+  const [defaultLoading, setDefaultLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
   const selectable = useCallback(
@@ -62,14 +65,41 @@ export function IssuePickerModal({
   const suggestionGroups = (suggestions ?? [])
     .map((group) => ({ ...group, issues: group.issues.filter(selectable) }))
     .filter((group) => group.issues.length > 0);
+  const visibleDefaultIssues = suggestions ? [] : defaultIssues.filter(selectable);
 
   useEffect(() => {
     if (!open) {
       setQuery("");
       setResults([]);
       setIsLoading(false);
+      setDefaultIssues([]);
+      setDefaultLoading(false);
+      return;
     }
-  }, [open]);
+
+    if (suggestions || typeof api?.listIssues !== "function") {
+      return;
+    }
+
+    let cancelled = false;
+    setDefaultLoading(true);
+    Promise.resolve(api.listIssues({ limit: 20 }))
+      .then((res) => {
+        if (!cancelled) {
+          setDefaultIssues(res?.issues ?? []);
+          setDefaultLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDefaultLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, suggestions]);
 
   const search = useCallback(
     (q: string) => {
@@ -145,7 +175,7 @@ export function IssuePickerModal({
           }}
         />
         <CommandList>
-          {isLoading && (
+          {(isLoading || (!query.trim() && !suggestions && defaultLoading)) && (
             <div className="py-6 text-center text-body text-muted-foreground">
               {t(($) => $.issue_picker.searching)}
             </div>
@@ -153,17 +183,24 @@ export function IssuePickerModal({
           {!isLoading && query.trim() && results.length === 0 && (
             <CommandEmpty>{t(($) => $.issue_picker.no_results)}</CommandEmpty>
           )}
-          {!isLoading && !query.trim() && suggestionGroups.length === 0 && (
-            <div className="py-6 text-center text-body text-muted-foreground">
-              {t(($) => $.issue_picker.prompt_to_search)}
-            </div>
-          )}
+          {!isLoading &&
+            !defaultLoading &&
+            !query.trim() &&
+            suggestionGroups.length === 0 &&
+            visibleDefaultIssues.length === 0 && (
+              <div className="py-6 text-center text-body text-muted-foreground">
+                {t(($) => $.issue_picker.prompt_to_search)}
+              </div>
+            )}
           {!isLoading && !query.trim() &&
             suggestionGroups.map((group) => (
               <CommandGroup key={group.key} heading={group.heading}>
                 {group.issues.map(row)}
               </CommandGroup>
             ))}
+          {!isLoading && !defaultLoading && !query.trim() && visibleDefaultIssues.length > 0 && (
+            <CommandGroup>{visibleDefaultIssues.map(row)}</CommandGroup>
+          )}
           {results.length > 0 && <CommandGroup>{results.map(row)}</CommandGroup>}
         </CommandList>
       </Command>

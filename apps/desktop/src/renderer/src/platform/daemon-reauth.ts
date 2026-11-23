@@ -1,7 +1,6 @@
 import { useAuthStore } from "@multica/core/auth";
 import { toast } from "sonner";
 import type { DaemonTranslator } from "../components/daemon-i18n";
-import { isEnterpriseSession, getEnterpriseToken } from "./enterprise-session";
 
 /**
  * Re-establish the local daemon's credentials after it failed to authenticate
@@ -24,9 +23,7 @@ export async function reauthenticateDaemon(
   t: DaemonTranslator,
 ): Promise<void> {
   const user = useAuthStore.getState().user;
-  const token = isEnterpriseSession()
-    ? getEnterpriseToken()
-    : localStorage.getItem("multica_token");
+  const token = localStorage.getItem("multica_token");
   if (!user || !token) {
     // No usable session at all — the standard recovery is the login page.
     useAuthStore.getState().logout();

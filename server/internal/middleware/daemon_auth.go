@@ -5,12 +5,13 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
@@ -136,7 +137,12 @@ func DaemonAuth(queries *db.Queries, patCache *auth.PATCache, daemonCache *auth.
 			// never these headers (MUL-3428, #4313).
 			r.Header.Del("X-Agent-ID")
 			r.Header.Del("X-Task-ID")
-			stripEnterpriseHeaders(r)
+
+			// The user identity is server-set too. Every user-credential
+			// branch below stamps it, but the mdt_ branch does not, so a
+			// client value would otherwise reach handlers that read it as
+			// the caller (requestUserID).
+			r.Header.Del("X-User-ID")
 
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
@@ -265,18 +271,11 @@ func DaemonAuth(queries *db.Queries, patCache *auth.PATCache, daemonCache *auth.
 			if strings.HasPrefix(tokenString, "mul_") {
 				hash := auth.HashToken(tokenString)
 
-				if userID, entSubject, ok := patCache.GetIdentity(r.Context(), hash); ok {
+				if userID, ok := patCache.Get(r.Context(), hash); ok {
 					if rejectTemporarilyDisabledUser(w, r, userID, "", DaemonAuthPathPAT) {
 						return
 					}
 					r.Header.Set("X-User-ID", userID)
-					stampEnterpriseSubject(r, entSubject)
-					// Same enterprise version snapshot as the Auth
-					// middleware's PAT path: the EnterpriseVersion check
-					// compares it against the live user row.
-					if _, _, entVer, ok := patCache.GetIdentityFull(r.Context(), hash); ok {
-						stampEnterpriseVersion(r, entVer)
-					}
 					ctx := context.WithValue(r.Context(), ctxKeyDaemonAuthPath, DaemonAuthPathPAT)
 					next.ServeHTTP(w, r.WithContext(ctx))
 					return
@@ -298,20 +297,12 @@ func DaemonAuth(queries *db.Queries, patCache *auth.PATCache, daemonCache *auth.
 					return
 				}
 				r.Header.Set("X-User-ID", userID)
-				stampEnterpriseSubject(r, pat.EnterpriseSubject.String)
-				if pat.EnterpriseAuthzVersion.Valid {
-					stampEnterpriseVersion(r, strconv.FormatInt(pat.EnterpriseAuthzVersion.Int64, 10))
-				}
 
 				var expiresAt time.Time
 				if pat.ExpiresAt.Valid {
 					expiresAt = pat.ExpiresAt.Time
 				}
-				patVer := ""
-				if pat.EnterpriseAuthzVersion.Valid {
-					patVer = strconv.FormatInt(pat.EnterpriseAuthzVersion.Int64, 10)
-				}
-				patCache.SetIdentityFull(r.Context(), hash, userID, pat.EnterpriseSubject.String, patVer, auth.TTLForExpiry(time.Now(), expiresAt))
+				patCache.Set(r.Context(), hash, userID, auth.TTLForExpiry(time.Now(), expiresAt))
 
 				// Cache miss = first request in this TTL window. Refresh
 				// last_used_at; subsequent hits skip the write entirely.
@@ -349,8 +340,19 @@ func DaemonAuth(queries *db.Queries, patCache *auth.PATCache, daemonCache *auth.
 			if rejectTemporarilyDisabledUser(w, r, sub, email, DaemonAuthPathJWT) {
 				return
 			}
-			r.Header.Set("X-User-ID", sub)
-			stampEnterpriseFromClaims(r, claims)
+
+			resolvedUserID := sub
+			if queries != nil && email != "" {
+				if subUUID, parseErr := util.ParseUUID(sub); parseErr == nil {
+					if _, err := queries.GetUser(r.Context(), subUUID); errors.Is(err, pgx.ErrNoRows) {
+						if existingUser, err := queries.GetUserByEmail(r.Context(), email); err == nil {
+							resolvedUserID = uuidToString(existingUser.ID)
+						}
+					}
+				}
+			}
+
+			r.Header.Set("X-User-ID", resolvedUserID)
 			ctx := context.WithValue(r.Context(), ctxKeyDaemonAuthPath, DaemonAuthPathJWT)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

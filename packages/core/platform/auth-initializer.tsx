@@ -102,6 +102,11 @@ export function AuthInitializer({
         // the persistence contract explicitly.
         configStore
           .getState()
+          .setWebhookPayloadConditionsSupported(
+            cfg.webhook_payload_conditions_supported === true,
+          );
+        configStore
+          .getState()
           .setAgentConversationStartersSupported(
             cfg.agent_conversation_starters_supported === true,
           );
@@ -117,6 +122,7 @@ export function AuthInitializer({
           .setCommentDeleteKeepRepliesSupported(
             cfg.comment_delete_keep_replies_supported === true,
           );
+        configStore.getState().setThemeStoreEnabled(cfg.theme_store_enabled === true);
         if (cfg.posthog_key) {
           initAnalytics({
             key: cfg.posthog_key,
@@ -285,6 +291,7 @@ export function AuthInitializer({
         retryTimer = undefined;
       }
       inFlight = true;
+      const credentialUsed = api.getToken?.() ?? null;
 
       try {
         const user = await api.getMe();
@@ -300,6 +307,14 @@ export function AuthInitializer({
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 401) {
+          if ((api.getToken?.() ?? null) !== credentialUsed) {
+            logger.info("ignoring 401 for a credential that has since been replaced");
+            return;
+          }
+          if (useAuthStore.getState().status === "authenticated") {
+            logger.info("ignoring 401 because session is already authenticated");
+            return;
+          }
           rejectSession();
           return;
         }

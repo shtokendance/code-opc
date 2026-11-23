@@ -33,9 +33,27 @@ function FileUploadButton({
     for (const file of files) onSelect(file);
   };
 
-  // `size-*`, not `h-* w-*`: the icon button's own `[&_svg:not([class*='size-'])]`
-  // rule would otherwise override it (icon-xs forces 12px).
-  const iconSize = size === "sm" ? "size-3.5" : "size-4.5";
+  const handleClick = async () => {
+    const pickFiles = (
+      window as unknown as {
+        desktopAPI?: {
+          pickFiles?: (opts?: { multiple?: boolean; accept?: string }) => Promise<File[]>;
+        };
+      }
+    ).desktopAPI?.pickFiles;
+    if (pickFiles) {
+      const files = await pickFiles({ multiple });
+      for (const file of files) onSelect(file);
+      return;
+    }
+    inputRef.current?.click();
+  };
+
+  // The default size takes the button's own icon size so it matches the
+  // composer's other icon buttons (the mic). `sm` needs `size-*`, not
+  // `h-* w-*`: the button's `[&_svg:not([class*='size-'])]` rule would
+  // otherwise override it (icon-xs forces 12px).
+  const iconSize = size === "sm" ? "size-3.5" : undefined;
   const buttonSize = size === "sm" ? "icon-xs" : "icon-sm";
 
   return (
@@ -44,7 +62,7 @@ function FileUploadButton({
         type="button"
         variant="ghost"
         size={buttonSize}
-        onClick={() => inputRef.current?.click()}
+        onClick={handleClick}
         disabled={disabled}
         label={attachLabel}
         className={cn("text-muted-foreground", className)}
@@ -55,7 +73,9 @@ function FileUploadButton({
         ref={inputRef}
         type="file"
         multiple={multiple}
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={handleChange}
       />
     </>

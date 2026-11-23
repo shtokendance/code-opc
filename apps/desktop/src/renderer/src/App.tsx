@@ -15,7 +15,9 @@ import { DesktopLoginPage } from "./pages/login";
 import { DesktopAuthRecoveryPage } from "./pages/auth-recovery";
 import { DesktopShell } from "./components/desktop-layout";
 import { UpdateNotification } from "./components/update-notification";
+import { NativeContextMenu } from "./components/native-context-menu";
 import { IssueWindow } from "./components/issue-window";
+import { DesktopDevToolbar } from "./components/desktop-dev-toolbar";
 import { useTabStore } from "./stores/tab-store";
 import { useWindowOverlayStore } from "./stores/window-overlay-store";
 import { useOpenSettingsShortcut } from "./hooks/use-open-settings-shortcut";
@@ -24,12 +26,14 @@ import { useDaemonIPCBridge } from "./platform/daemon-ipc-bridge";
 import { syncDaemonOnLogin } from "./platform/daemon-login-sync";
 import { createDesktopLocaleAdapter } from "./platform/i18n-adapter";
 import { captureEvent } from "@multica/core/analytics";
+import { AppearanceSync } from "@multica/views/common/appearance-sync";
 import { RESOURCES } from "@multica/views/locales";
 import { DesktopClientUsageReporter } from "./platform/client-usage-reporter";
 import { DiagnosticRouteReporter } from "./platform/diagnostic-route-reporter";
 import { flushFreezeBreadcrumb } from "./freeze-flush";
 import { DesktopAuthSessionBridge } from "./platform/auth-session-bridge";
 import { WorkspaceWindowBridge } from "./platform/workspace-window-bridge";
+import { IssueDeepLinkBridge } from "./platform/issue-deep-link-bridge";
 import {
   launchWorkspaceSlug,
   otherWindowWorkspaces,
@@ -40,26 +44,6 @@ import {
   tearDownOnSessionExpiry,
   type SessionTeardown,
 } from "./platform/session-teardown";
-import {
-  createEnterpriseStorage,
-  isEnterpriseSession,
-  getEnterpriseToken,
-  restoreEnterpriseSession,
-  clearEnterpriseSession,
-} from "./platform/enterprise-session";
-
-// Overlay storage adapter that shadows `multica_token` with the in-memory
-// enterprise token while an enterprise session is active (BND-161) — the
-// enterprise credential never reaches renderer localStorage. Created once at
-// module scope; all accesses are closures over the module state.
-const enterpriseStorage = createEnterpriseStorage();
-
-// Boot-time enterprise restore, before anything below renders: CoreProvider's
-// initCore reads the credential through the storage adapter exactly once, at
-// first render, so the sealed token must already be in memory by then. This
-// runs synchronously (sendSync IPC); when there is no sealed enterprise
-// session it is a no-op and the normal personal-session path proceeds.
-restoreEnterpriseSession();
 
 // BCP-47 region tags for the <html lang> attribute, mirroring
 // apps/web/app/layout.tsx HTML_LANG. index.html ships a static lang="en";
@@ -74,6 +58,7 @@ const HTML_LANG: Record<SupportedLocale, string> = {
   ja: "ja-JP",
   fr: "fr-FR",
   es: "es",
+  ru: "ru",
 };
 
 
@@ -123,7 +108,7 @@ function IssueWindowContent() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <MulticaIcon mode="launch" size={40} />
+        <MulticaIcon mode="think" size={40} />
       </div>
     );
   }
@@ -159,12 +144,12 @@ function AppContent() {
 
   // Listen for invite IDs delivered via deep link (multica://invite/<id>).
   // We open the overlay regardless of login state — if the user isn't logged
-  // in, InvitePage's queries will fail and render the "not found" state,
+  // in, InvitationsPage's queries will fail and render the "not found" state,
   // which is acceptable; the expected pre-flight happens in the web app
   // (login + next=/invite/... dance) before the deep link is ever dispatched.
   useEffect(() => {
     return window.desktopAPI.onInviteOpen((invitationId) => {
-      useWindowOverlayStore.getState().open({ type: "invite", invitationId });
+      useWindowOverlayStore.getState().open({ type: "invitations", invitationId });
     });
   }, []);
 
@@ -172,7 +157,22 @@ function AppContent() {
   // daemonAPI.syncToken is handled separately by the [user] effect below, which
   // fires whenever a user logs in (deep link, session restore, account switch).
   useEffect(() => {
-    return window.desktopAPI.onAuthToken(async (token) => {
+    return window.desktopAPI.onAuthToken(async (tokenInput: any) => {
+      let token = "";
+      if (typeof tokenInput === "string") {
+        token = tokenInput;
+      } else if (Array.isArray(tokenInput) && typeof tokenInput[0] === "string") {
+        token = tokenInput[0];
+      } else if (tokenInput && typeof tokenInput === "object") {
+        if (typeof tokenInput.data === "string") token = tokenInput.data;
+        else if (Array.isArray(tokenInput.data) && typeof tokenInput.data[0] === "string") token = tokenInput.data[0];
+        else if (typeof tokenInput.token === "string") token = tokenInput.token;
+      }
+      token = token.trim();
+      if (!token) {
+        console.warn("Received empty or invalid auth token:", tokenInput);
+        return;
+      }
       setBootstrapping(true);
       try {
         await useAuthStore.getState().loginWithToken(token);
@@ -183,8 +183,8 @@ function AppContent() {
         // WorkspaceRouteLayout when the URL resolves.
         const wsList = await api.listWorkspaces();
         qc.setQueryData(workspaceKeys.list(), wsList);
-      } catch {
-        // Token invalid or expired — user stays on login page
+      } catch (err) {
+        console.error("Login with token failed:", err);
       } finally {
         setBootstrapping(false);
       }
@@ -195,9 +195,7 @@ function AppContent() {
   // inside syncDaemonOnLogin is load-bearing — see that module.
   useEffect(() => {
     if (!user || !runtimeConfig) return;
-    const token = isEnterpriseSession()
-      ? getEnterpriseToken()
-      : localStorage.getItem("multica_token");
+    const token = localStorage.getItem("multica_token");
     if (!token) return;
     const userId = user.id;
     (async () => {
@@ -355,7 +353,7 @@ function AppContent() {
   if (isLoading || bootstrapping) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <MulticaIcon mode="launch" size={40} />
+        <MulticaIcon mode="think" size={40} />
       </div>
     );
   }
@@ -400,7 +398,6 @@ const sessionTeardown: SessionTeardown = {
   closeOverlay: () => useWindowOverlayStore.getState().close(),
   clearDaemonToken: () => window.daemonAPI.clearToken(),
   stopDaemon: () => window.daemonAPI.stop(),
-  clearEnterpriseSession: () => clearEnterpriseSession(),
 };
 
 function handleDaemonLogout() {
@@ -489,11 +486,11 @@ export default function App() {
 
   return (
     <ThemeProvider>
+      <AppearanceSync />
       {runtimeConfigResult.ok ? (
         <CoreProvider
           apiBaseUrl={runtimeConfigResult.config.apiUrl}
           wsUrl={runtimeConfigResult.config.wsUrl}
-          storage={enterpriseStorage}
           onLogout={
             windowContext.kind === "main" ? handleDaemonLogout : undefined
           }
@@ -506,8 +503,10 @@ export default function App() {
           localeAdapter={localeAdapter}
         >
           <DesktopAuthSessionBridge />
+          <NativeContextMenu />
           {windowContext.kind === "main" && <DiagnosticRouteReporter />}
           {windowContext.kind === "main" && <WorkspaceWindowBridge />}
+          {windowContext.kind === "main" && <IssueDeepLinkBridge />}
           {windowContext.kind === "main" && (
             <DesktopClientUsageReporter
               apiUrl={runtimeConfigResult.config.apiUrl}
@@ -518,6 +517,12 @@ export default function App() {
           ) : (
             <AppContent />
           )}
+          {/* Opt-in dev status bar; see "Dev Toolbar" in CONTRIBUTING.md. */}
+          {import.meta.env.DEV &&
+            import.meta.env.VITE_DEV_TOOLBAR &&
+            windowContext.kind === "main" && (
+              <DesktopDevToolbar apiUrl={runtimeConfigResult.config.apiUrl} />
+            )}
         </CoreProvider>
       ) : (
         <BlockingRuntimeConfigError message={runtimeConfigResult.error.message} />

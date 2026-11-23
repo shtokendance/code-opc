@@ -18,7 +18,8 @@ import (
 // it owns. It atomically fails any dispatched/running tasks the server still
 // believes belong to that runtime — those are the tasks the previous daemon
 // process was running when it died — and triggers MaybeRetryFailedTask for
-// each so the user sees a fresh attempt instead of a permanently stuck row.
+// each so retry-safe work gets a fresh attempt. Started Muse executions retain
+// a cleanup fence because their workers can survive the daemon process.
 //
 // This is the targeted fix for "issue stuck at in_progress when daemon
 // restarts mid-task": the runtime heartbeat sweeper takes up to 75s + the
@@ -243,13 +244,6 @@ func (h *Handler) rerunIssue(w http.ResponseWriter, r *http.Request, issue db.Is
 		return h.canInvokeAgent(r.Context(), agent, actorType, actorID, originatorUserID, workspaceID)
 	}
 
-	// Enterprise workspace: a rerun enqueues a new enterprise task, so the
-	// rerunning member must be an enterprise-authenticated human (TASK-C02.5).
-	if err := h.enterpriseInitiatorGateHTTP(r, actorType, actorID, issue.WorkspaceID); err != nil {
-		writeEnterpriseInitiatorRefusal(w)
-		return
-	}
-
 	task, err := h.TaskService.RerunIssue(r.Context(), issue.ID, sourceTaskID, pgtype.UUID{}, actorUserID, fresh, canInvoke)
 	if errors.Is(err, service.ErrRerunInvokeNotAllowed) {
 		h.writeDispatchBlocked(w, http.StatusForbidden, ReasonInvocationNotAllowed)
@@ -257,6 +251,10 @@ func (h *Handler) rerunIssue(w http.ResponseWriter, r *http.Request, issue db.Is
 	}
 	if errors.Is(err, service.ErrIssueInTriage) {
 		h.writeDispatchBlocked(w, http.StatusForbidden, ReasonIssueInTriage)
+		return
+	}
+	if errors.Is(err, service.ErrProjectAccessDenied) {
+		h.writeDispatchBlocked(w, http.StatusForbidden, ReasonProjectAccessBlocked)
 		return
 	}
 	// Not a dispatch refusal: the issue may well be runnable, and only the named
@@ -296,16 +294,7 @@ func (h *Handler) RetrySourceContextQuickCreate(w http.ResponseWriter, r *http.R
 	canInvoke := func(agent db.Agent) bool {
 		return h.canInvokeAgent(r.Context(), agent, "member", userID, userID, uuidToString(workspaceID))
 	}
-	// Enterprise workspace: the retry enqueues an enterprise task, so the
-	// requester must be an enterprise-authenticated human (TASK-C02.5).
-	if err := h.enterpriseInitiatorGateHTTP(r, "member", userID, workspaceID); err != nil {
-		writeEnterpriseInitiatorRefusal(w)
-		return
-	}
 	task, err := h.TaskService.RetrySourceContextQuickCreate(r.Context(), workspaceID, requesterID, taskID, canInvoke)
-	if writeIssueLimitReached(w, err) {
-		return
-	}
 	if errors.Is(err, service.ErrRerunInvokeNotAllowed) {
 		h.writeDispatchBlocked(w, http.StatusForbidden, ReasonInvocationNotAllowed)
 		return

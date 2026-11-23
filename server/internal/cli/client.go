@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -110,11 +111,11 @@ func newHTTPError(method, path string, resp *http.Response) *HTTPError {
 		Path:       path,
 		StatusCode: resp.StatusCode,
 		Body:       strings.TrimSpace(string(data)),
-		TaskScoped: requestUsedTaskToken(resp),
+		TaskScoped: RequestUsedTaskToken(resp),
 	}
 }
 
-// requestUsedTaskToken reports whether the request that produced resp actually
+// RequestUsedTaskToken reports whether the request that produced resp actually
 // sent a task token.
 //
 // Reading the client's own Token field would be wrong twice over. DownloadFile
@@ -124,7 +125,7 @@ func newHTTPError(method, path string, resp *http.Response) *HTTPError {
 // across a cross-host redirect, so the request that was sent is not always the
 // one the caller built. resp.Request is the request that actually went out,
 // after redirects, which is the only thing this claim can honestly rest on.
-func requestUsedTaskToken(resp *http.Response) bool {
+func RequestUsedTaskToken(resp *http.Response) bool {
 	if resp == nil || resp.Request == nil {
 		return false
 	}
@@ -323,6 +324,17 @@ func (c *APIClient) DeleteJSON(ctx context.Context, path string) error {
 
 // DeleteJSONResponse performs a DELETE request and optionally decodes the JSON response.
 func (c *APIClient) DeleteJSONResponse(ctx context.Context, path string, out any) error {
+	return c.deleteJSON(ctx, path, out, nil)
+}
+
+// DeleteJSONWithConflict lets callers consume a structured 409 in full before
+// deciding whether a follow-up request is safe. Other HTTP errors use the
+// usual bounded diagnostic body.
+func (c *APIClient) DeleteJSONWithConflict(ctx context.Context, path string, onConflict func(io.Reader) error) error {
+	return c.deleteJSON(ctx, path, nil, onConflict)
+}
+
+func (c *APIClient) deleteJSON(ctx context.Context, path string, out any, onConflict func(io.Reader) error) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.BaseURL+path, nil)
 	if err != nil {
 		return err
@@ -336,6 +348,9 @@ func (c *APIClient) DeleteJSONResponse(ctx context.Context, path string, out any
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusConflict && onConflict != nil {
+		return onConflict(resp.Body)
+	}
 	if resp.StatusCode >= 400 {
 		return newHTTPError(http.MethodDelete, path, resp)
 	}
@@ -814,31 +829,352 @@ func (c *APIClient) DownloadFile(ctx context.Context, downloadURL string) ([]byt
 	}
 
 	const maxDownloadSize = 100 << 20 // 100 MB
-	return io.ReadAll(io.LimitReader(resp.Body, maxDownloadSize))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxDownloadSize))
+	return data, wrapBodyRead(req, err)
 }
 
-// HealthCheck hits the /health endpoint and returns the response body.
-func (c *APIClient) HealthCheck(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"/health", nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := c.HTTPClient.Do(req)
-	err = wrapTransport(req, err)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+// Project represents a workspace project.
+type Project struct {
+	ID          string  `json:"id"`
+	WorkspaceID string  `json:"workspace_id"`
+	Title       string  `json:"title"`
+	Description *string `json:"description"`
+	Status      string  `json:"status"`
+	Priority    string  `json:"priority"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+	IssueCount  int64   `json:"issue_count"`
+	DoneCount   int64   `json:"done_count"`
+}
 
-	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	if resp.StatusCode >= 400 {
-		return "", &HTTPError{
-			Method:     http.MethodGet,
-			Path:       "/health",
-			StatusCode: resp.StatusCode,
-			Body:       strings.TrimSpace(string(data)),
-			TaskScoped: requestUsedTaskToken(resp),
+// Issue represents a task or problem tracked in Multica.
+type Issue struct {
+	ID           string  `json:"id"`
+	WorkspaceID  string  `json:"workspace_id"`
+	Number       int32   `json:"number"`
+	Identifier   string  `json:"identifier"`
+	Title        string  `json:"title"`
+	Description  *string `json:"description"`
+	Status       string  `json:"status"`
+	StatusName   string  `json:"status_name"`
+	Priority     string  `json:"priority"`
+	AssigneeType *string `json:"assignee_type"`
+	AssigneeID   *string `json:"assignee_id"`
+	CreatorType  string  `json:"creator_type"`
+	CreatorID    string  `json:"creator_id"`
+	ProjectID    *string              `json:"project_id"`
+	Attachments  []AttachmentResponse `json:"attachments,omitempty"`
+	CreatedAt    string               `json:"created_at"`
+	UpdatedAt    string               `json:"updated_at"`
+}
+
+// IssueComment represents a discussion comment on an issue.
+type IssueComment struct {
+	ID          string               `json:"id"`
+	IssueID     string               `json:"issue_id"`
+	ParentID    *string              `json:"parent_id,omitempty"`
+	Content     string               `json:"content"`
+	AuthorType  string               `json:"author_type"`
+	AuthorID    string               `json:"author_id"`
+	Attachments []AttachmentResponse `json:"attachments,omitempty"`
+	CreatedAt   string               `json:"created_at"`
+	UpdatedAt   string               `json:"updated_at"`
+}
+
+// CreateIssueRequest defines the payload for creating a new issue.
+type CreateIssueRequest struct {
+	Title        string   `json:"title"`
+	Description  *string  `json:"description,omitempty"`
+	Status       string   `json:"status,omitempty"`
+	Priority     string   `json:"priority,omitempty"`
+	AssigneeType *string  `json:"assignee_type,omitempty"`
+	AssigneeID   *string  `json:"assignee_id,omitempty"`
+	ProjectID    *string  `json:"project_id,omitempty"`
+	DueDate      *string  `json:"due_date,omitempty"`
+	LabelIDs     []string `json:"label_ids,omitempty"`
+}
+
+// UpdateIssueRequest defines the payload for updating an existing issue.
+type UpdateIssueRequest struct {
+	Title        *string `json:"title,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	Status       *string `json:"status,omitempty"`
+	Priority     *string `json:"priority,omitempty"`
+	AssigneeType *string `json:"assignee_type,omitempty"`
+	AssigneeID   *string `json:"assignee_id,omitempty"`
+	ProjectID    *string `json:"project_id,omitempty"`
+	DueDate      *string `json:"due_date,omitempty"`
+}
+
+// ListIssueOptions defines query filters for listing issues.
+type ListIssueOptions struct {
+	ProjectID string
+	Status    string
+	Limit     int
+}
+
+// ListProjects retrieves all projects in the current workspace.
+func (c *APIClient) ListProjects(ctx context.Context) ([]Project, error) {
+	var projects []Project
+	if err := c.GetJSON(ctx, "/api/projects", &projects); err != nil {
+		return nil, fmt.Errorf("list projects: %w", err)
+	}
+	return projects, nil
+}
+
+// GetProject retrieves a single project by ID.
+func (c *APIClient) GetProject(ctx context.Context, id string) (*Project, error) {
+	var project Project
+	if err := c.GetJSON(ctx, "/api/projects/"+url.PathEscape(id), &project); err != nil {
+		return nil, fmt.Errorf("get project %s: %w", id, err)
+	}
+	return &project, nil
+}
+
+// ListIssues retrieves issues based on the provided filters.
+func (c *APIClient) ListIssues(ctx context.Context, opts ListIssueOptions) ([]Issue, error) {
+	v := url.Values{}
+	if opts.ProjectID != "" {
+		v.Set("project_id", opts.ProjectID)
+	}
+	if opts.Status != "" {
+		v.Set("status", opts.Status)
+	}
+	if opts.Limit > 0 {
+		v.Set("limit", fmt.Sprintf("%d", opts.Limit))
+	}
+
+	path := "/api/issues"
+	if len(v) > 0 {
+		path += "?" + v.Encode()
+	}
+
+	type listIssueResp struct {
+		Issues []Issue `json:"issues"`
+	}
+	var resp listIssueResp
+	if err := c.GetJSON(ctx, path, &resp); err != nil {
+		var sliceResp []Issue
+		if errSlice := c.GetJSON(ctx, path, &sliceResp); errSlice == nil {
+			return sliceResp, nil
+		}
+		return nil, fmt.Errorf("list issues: %w", err)
+	}
+	return resp.Issues, nil
+}
+
+// GetIssue retrieves a single issue by ID or identifier (e.g. THEB-1).
+func (c *APIClient) GetIssue(ctx context.Context, idOrIdentifier string) (*Issue, error) {
+	var issue Issue
+	if err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(idOrIdentifier), &issue); err != nil {
+		return nil, fmt.Errorf("get issue %s: %w", idOrIdentifier, err)
+	}
+	return &issue, nil
+}
+
+// CreateIssue creates a new issue in the workspace.
+func (c *APIClient) CreateIssue(ctx context.Context, req CreateIssueRequest) (*Issue, error) {
+	if req.Status == "" {
+		req.Status = "todo"
+	}
+	var created Issue
+	if err := c.PostJSON(ctx, "/api/issues", req, &created); err != nil {
+		return nil, fmt.Errorf("create issue: %w", err)
+	}
+	return &created, nil
+}
+
+// UpdateIssue updates an existing issue.
+func (c *APIClient) UpdateIssue(ctx context.Context, id string, req UpdateIssueRequest) (*Issue, error) {
+	var updated Issue
+	if err := c.PatchJSON(ctx, "/api/issues/"+url.PathEscape(id), req, &updated); err != nil {
+		return nil, fmt.Errorf("update issue %s: %w", id, err)
+	}
+	return &updated, nil
+}
+
+// ListIssueComments retrieves all comments for an issue.
+func (c *APIClient) ListIssueComments(ctx context.Context, issueID string) ([]IssueComment, error) {
+	var comments []IssueComment
+	if err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(issueID)+"/comments", &comments); err != nil {
+		return nil, fmt.Errorf("list issue comments: %w", err)
+	}
+	return comments, nil
+}
+
+// AddIssueComment posts a new comment to an issue.
+func (c *APIClient) AddIssueComment(ctx context.Context, issueID string, content string) (*IssueComment, error) {
+	body := map[string]string{
+		"content": content,
+	}
+	var comment IssueComment
+	if err := c.PostJSON(ctx, "/api/issues/"+url.PathEscape(issueID)+"/comments", body, &comment); err != nil {
+		return nil, fmt.Errorf("add issue comment: %w", err)
+	}
+	return &comment, nil
+}
+
+// SetIssueStatus changes the status of an issue (equivalent to `multica issue status`).
+func (c *APIClient) SetIssueStatus(ctx context.Context, idOrIdentifier, status string) error {
+	body := map[string]any{"status": status}
+	var result map[string]any
+	if err := c.PutJSON(ctx, "/api/issues/"+url.PathEscape(idOrIdentifier), body, &result); err != nil {
+		return fmt.Errorf("set issue status: %w", err)
+	}
+	return nil
+}
+
+// AssignIssue assigns or unassigns an issue (equivalent to `multica issue assign`).
+func (c *APIClient) AssignIssue(ctx context.Context, idOrIdentifier string, assigneeType, assigneeID *string) error {
+	body := map[string]any{
+		"assignee_type": assigneeType,
+		"assignee_id":   assigneeID,
+	}
+	var result map[string]any
+	if err := c.PutJSON(ctx, "/api/issues/"+url.PathEscape(idOrIdentifier), body, &result); err != nil {
+		return fmt.Errorf("assign issue: %w", err)
+	}
+	return nil
+}
+
+// DeleteIssue deletes an issue (equivalent to `multica issue delete`).
+func (c *APIClient) DeleteIssue(ctx context.Context, idOrIdentifier string) error {
+	if err := c.DeleteJSON(ctx, "/api/issues/"+url.PathEscape(idOrIdentifier)); err != nil {
+		return fmt.Errorf("delete issue: %w", err)
+	}
+	return nil
+}
+
+// ListIssueChildren lists sub-issues of a parent issue.
+func (c *APIClient) ListIssueChildren(ctx context.Context, idOrIdentifier string) ([]Issue, error) {
+	var resp struct {
+		Issues []Issue `json:"issues"`
+	}
+	if err := c.GetJSON(ctx, "/api/issues/"+url.PathEscape(idOrIdentifier)+"/children", &resp); err != nil {
+		return nil, fmt.Errorf("list issue children: %w", err)
+	}
+	return resp.Issues, nil
+}
+
+// SearchIssues searches issues by query string (equivalent to `multica issue search`).
+func (c *APIClient) SearchIssues(ctx context.Context, query string) ([]Issue, error) {
+	v := url.Values{}
+	v.Set("q", query)
+	var resp struct {
+		Issues []Issue `json:"issues"`
+	}
+	if err := c.GetJSON(ctx, "/api/issues/search?"+v.Encode(), &resp); err != nil {
+		return nil, fmt.Errorf("search issues: %w", err)
+	}
+	return resp.Issues, nil
+}
+
+// UpdateIssueComment edits an existing comment on an issue.
+func (c *APIClient) UpdateIssueComment(ctx context.Context, issueID, commentID, content string) error {
+	body := map[string]string{"content": content}
+	return c.PatchJSON(ctx, fmt.Sprintf("/api/issues/%s/comments/%s", url.PathEscape(issueID), url.PathEscape(commentID)), body, nil)
+}
+
+// DeleteIssueComment deletes a comment on an issue.
+func (c *APIClient) DeleteIssueComment(ctx context.Context, issueID, commentID string) error {
+	return c.DeleteJSON(ctx, fmt.Sprintf("/api/issues/%s/comments/%s", url.PathEscape(issueID), url.PathEscape(commentID)))
+}
+
+// ResolveIssueComment marks a comment thread resolved or unresolved.
+func (c *APIClient) ResolveIssueComment(ctx context.Context, issueID, commentID string, resolve bool) error {
+	action := "resolve"
+	if !resolve {
+		action = "unresolve"
+	}
+	return c.PostJSON(ctx, fmt.Sprintf("/api/issues/%s/comments/%s/%s", url.PathEscape(issueID), url.PathEscape(commentID), action), nil, nil)
+}
+
+// ArchiveProject archives a project (equivalent to `multica project archive`).
+func (c *APIClient) ArchiveProject(ctx context.Context, id string) error {
+	var result map[string]any
+	return c.PostJSON(ctx, "/api/projects/"+url.PathEscape(id)+"/archive", map[string]any{}, &result)
+}
+
+// RestoreProject restores an archived project (equivalent to `multica project restore`).
+func (c *APIClient) RestoreProject(ctx context.Context, id string) error {
+	var result map[string]any
+	return c.PostJSON(ctx, "/api/projects/"+url.PathEscape(id)+"/restore", map[string]any{}, &result)
+}
+
+// DeleteProject deletes a project (equivalent to `multica project delete`).
+func (c *APIClient) DeleteProject(ctx context.Context, id string) error {
+	return c.DeleteJSON(ctx, "/api/projects/"+url.PathEscape(id))
+}
+
+// ProjectMember represents a member assigned to a project.
+type ProjectMember struct {
+	UserID    string `json:"user_id"`
+	Role      string `json:"role"`
+	Name      string `json:"name,omitempty"`
+	Email     string `json:"email,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+}
+
+// ListProjectMembers lists members in a project.
+func (c *APIClient) ListProjectMembers(ctx context.Context, id string) ([]ProjectMember, error) {
+	var members []ProjectMember
+	if err := c.GetJSON(ctx, "/api/projects/"+url.PathEscape(id)+"/members", &members); err != nil {
+		return nil, fmt.Errorf("list project members: %w", err)
+	}
+	return members, nil
+}
+
+// AddProjectMembers adds users to a project.
+func (c *APIClient) AddProjectMembers(ctx context.Context, id string, userIDs []string) error {
+	body := map[string]any{"user_ids": userIDs}
+	return c.PostJSON(ctx, "/api/projects/"+url.PathEscape(id)+"/members", body, nil)
+}
+
+// RemoveProjectMembers removes users from a project.
+func (c *APIClient) RemoveProjectMembers(ctx context.Context, id string, userIDs []string) error {
+	for _, uid := range userIDs {
+		if err := c.DeleteJSON(ctx, fmt.Sprintf("/api/projects/%s/members/%s", url.PathEscape(id), url.PathEscape(uid))); err != nil {
+			return err
 		}
 	}
-	return strings.TrimSpace(string(data)), nil
+	return nil
+}
+
+// WorkspaceAgent represents an AI agent in the workspace.
+type WorkspaceAgent struct {
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description,omitempty"`
+	Instructions string   `json:"instructions,omitempty"`
+	Model        string   `json:"model,omitempty"`
+	SystemKey    string   `json:"system_key,omitempty"`
+	Skills       []string `json:"skills,omitempty"`
+}
+
+// ListAgents lists agents configured in the current workspace (equivalent to `multica agent list`).
+func (c *APIClient) ListAgents(ctx context.Context) ([]WorkspaceAgent, error) {
+	var agents []WorkspaceAgent
+	if err := c.GetJSON(ctx, "/api/agents", &agents); err != nil {
+		return nil, fmt.Errorf("list agents: %w", err)
+	}
+	return agents, nil
+}
+
+// WorkspaceMember represents a human user or bot member in a workspace.
+type WorkspaceMember struct {
+	ID        string `json:"id"`
+	UserID    string `json:"user_id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+}
+
+// ListWorkspaceMembers lists members in the current workspace (equivalent to `multica workspace member list`).
+func (c *APIClient) ListWorkspaceMembers(ctx context.Context) ([]WorkspaceMember, error) {
+	var members []WorkspaceMember
+	if err := c.GetJSON(ctx, "/api/workspaces/members", &members); err != nil {
+		return nil, fmt.Errorf("list workspace members: %w", err)
+	}
+	return members, nil
 }

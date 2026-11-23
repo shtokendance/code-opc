@@ -20,12 +20,16 @@ import {
   setupDaemonManager,
 } from "./daemon-manager";
 import { setupLocalDirectory } from "./local-directory";
+import { setupThemeFolder } from "./theme-folder";
+import { setupVoiceInput } from "./voice";
 import { configureLinuxFileDialogs } from "./linux-file-dialog";
 import { openExternalSafely, downloadURLSafely } from "./external-url";
 import { installContextMenu } from "./context-menu";
+import { devToolbarPreferencesPath, installDevToolbarToggle } from "./dev-toolbar-toggle";
 import { handleAppShortcut } from "./keyboard-shortcuts";
 import { installNavigationGestures } from "./navigation-gestures";
 import { installNavigationGuard } from "./navigation-guard";
+import { installWindowForegroundEvents, windowForeground } from "./window-foreground";
 import { createRendererWebPreferences } from "./renderer-web-preferences";
 import { getAppVersion } from "./app-version";
 import { loadRuntimeConfig } from "./runtime-config-loader";
@@ -41,6 +45,7 @@ import {
   type RendererRecoveryWindow,
 } from "./renderer-recovery";
 import { createBestEffortDevLog } from "./dev-log";
+import { ignoreBrokenStdio } from "./stdio-guard";
 import { appendMissingPathDirs } from "./path-fallback";
 import {
   writeFreezeBreadcrumb,
@@ -89,22 +94,6 @@ import {
   NotificationGate,
   parseNativeNotificationPayload,
 } from "./notification-gate";
-import {
-  startEnterpriseAuthServer,
-  type EnterpriseAuthServerHandle,
-} from "./enterprise-auth-server";
-import {
-  deleteEnterpriseCredential,
-  hasEnterpriseCredential,
-  openEnterpriseCredential,
-  openEnterpriseCredentialSync,
-  sealEnterpriseCredential,
-} from "./enterprise-credentials";
-import type {
-  EnterpriseAuthBeginResult,
-  EnterpriseCallbackPayload,
-} from "../shared/enterprise";
-import { ENTERPRISE_SESSION_PROFILE } from "../shared/enterprise";
 
 configureLinuxFileDialogs(app.commandLine);
 
@@ -166,6 +155,9 @@ if (process.platform !== "win32") {
   ]);
 }
 
+// Before anything can log: release builds write to stdout/stderr too.
+ignoreBrokenStdio();
+
 const PROTOCOL = "multica";
 const devLog = is.dev ? createBestEffortDevLog() : undefined;
 
@@ -194,9 +186,6 @@ const mainRendererMessages = new MainRendererMessageQueue<BrowserWindow>(
 const unreadBadgeCounts = new Map<BrowserWindow, number>();
 let desktopInitialized = false;
 let authSessionGeneration = 0;
-// At most one enterprise login attempt at a time. The handle owns the
-// loopback HTTP server and the one-time callback state.
-let enterpriseAuthHandle: EnterpriseAuthServerHandle | null = null;
 const rendererRouteContexts = new WeakMap<
   Electron.WebContents,
   RendererRouteContext
@@ -262,7 +251,7 @@ function handOffToWorkspaceWindow(
 ): boolean {
   if (!source || !mainWindows.has(source)) return false;
   if (!request || typeof request !== "object") return false;
-  const { workspaceSlug: rawSlug, path: rawPath } = request as Record<
+  const { workspaceSlug: rawSlug, path: rawPath, navigate } = request as Record<
     string,
     unknown
   >;
@@ -274,7 +263,11 @@ function handOffToWorkspaceWindow(
   const target = mainWindows.findByWorkspace(workspaceSlug, source);
   if (!target || target.isDestroyed()) return false;
   if (path) {
-    dispatchToMainRenderer(WORKSPACE_OPEN_PATH_CHANNEL, path, target);
+    dispatchToMainRenderer(
+      WORKSPACE_OPEN_PATH_CHANNEL,
+      { path, navigate: navigate === true },
+      target,
+    );
   } else {
     focusWindow(target);
   }
@@ -346,17 +339,15 @@ function handleDeepLink(url: string): void {
       if (id) dispatchToMainRenderer("invite:open", decodeURIComponent(id));
       return;
     }
+
+    if (parsed.hostname === "open" && parsed.pathname === "/issue") {
+      // Keep the source instance in the payload. The authenticated renderer
+      // validates it against runtime config before opening a workspace tab.
+      dispatchToMainRenderer("issue:open", url);
+    }
   } catch {
     // Ignore malformed URLs
   }
-}
-
-// --- Enterprise auth (loopback callback + credential vault) ---------------
-
-async function closeEnterpriseAuthHandle(): Promise<void> {
-  const handle = enterpriseAuthHandle;
-  enterpriseAuthHandle = null;
-  if (handle) await handle.close();
 }
 
 // --- Window creation -----------------------------------------------------
@@ -373,6 +364,7 @@ function getSystemLocale(): string {
 }
 
 function loadRenderer(window: BrowserWindow): void {
+  installWindowForegroundEvents(window);
   const rendererEntry = join(__dirname, "../renderer/index.html");
   const rendererURL =
     is.dev && process.env["ELECTRON_RENDERER_URL"]
@@ -631,6 +623,8 @@ function createIssueWindow(context: IssueWindowContext): void {
     minHeight: 520,
     title: context.title,
     titleBarStyle: "hiddenInset",
+    // Center the native controls in the issue page's 48px header, which is
+    // this window's title bar.
     trafficLightPosition: { x: 16, y: 17 },
     show: false,
     autoHideMenuBar: true,
@@ -775,12 +769,21 @@ if (!gotTheLock) {
   );
   if (coldStartDeepLink) handleDeepLink(coldStartDeepLink);
 
+  // scripts/dev-env.sh starts a managed dev Desktop signed in by handing it
+  // the token a browser login would deliver. An environment variable rather
+  // than argv keeps the token out of other users' `ps`; it is removed before
+  // any child process (the daemon, agent CLIs) can inherit it. Packaged builds
+  // never read it.
+  const devAuthToken = is.dev ? process.env.MULTICA_DEV_AUTH_TOKEN : undefined;
+  delete process.env.MULTICA_DEV_AUTH_TOKEN;
+  if (devAuthToken) dispatchToMainRenderer("auth:token", devAuthToken);
+
   app.whenReady().then(async () => {
     const viteEnv = import.meta.env as ImportMetaEnv & {
       readonly VITE_API_URL?: string;
       readonly VITE_WS_URL?: string;
       readonly VITE_APP_URL?: string;
-      readonly VITE_PLATFORM_URL?: string;
+      readonly VITE_DEV_TOOLBAR?: string;
     };
 
     runtimeConfigResult = await loadRuntimeConfig({
@@ -792,7 +795,6 @@ if (!gotTheLock) {
         apiUrl: viteEnv.VITE_API_URL,
         wsUrl: viteEnv.VITE_WS_URL,
         appUrl: viteEnv.VITE_APP_URL,
-        platformUrl: viteEnv.VITE_PLATFORM_URL,
       },
     });
 
@@ -882,76 +884,9 @@ if (!gotTheLock) {
       event.returnValue = runtimeConfigResult;
     });
 
-    // Enterprise login (OPEN-104 / BND-161). Main owns the loopback callback
-    // server and the safeStorage-backed credential vault; plaintext values
-    // cross this boundary only in memory, during the login flow.
-    ipcMain.handle(
-      "enterprise:begin-auth",
-      async (): Promise<EnterpriseAuthBeginResult> => {
-        await closeEnterpriseAuthHandle();
-        try {
-          const handle = await startEnterpriseAuthServer({
-            onCallback: (code) => {
-              enterpriseAuthHandle = null;
-              dispatchToMainRenderer("enterprise:callback", {
-                code,
-              } satisfies EnterpriseCallbackPayload);
-            },
-            onExpired: () => {
-              enterpriseAuthHandle = null;
-              dispatchToMainRenderer("enterprise:callback", {
-                error: "expired",
-              } satisfies EnterpriseCallbackPayload);
-            },
-          });
-          enterpriseAuthHandle = handle;
-          return { ok: true, port: handle.port, state: handle.state };
-        } catch (err) {
-          console.error(
-            "[enterprise] failed to start loopback auth server:",
-            err,
-          );
-          return { ok: false, error: "unavailable" };
-        }
-      },
-    );
-
-    ipcMain.handle("enterprise:cancel-auth", () =>
-      closeEnterpriseAuthHandle(),
-    );
-
-    ipcMain.handle(
-      "enterprise:seal",
-      (_event, profile: unknown, plaintext: unknown) => {
-        if (typeof profile !== "string" || typeof plaintext !== "string") {
-          throw new Error("enterprise:seal expects string arguments");
-        }
-        return sealEnterpriseCredential(profile, plaintext);
-      },
-    );
-    ipcMain.handle("enterprise:open", (_event, profile: unknown) => {
-      if (typeof profile !== "string") return null;
-      return openEnterpriseCredential(profile);
-    });
-    ipcMain.handle("enterprise:delete", (_event, profile: unknown) => {
-      if (typeof profile !== "string") return;
-      return deleteEnterpriseCredential(profile);
-    });
-    ipcMain.handle("enterprise:has", (_event, profile: unknown) => {
-      if (typeof profile !== "string") return false;
-      return hasEnterpriseCredential(profile);
-    });
-
-    // Sync boot-time restore: the renderer must have the sealed enterprise
-    // session token before its first render, so this cannot be an invoke.
-    ipcMain.on("enterprise:restore", (event) => {
-      event.returnValue = openEnterpriseCredentialSync(
-        ENTERPRISE_SESSION_PROFILE,
-      );
-    });
-
-    app.on("before-quit", () => {
-      void closeEnterpriseAuthHandle();
+    installDevToolbarToggle({
+      enabled: is.dev && Boolean(viteEnv.VITE_DEV_TOOLBAR),
+      preferencesPath: devToolbarPreferencesPath(app.getPath("userData")),
     });
 
     ipcMain.on(RENDERER_ROUTE_CONTEXT_CHANNEL, (event, context: unknown) => {
@@ -1064,6 +999,10 @@ if (!gotTheLock) {
       );
     });
 
+    ipcMain.handle("window:foreground", (event) =>
+      windowForeground(BrowserWindow.fromWebContents(event.sender)),
+    );
+
     // Main owns foreground detection and item-level dedupe. Every renderer
     // has its own WebSocket and `document.hasFocus()` only describes that one
     // window, so renderer-only gating can emit N duplicate system banners.
@@ -1081,9 +1020,7 @@ if (!gotTheLock) {
 
       const payload = parseNativeNotificationPayload(value);
       if (!payload || !Notification.isSupported()) return;
-      const anyWindowFocused = BrowserWindow.getAllWindows().some(
-        (window) => !window.isDestroyed() && window.isFocused(),
-      );
+      const anyWindowFocused = BrowserWindow.getAllWindows().some(windowForeground);
       if (!notificationGate.shouldShow(payload.itemId, anyWindowFocused)) {
         return;
       }
@@ -1105,11 +1042,17 @@ if (!gotTheLock) {
           {
             slug: payload.slug,
             itemId: payload.itemId,
-            issueKey: payload.issueKey,
+            ...(payload.chatSessionId
+              ? { chatSessionId: payload.chatSessionId }
+              : { issueKey: payload.issueKey }),
           },
           mainWindows.findByWorkspace(payload.slug),
         );
       });
+      notification.on("failed", (_event, error) => {
+        console.warn("Native notification delivery failed:", error);
+      });
+      notification.on("show", () => console.info("Native notification displayed"));
       notification.show();
     });
 
@@ -1153,12 +1096,10 @@ if (!gotTheLock) {
     setupDaemonManager(
       () => mainWindows.mostRecent(),
       () => mainWindows.all(),
-      {
-        runtimeConfigGetter: () =>
-          runtimeConfigResult.ok ? runtimeConfigResult.config : null,
-      },
     );
     setupLocalDirectory(() => mainWindows.mostRecent());
+    setupThemeFolder();
+    setupVoiceInput();
 
     // Registered after the updater and daemon gates, so a quit they hold
     // (busy daemon, pending install) leaves the session writable; only the

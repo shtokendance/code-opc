@@ -5,11 +5,6 @@ const { mockGetState, logout } = vi.hoisted(() => ({
   logout: vi.fn(),
 }));
 
-const { mockIsEnterpriseSession, mockGetEnterpriseToken } = vi.hoisted(() => ({
-  mockIsEnterpriseSession: vi.fn(() => false),
-  mockGetEnterpriseToken: vi.fn(() => null as string | null),
-}));
-
 const { toastError } = vi.hoisted(() => ({ toastError: vi.fn() }));
 
 vi.mock("@multica/core/auth", () => ({
@@ -18,11 +13,6 @@ vi.mock("@multica/core/auth", () => ({
 
 vi.mock("sonner", () => ({
   toast: { error: toastError },
-}));
-
-vi.mock("./enterprise-session", () => ({
-  isEnterpriseSession: mockIsEnterpriseSession,
-  getEnterpriseToken: mockGetEnterpriseToken,
 }));
 
 import { reauthenticateDaemon } from "./daemon-reauth";
@@ -48,8 +38,6 @@ const daemonAPI = {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  mockIsEnterpriseSession.mockReturnValue(false);
-  mockGetEnterpriseToken.mockReturnValue(null);
   (window as unknown as { daemonAPI: typeof daemonAPI }).daemonAPI = daemonAPI;
   mockGetState.mockReturnValue({ user: { id: "user-1" }, logout });
 });
@@ -62,18 +50,6 @@ describe("reauthenticateDaemon", () => {
     await reauthenticateDaemon(t);
 
     expect(daemonAPI.reauthenticate).toHaveBeenCalledWith("jwt-abc", "user-1");
-    expect(logout).not.toHaveBeenCalled();
-    expect(toastError).not.toHaveBeenCalled();
-  });
-
-  it("re-mints + restarts the daemon using enterprise token when in enterprise session", async () => {
-    mockIsEnterpriseSession.mockReturnValue(true);
-    mockGetEnterpriseToken.mockReturnValue("ent-jwt");
-    daemonAPI.reauthenticate.mockResolvedValue({ ok: true });
-
-    await reauthenticateDaemon(t);
-
-    expect(daemonAPI.reauthenticate).toHaveBeenCalledWith("ent-jwt", "user-1");
     expect(logout).not.toHaveBeenCalled();
     expect(toastError).not.toHaveBeenCalled();
   });

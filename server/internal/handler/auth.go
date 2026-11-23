@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/analytics"
 	"github.com/multica-ai/multica/server/internal/auth"
+	"github.com/multica-ai/multica/server/internal/issuestatus"
 	"github.com/multica-ai/multica/server/internal/logger"
 	obsmetrics "github.com/multica-ai/multica/server/internal/metrics"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
@@ -61,6 +62,7 @@ var supportedLanguages = map[string]struct{}{
 	"ja":      {},
 	"fr":      {},
 	"es":      {},
+	"ru":      {},
 }
 
 type UserResponse struct {
@@ -77,8 +79,13 @@ type UserResponse struct {
 	// Always serialized (null when unset): clients treat a missing key as
 	// "server cannot track What's new" and suppress the auto-opening card.
 	WhatsNewSeenVersion *string `json:"whats_new_seen_version"`
-	CreatedAt           string  `json:"created_at"`
-	UpdatedAt           string  `json:"updated_at"`
+	// Star prompt bookkeeping. The count is always serialized: clients treat
+	// a missing key as "server cannot track the prompt" and never show it.
+	StarPromptShownCount  int32   `json:"star_prompt_shown_count"`
+	StarPromptLastShownAt *string `json:"star_prompt_last_shown_at"`
+	StarPromptStarredAt   *string `json:"star_prompt_starred_at"`
+	CreatedAt             string  `json:"created_at"`
+	UpdatedAt             string  `json:"updated_at"`
 }
 
 // MaxProfileDescriptionLen caps the user-supplied profile_description body.
@@ -106,6 +113,9 @@ func (h *Handler) userToResponse(u db.User) UserResponse {
 		OnboardingQuestionnaire: json.RawMessage(q),
 		ProfileDescription:      u.ProfileDescription,
 		WhatsNewSeenVersion:     textToPtr(u.WhatsNewSeenVersion),
+		StarPromptShownCount:    u.StarPromptShownCount,
+		StarPromptLastShownAt:   timestampToPtr(u.StarPromptLastShownAt),
+		StarPromptStarredAt:     timestampToPtr(u.StarPromptStarredAt),
 		CreatedAt:               timestampToString(u.CreatedAt),
 		UpdatedAt:               timestampToString(u.UpdatedAt),
 	}
@@ -164,14 +174,6 @@ func isSixDigitCode(code string) bool {
 }
 
 func (h *Handler) issueJWT(user db.User) (string, error) {
-	return h.issueJWTWithEnterprise(user, "", 0)
-}
-
-// issueJWTWithEnterprise signs a session JWT and, when entSID is non-empty,
-// stamps the enterprise session epoch (ent_sid + ent_ver) into the claims.
-// The exchange flow is the only producer of enterprise claims; ent_ver MUST
-// be the version just read from the user row, not a client-supplied value.
-func (h *Handler) issueJWTWithEnterprise(user db.User, entSID string, entVer int64) (string, error) {
 	if auth.IsTemporarilyDisabledUser(uuidToString(user.ID), user.Email) {
 		return "", auth.ErrTemporarilyDisabledUser
 	}
@@ -184,19 +186,14 @@ func (h *Handler) issueJWTWithEnterprise(user db.User, entSID string, entVer int
 	if err != nil {
 		return "", err
 	}
-	claims := jwt.MapClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":   uuidToString(user.ID),
 		"email": user.Email,
 		"name":  user.Name,
 		"sid":   sid,
 		"exp":   time.Now().Add(auth.AuthTokenTTL()).Unix(),
 		"iat":   time.Now().Unix(),
-	}
-	if entSID != "" {
-		claims[auth.EnterpriseSessionClaim] = entSID
-		claims[auth.EnterpriseVersionClaim] = entVer
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	})
 	return token.SignedString(auth.JWTSecret())
 }
 
@@ -499,6 +496,110 @@ func (h *Handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func departmentWorkspaceSlug(deptCode string) string {
+	cleaned := strings.ToLower(strings.TrimSpace(deptCode))
+	var b strings.Builder
+	for _, r := range cleaned {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+		} else if r == '_' || r == ' ' {
+			b.WriteRune('-')
+		}
+	}
+	slugPart := strings.Trim(b.String(), "-")
+	if slugPart == "" {
+		slugPart = "default"
+	}
+	if strings.HasPrefix(slugPart, "dept-") {
+		return slugPart
+	}
+	return "dept-" + slugPart
+}
+
+func (h *Handler) ensureDepartmentWorkspace(ctx context.Context, user db.User, deptCode, deptName string, isDeptManager bool) error {
+	slug := departmentWorkspaceSlug(deptCode)
+	wsName := strings.TrimSpace(deptName)
+	if wsName == "" {
+		wsName = slug
+	}
+
+	ws, err := h.Queries.GetWorkspaceBySlug(ctx, slug)
+	if errors.Is(err, pgx.ErrNoRows) {
+		createdWs, createErr := h.Queries.CreateWorkspace(ctx, db.CreateWorkspaceParams{
+			Name:        wsName,
+			Slug:        slug,
+			IssuePrefix: "DP",
+		})
+		if createErr != nil {
+			var reloadErr error
+			ws, reloadErr = h.Queries.GetWorkspaceBySlug(ctx, slug)
+			if reloadErr != nil {
+				return fmt.Errorf("create workspace %s failed: %w (reload: %v)", slug, createErr, reloadErr)
+			}
+		} else {
+			ws = createdWs
+		}
+	} else if err != nil {
+		return fmt.Errorf("get workspace %s failed: %w", slug, err)
+	}
+
+	// Ensure default issue statuses are populated for the workspace
+	_ = issuestatus.Ensure(ctx, h.Queries, ws.ID)
+
+	targetRole := "member"
+	if isDeptManager {
+		targetRole = "admin"
+	}
+
+	member, err := h.Queries.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{
+		UserID:      user.ID,
+		WorkspaceID: ws.ID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		if _, err := h.Queries.CreateMember(ctx, db.CreateMemberParams{
+			WorkspaceID: ws.ID,
+			UserID:      user.ID,
+			Role:        targetRole,
+		}); err != nil {
+			if m, reloadErr := h.Queries.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{
+				UserID:      user.ID,
+				WorkspaceID: ws.ID,
+			}); reloadErr == nil {
+				member = m
+				if isDeptManager && member.Role == "member" {
+					if _, err := h.Queries.UpdateMemberRole(ctx, db.UpdateMemberRoleParams{
+						ID:   member.ID,
+						Role: "admin",
+					}); err != nil {
+						return fmt.Errorf("upgrade member role failed: %w", err)
+					}
+				}
+			} else {
+				return fmt.Errorf("create member in %s failed: %w", slug, err)
+			}
+		}
+	} else if err != nil {
+		return fmt.Errorf("get member failed: %w", err)
+	} else {
+		if isDeptManager && member.Role == "member" {
+			if _, err := h.Queries.UpdateMemberRole(ctx, db.UpdateMemberRoleParams{
+				ID:   member.ID,
+				Role: "admin",
+			}); err != nil {
+				return fmt.Errorf("upgrade member role failed: %w", err)
+			}
+		}
+	}
+
+	if !user.OnboardedAt.Valid {
+		if _, err := h.Queries.MarkUserOnboarded(ctx, user.ID); err != nil {
+			return fmt.Errorf("mark user onboarded failed: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := requireUserID(w, r)
 	if !ok {
@@ -507,14 +608,46 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Queries.GetUser(r.Context(), parseUUID(userID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		// The credential no longer identifies an existing user. Return the
-		// same terminal status as an expired token so clients can sign in again.
-		writeError(w, http.StatusUnauthorized, "user not found")
-		return
-	}
-	if err != nil {
+		email := r.Header.Get("X-User-Email")
+		if email != "" {
+			name := email
+			if at := strings.Index(email, "@"); at > 0 {
+				name = email[:at]
+			}
+			created, createErr := h.Queries.CreateUserWithID(r.Context(), db.CreateUserWithIDParams{
+				ID:    parseUUID(userID),
+				Name:  name,
+				Email: email,
+			})
+			if createErr == nil {
+				user = created
+			} else if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
+				user = existing
+			} else {
+				writeError(w, http.StatusUnauthorized, "user not found")
+				return
+			}
+		} else {
+			writeError(w, http.StatusUnauthorized, "user not found")
+			return
+		}
+	} else if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to load user")
 		return
+	}
+
+	deptCode := strings.TrimSpace(r.Header.Get("X-User-Dept-Code"))
+	deptName := strings.TrimSpace(r.Header.Get("X-User-Dept-Name"))
+	isDeptManager := r.Header.Get("X-User-Is-Dept-Manager") == "true"
+
+	if deptCode != "" {
+		if err := h.ensureDepartmentWorkspace(r.Context(), user, deptCode, deptName, isDeptManager); err != nil {
+			slog.Error("failed to ensure department workspace", "error", err, "user_id", userID, "dept_code", deptCode)
+		} else if !user.OnboardedAt.Valid {
+			if reloaded, err := h.Queries.GetUser(r.Context(), user.ID); err == nil {
+				user = reloaded
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, h.userToResponse(user))

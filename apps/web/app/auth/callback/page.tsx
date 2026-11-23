@@ -9,6 +9,7 @@ import { paths, resolvePostAuthDestination } from "@multica/core/paths";
 import { api } from "@multica/core/api";
 import { createLogger } from "@multica/core/logger";
 import { validateCliCallback, redirectToCliCallback } from "@multica/views/auth";
+import { setLoggedInCookie } from "@/features/auth/auth-cookie";
 import {
   Card,
   CardHeader,
@@ -30,14 +31,16 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
+  const loginWithToken = useAuthStore((s) => s.loginWithToken);
   const [error, setError] = useState<CallbackError | null>(null);
   const [desktopToken, setDesktopToken] = useState<string | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("code");
+    const token = searchParams.get("token");
     const errorParam = searchParams.get("error");
     if (errorParam) {
-      authLogger.warn("Google OAuth returned an error parameter", errorParam);
+      authLogger.warn("OAuth returned an error parameter", errorParam);
       setError(
         errorParam === "access_denied"
           ? { kind: "access_denied" }
@@ -46,21 +49,62 @@ function CallbackContent() {
       return;
     }
 
+    const state = searchParams.get("state") || "";
+    const stateParts = state.split(",");
+    const isDesktop = stateParts.includes("platform:desktop");
+    const nextPart = stateParts.find((p) => p.startsWith("next:"));
+    const nextUrl = sanitizeNextUrl(nextPart ? nextPart.slice(5) : null);
+
+    // Direct token branch (Plan A - 平台直签零换票)
+    if (token) {
+      if (isDesktop) {
+        setDesktopToken(token);
+        window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(token)}`;
+        return;
+      }
+
+      loginWithToken(token)
+        .then(async (loggedInUser) => {
+          setLoggedInCookie();
+          api.setToken?.(token);
+          const wsList = await api.listWorkspaces();
+          qc.setQueryData(workspaceKeys.list(), wsList);
+          const onboarded = loggedInUser.onboarded_at != null;
+
+          if (nextUrl) {
+            router.push(nextUrl);
+            return;
+          }
+
+          if (!onboarded) {
+            try {
+              const invites = await api.listMyInvitations();
+              if (invites.length > 0) {
+                qc.setQueryData(workspaceKeys.myInvitations(), invites);
+                router.push(paths.invitations());
+                return;
+              }
+            } catch {
+              // Network blip on the invite lookup is non-fatal
+            }
+          }
+
+          router.push(resolvePostAuthDestination(wsList, onboarded));
+        })
+        .catch((err) => {
+          authLogger.error("Direct token login failed", err);
+          setError(callbackErrorFrom(err));
+        });
+      return;
+    }
+
     if (!code) {
       setError({ kind: "missing_code" });
       return;
     }
 
-    const state = searchParams.get("state") || "";
-    const stateParts = state.split(",");
-    const isDesktop = stateParts.includes("platform:desktop");
-    const nextPart = stateParts.find((p) => p.startsWith("next:"));
-    // Strip "next:" prefix, then drop anything that isn't a safe relative path
-    // so an attacker-controlled `state=next:https://evil` cannot redirect here.
-    const nextUrl = sanitizeNextUrl(nextPart ? nextPart.slice(5) : null);
-
     // CLI callback params — carried across the Google OAuth round-trip so
-    // headless/WSL2 `multica login` can receive the JWT after browser-based
+    // headless/WSL2 `codeopc login` can receive the JWT after browser-based
     // Google auth completes.
     const cliCallbackPart = stateParts.find((p) => p.startsWith("cli_callback:"));
     const cliStatePart = stateParts.find((p) => p.startsWith("cli_state:"));
@@ -102,7 +146,7 @@ function CallbackContent() {
         .googleLogin(code, redirectUri)
         .then(({ token }) => {
           setDesktopToken(token);
-          window.location.href = `multica://auth/callback?token=${encodeURIComponent(token)}`;
+          window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(token)}`;
         })
         .catch((err) => {
           authLogger.error("Desktop Google OAuth callback failed", err);
@@ -126,7 +170,7 @@ function CallbackContent() {
 
           // 2. Un-onboarded users may have pending invitations on their
           //    email even when no `next=` was carried (came from a fresh
-          //    login on multica.ai instead of clicking the email link,
+          //    login on codeopc.ai instead of clicking the email link,
           //    or `state` was lost across the round-trip). Look them up by
           //    email and route to the batch /invitations page if any.
           //    Already-onboarded users skip this lookup — their new invites
@@ -160,7 +204,7 @@ function CallbackContent() {
           setError(callbackErrorFrom(err));
         });
     }
-  }, [searchParams, loginWithGoogle, router, qc]);
+  }, [searchParams, loginWithGoogle, loginWithToken, router, qc]);
 
   const errorDescription = (() => {
     if (!error) return null;
@@ -204,7 +248,7 @@ function CallbackContent() {
             <Button
               variant="outline"
               onClick={() => {
-                window.location.href = `multica://auth/callback?token=${encodeURIComponent(desktopToken)}`;
+                window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(desktopToken)}`;
               }}
             >
               {t(($) => $.web.desktop_handoff.open_button)}

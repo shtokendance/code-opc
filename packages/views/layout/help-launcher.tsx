@@ -1,14 +1,13 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUpRight,
-  BookOpen,
   CircleHelp,
-  Download,
-  History,
   Megaphone,
   MessageCircle,
+  Star,
 } from "@multica/ui/icons";
 import {
   DropdownMenu,
@@ -22,33 +21,27 @@ import {
 import { TooltipHint } from "@multica/ui/components/common/tooltip-hint";
 import { useModalStore } from "@multica/core/modals";
 import { useConfigStore } from "@multica/core/config";
-import { isDesktopShell } from "../platform/local-directory";
-import { DISCORD_URL, DiscordIcon } from "./discord";
+import { formatStarCount, githubStarsOptions, MULTICA_GITHUB_URL } from "@multica/core/github/stars";
+import { createLogger } from "@multica/core/logger";
+import { markStarPromptStarred } from "@multica/core/star-prompt";
+import { GitHubIcon } from "../onboarding/components/brand-icons";
 import { useT } from "../i18n";
-import { docsLocalePrefix } from "../common/docs-locale";
 import { RAIL_ICON_BUTTON_CLASS } from "./rail-styles";
-import { CHANGELOG_URL, DOCS_URL, DOWNLOAD_URL } from "./help-links";
 import { useWhatsNewMenuPanel, WhatsNewMenuPanel } from "../whats-new/whats-new-menu-panel";
 
+const logger = createLogger("help-launcher");
 
 export function HelpLauncher() {
-  const { t, i18n } = useT("layout");
+  const { t } = useT("layout");
   const serverVersion = useConfigStore((state) => state.serverVersion);
-  // Web-only: offering "download the desktop app" inside the desktop app is
-  // nonsense, and this rail is shared — apps/desktop renders the same app
-  // shell as the web dashboard, so the entry has to be gated here.
-  //
-  // No `mounted` deferral (cf. browser-notification-setting.tsx): the desktop
-  // renderer is a locally-bundled SPA with no SSR pass, and on web
-  // `isDesktopShell()` is false both on the server and after hydration. The
-  // markup matches either way, so the link can ship in the SSR payload instead
-  // of popping in a frame late.
-  const desktop = isDesktopShell();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const whatsNew = useWhatsNewMenuPanel();
+  const [open, setOpen] = useState(false);
+  // Asked only once the menu opens, so closed sessions never call GitHub.
+  const { data: stars } = useQuery({ ...githubStarsOptions(), enabled: open });
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <TooltipHint label={t(($) => $.help.trigger)} side="right">
           <DropdownMenuTrigger
             ref={triggerRef}
@@ -64,37 +57,6 @@ export function HelpLauncher() {
           sideOffset={8}
           className="min-w-40 max-w-56"
         >
-          {!desktop && (
-            <>
-              <DropdownMenuItem
-                render={
-                  <a
-                    href={DOWNLOAD_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  />
-                }
-              >
-                <Download className="h-3.5 w-3.5" />
-                {t(($) => $.help.download_desktop)}
-                <ArrowUpRight className="size-3 translate-y-px text-faint-foreground" />
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
-          <DropdownMenuItem
-            render={
-              <a
-                href={`${DOCS_URL}${docsLocalePrefix(i18n.language)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              />
-            }
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            {t(($) => $.help.docs)}
-            <ArrowUpRight className="size-3 translate-y-px text-faint-foreground" />
-          </DropdownMenuItem>
           {whatsNew.available && (
             <DropdownMenuItem onClick={whatsNew.show}>
               <Megaphone className="h-3.5 w-3.5" />
@@ -111,25 +73,22 @@ export function HelpLauncher() {
           )}
           <DropdownMenuItem
             render={
-              <a
-                href={CHANGELOG_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              />
+              <a href={MULTICA_GITHUB_URL} target="_blank" rel="noopener noreferrer" />
             }
+            onClick={() => {
+              markStarPromptStarred().catch((err) => logger.warn("failed to record star click", err));
+            }}
           >
-            <History className="h-3.5 w-3.5" />
-            {t(($) => $.help.changelog)}
-            <ArrowUpRight className="size-3 translate-y-px text-faint-foreground" />
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            render={
-              <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" />
-            }
-          >
-            <DiscordIcon className="h-3.5 w-3.5" />
-            {t(($) => $.help.discord)}
-            <ArrowUpRight className="size-3 translate-y-px text-faint-foreground" />
+            <GitHubIcon className="h-3.5 w-3.5" />
+            {t(($) => $.help.star_on_github)}
+            {typeof stars === "number" ? (
+              <span className="ml-auto inline-flex shrink-0 items-center gap-1 text-caption whitespace-nowrap text-muted-foreground tabular-nums">
+                <Star aria-hidden="true" className="size-3" />
+                {formatStarCount(stars)}
+              </span>
+            ) : (
+              <ArrowUpRight className="size-3 translate-y-px text-faint-foreground" />
+            )}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => useModalStore.getState().open("feedback")}

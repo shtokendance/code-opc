@@ -5,11 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/auth"
 	"github.com/multica-ai/multica/server/internal/util"
@@ -83,9 +83,9 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			// fixed in #4313.
 			r.Header.Del("X-Agent-ID")
 			r.Header.Del("X-Task-ID")
-			// Enterprise identity headers are stamped from the authenticated
-			// credential below; anything the client sent is untrusted.
-			stripEnterpriseHeaders(r)
+			r.Header.Del("X-User-Dept-Code")
+			r.Header.Del("X-User-Dept-Name")
+			r.Header.Del("X-User-Is-Dept-Manager")
 
 			tokenString, fromCookie := extractToken(r)
 			if tokenString == "" {
@@ -218,17 +218,11 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 				// last time we looked, and nothing has invalidated the
 				// entry since. Skip the DB SELECT and the last_used_at
 				// UPDATE — last_used_at is bumped once per TTL window.
-				// The cached value carries the enterprise subject snapshot
-				// so the enterprise version check survives the cache.
-				if userID, entSubject, ok := patCache.GetIdentity(r.Context(), hash); ok {
+				if userID, ok := patCache.Get(r.Context(), hash); ok {
 					if rejectTemporarilyDisabledUser(w, r, userID, "", "pat_cache") {
 						return
 					}
 					r.Header.Set("X-User-ID", userID)
-					stampEnterpriseSubject(r, entSubject)
-					if _, _, entVer, ok := patCache.GetIdentityFull(r.Context(), hash); ok {
-						stampEnterpriseVersion(r, entVer)
-					}
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -249,10 +243,6 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 					return
 				}
 				r.Header.Set("X-User-ID", userID)
-				stampEnterpriseSubject(r, pat.EnterpriseSubject.String)
-				if pat.EnterpriseAuthzVersion.Valid {
-					stampEnterpriseVersion(r, strconv.FormatInt(pat.EnterpriseAuthzVersion.Int64, 10))
-				}
 
 				// Clamp cache TTL to the token's remaining lifetime so a
 				// PAT expiring in <AuthCacheTTL can't continue passing
@@ -261,11 +251,7 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 				if pat.ExpiresAt.Valid {
 					expiresAt = pat.ExpiresAt.Time
 				}
-				patVer := ""
-				if pat.EnterpriseAuthzVersion.Valid {
-					patVer = strconv.FormatInt(pat.EnterpriseAuthzVersion.Int64, 10)
-				}
-				patCache.SetIdentityFull(r.Context(), hash, userID, pat.EnterpriseSubject.String, patVer, auth.TTLForExpiry(time.Now(), expiresAt))
+				patCache.Set(r.Context(), hash, userID, auth.TTLForExpiry(time.Now(), expiresAt))
 
 				// Cache miss = TTL expired (or first use after revoke /
 				// process restart). Refresh last_used_at; subsequent hits
@@ -306,17 +292,37 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			if rejectTemporarilyDisabledUser(w, r, sub, email, "jwt") {
 				return
 			}
-			r.Header.Set("X-User-ID", sub)
+
+			resolvedUserID := sub
+			if queries != nil && email != "" {
+				if subUUID, parseErr := util.ParseUUID(sub); parseErr == nil {
+					if _, err := queries.GetUser(r.Context(), subUUID); errors.Is(err, pgx.ErrNoRows) {
+						if existingUser, err := queries.GetUserByEmail(r.Context(), email); err == nil {
+							resolvedUserID = uuidToString(existingUser.ID)
+						}
+					}
+				}
+			}
+
+			r.Header.Set("X-User-ID", resolvedUserID)
 			if email != "" {
 				r.Header.Set("X-User-Email", email)
 			}
-			stampEnterpriseFromClaims(r, claims)
+			if deptCode, ok := claims["dept_code"].(string); ok && deptCode != "" {
+				r.Header.Set("X-User-Dept-Code", deptCode)
+			}
+			if deptName, ok := claims["dept_name"].(string); ok && deptName != "" {
+				r.Header.Set("X-User-Dept-Name", deptName)
+			}
+			if isManager, ok := claims["is_dept_manager"].(bool); ok && isManager {
+				r.Header.Set("X-User-Is-Dept-Manager", "true")
+			}
 
 			// Sliding session: a browser that keeps using the app keeps its
 			// cookie, instead of being logged out on the anniversary of its
 			// login. No-op until the session drops below half its TTL
 			// (MUL-7436).
-			r = renewCookieSession(w, r, claims, fromCookie, cfSigner, enterpriseRefresher(queries))
+			r = renewCookieSession(w, r, claims, fromCookie, cfSigner)
 
 			next.ServeHTTP(w, r)
 		})

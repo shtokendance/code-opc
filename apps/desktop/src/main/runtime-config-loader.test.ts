@@ -2,7 +2,12 @@
 import { mkdtemp, writeFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("electron", () => ({
+  app: { getPath: () => tmpdir() },
+}));
+
 import { loadRuntimeConfig } from "./runtime-config-loader";
 
 describe("loadRuntimeConfig", () => {
@@ -47,9 +52,9 @@ describe("loadRuntimeConfig", () => {
       ok: true,
       config: {
         schemaVersion: 1,
-        apiUrl: "https://api.multica.ai",
-        wsUrl: "wss://api.multica.ai/ws",
-        appUrl: "https://multica.ai",
+        apiUrl: "http://10.101.102.116:3088",
+        wsUrl: "ws://10.101.102.116:3088/ws",
+        appUrl: "http://10.101.102.116:3080",
       },
     });
   });

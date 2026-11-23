@@ -127,11 +127,7 @@ func validateSkillBundle(ref SkillRefData, bundle SkillData) bool {
 	if bundle.ID != ref.ID || bundle.Source != ref.Source || bundle.Hash != ref.Hash {
 		return false
 	}
-	// FileCount 0 means the ref doesn't know the bundle's file cardinality —
-	// claim-issued enterprise refs (enterprise_skills) carry only id + pin.
-	// The manifest hash below still commits to the exact file set, so an
-	// unknown count never weakens the check (same convention as SizeBytes).
-	if ref.FileCount > 0 && len(bundle.Files) != ref.FileCount {
+	if len(bundle.Files) != ref.FileCount {
 		return false
 	}
 	files := make([]skillbundle.File, 0, len(bundle.Files))

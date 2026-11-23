@@ -182,7 +182,7 @@ func TestBuildClaimedTaskResponseRejectsAgentOwnerChangedAfterClaim(t *testing.T
 	}
 	req := newOwnerDaemonRequest(http.MethodPost, "/api/daemon/runtimes/"+runtimeID+"/tasks/claim", nil)
 	_, _, _, _, _, failure := testHandler.buildClaimedTaskResponse(
-		req, task, runtime, runtimeID, testWorkspaceID, false,
+		req, task, runtime, runtimeID, testWorkspaceID,
 	)
 	if failure == nil || failure.status != http.StatusForbidden || failure.outcome != "error_runtime_access_denied" {
 		t.Fatalf("failure = %+v, want runtime-access forbidden", failure)
@@ -236,7 +236,7 @@ func TestBuildClaimedTaskResponseRejectsAgentReboundAfterClaim(t *testing.T) {
 	}
 	req := newOwnerDaemonRequest(http.MethodPost, "/api/daemon/runtimes/"+oldRuntimeID+"/tasks/claim", nil)
 	_, _, _, _, _, failure := testHandler.buildClaimedTaskResponse(
-		req, task, runtime, oldRuntimeID, testWorkspaceID, false,
+		req, task, runtime, oldRuntimeID, testWorkspaceID,
 	)
 	if failure == nil || failure.status != http.StatusConflict || failure.outcome != "error_agent_runtime_changed" {
 		t.Fatalf("failure = %+v, want runtime-changed conflict", failure)
@@ -262,34 +262,11 @@ func TestBuildClaimedTaskResponseRejectsAgentReboundAfterClaim(t *testing.T) {
 	}
 }
 
-// PUCK-89 blocker 1: the claim path reads the runtime BEFORE claiming, so a
-// concurrent re-registration can flip runtime.owner_id between that read and
-// final delivery. The final delivery gate must re-authorize against the
-// CURRENT owner inside the finalize transaction — the singular claim must not
-// return the task to the daemon, must settle it through the existing failure
-// path, and must keep the empty successful-poll response.
-// finalizeClaimDeliveryForTest drives the singular finalize+delivery path
-// (shared gate included) against a task already claimed out-of-band, so a test
-// can mutate the runtime between claim and finalize the way a concurrent
-// re-registration would in production.
-func (h *Handler) finalizeClaimDeliveryForTest(
-	r *http.Request, task *db.AgentTaskQueue, runtimeID, runtimeWorkspaceID string,
-) (AgentTaskResponse, []pgtype.UUID, int, int, *claimBuildFailure, error) {
-	runtime, err := h.Queries.GetAgentRuntimeForWorkspace(r.Context(), db.GetAgentRuntimeForWorkspaceParams{
-		ID:          parseUUID(runtimeID),
-		WorkspaceID: parseUUID(runtimeWorkspaceID),
-	})
-	if err != nil {
-		return AgentTaskResponse{}, nil, 0, 0, nil, fmt.Errorf("load runtime: %w", err)
-	}
-	return h.finalizeClaimDeliveryForTestWithRuntime(r, task, runtime, runtimeID, runtimeWorkspaceID)
-}
-
 func (h *Handler) finalizeClaimDeliveryForTestWithRuntime(
 	r *http.Request, task *db.AgentTaskQueue, runtime db.AgentRuntime, runtimeID, runtimeWorkspaceID string,
 ) (AgentTaskResponse, []pgtype.UUID, int, int, *claimBuildFailure, error) {
 	resp, deliveredCommentIDs, _, agentSkillCount, builtinSkillCount, buildFailure := h.buildClaimedTaskResponse(
-		r, task, runtime, runtimeID, runtimeWorkspaceID, false,
+		r, task, runtime, runtimeID, runtimeWorkspaceID,
 	)
 	if buildFailure != nil {
 		return resp, deliveredCommentIDs, agentSkillCount, builtinSkillCount, buildFailure, nil

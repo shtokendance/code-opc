@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/multica-ai/multica/server/internal/runtimeapps"
+	"github.com/multica-ai/multica/server/pkg/protocol"
 	"github.com/multica-ai/multica/server/pkg/remotemcp"
 )
 
@@ -114,6 +115,7 @@ type Task struct {
 	ProjectID                     string                 `json:"project_id,omitempty"`                       // active project for this task, when present
 	ProjectTitle                  string                 `json:"project_title,omitempty"`                    // human-readable project title for context injection
 	ProjectDescription            string                 `json:"project_description,omitempty"`              // durable project-level context injected into the brief
+	ProjectArchived               bool                   `json:"project_archived,omitempty"`                 // project is archived; the brief says so
 	ProjectResources              []ProjectResourceData  `json:"project_resources,omitempty"`                // project-scoped resources to expose to the agent
 	IsLeaderTask                  bool                   `json:"is_leader_task,omitempty"`                   // true when executing in the squad-leader coordinator role
 	LeaderRoleResolved            bool                   `json:"leader_role_resolved,omitempty"`             // server capability: IsLeaderTask/SquadID authoritatively answer "is this a leader run". Absent on servers predating it — those before #4951 never sent is_leader_task at all, later ones send it without this guarantee — so taskIsSquadLeader falls back to the briefing marker for both (MUL-5811)
@@ -143,6 +145,8 @@ type Task struct {
 	ChatType                      string                 `json:"chat_type,omitempty"`                        // "group" when the channel conversation is a shared room, "p2p" for a 1:1 with the bot. Empty for a web chat or an old server; the per-turn prompt then reports unknown rather than guessing 1:1
 	ChatInThread                  bool                   `json:"chat_in_thread,omitempty"`                   // true when the latest @mention was a thread reply; selects which read command the prompt tells the agent to start with
 	ChatMessage                   string                 `json:"chat_message,omitempty"`                     // user message content for chat tasks
+	ChatSkillMessage              *string                `json:"chat_skill_message,omitempty"`               // verified member-authored input only; excludes system kickoff and agent messages
+	ChatResumeMessage             *string                `json:"chat_resume_message,omitempty"`              // input excluding guidance already in PriorSessionID
 	ChatMessageAttachments        []ChatAttachmentMeta   `json:"chat_message_attachments,omitempty"`         // attachments linked to the chat message; agent uses these to `multica attachment download <id>`
 	ChatIntro                     bool                   `json:"chat_intro,omitempty"`                       // legacy compatibility for historical is_agent_intro sessions; new agent creation no longer creates these chats
 	RegenerateQuickActionsFor     string                 `json:"regenerate_quick_actions_for,omitempty"`     // set only by servers predating server-side quick-actions generation (MUL-5573). Read as a REFUSAL marker, never executed: see the guard in runTask
@@ -154,41 +158,18 @@ type Task struct {
 	AutopilotTriggerPayload       json.RawMessage        `json:"autopilot_trigger_payload,omitempty"`        // optional trigger payload for webhook/api runs
 	QuickCreatePrompt             string                 `json:"quick_create_prompt,omitempty"`              // user's natural-language input for quick-create tasks
 	QuickCreatePriority           string                 `json:"quick_create_priority,omitempty"`            // explicit priority selected in quick-create
-	// Enterprise marks an enterprise-protocol task (server claim response
-	// carried the enterprise marker). The daemon tightens managed execution
-	// parameters on this signal — see agent.ExecOptions.Enterprise — and
-	// resolves enterprise skill refs failed-closed instead of failing the
-	// whole task. False for personal tasks and for servers predating the
-	// marker, so old servers keep byte-identical behavior.
-	Enterprise bool `json:"enterprise,omitempty"`
-	// EnterpriseSkills mirrors the claim payload's enterprise_skills:
-	// platform-published refs pinned to attested manifest digests. The
-	// daemon folds them into the task's resolve set (source "enterprise",
-	// the pinned-version path) alongside agent skill refs;
-	// EnterpriseSkillsStatus reports ok / empty / unavailable from the
-	// server listing. Empty for personal tasks and for servers predating
-	// the field.
-	EnterpriseSkills         []EnterpriseSkillRefData `json:"enterprise_skills,omitempty"`
-	EnterpriseSkillsStatus   string                   `json:"enterprise_skills_status,omitempty"`
-	// ManagedMcpStatus mirrors the claim payload's managed_mcp_status
-	// (BND-161): ok / empty / failed_closed. On failed_closed the managed
-	// set was zeroed server-side and the daemon must not fall back to ANY
-	// local MCP configuration; on empty the managed set is legitimately {}.
-	// Empty for personal tasks and servers predating the field.
-	ManagedMcpStatus string `json:"managed_mcp_status,omitempty"`
-	// EnterpriseLease mirrors the claim payload's enterprise_lease: the
-	// server-minted platform grant (INT-102) for this task. The daemon
-	// renews it for the life of the task through the server; a renewal
-	// refusal stops the task's cloud calls. Nil for personal tasks and for
-	// servers predating the field.
-	EnterpriseLease *EnterpriseLeaseData `json:"enterprise_lease,omitempty"`
-	QuickCreateDueDate       string                   `json:"quick_create_due_date,omitempty"`       // explicit calendar due date selected in quick-create
-	QuickCreateAttachmentIDs []string                 `json:"quick_create_attachment_ids,omitempty"` // attachments uploaded in the quick-create prompt and bound by issue create
-	QuickCreateSourceContext json.RawMessage          `json:"quick_create_source_context,omitempty"` // immutable historical context, separate from the new instruction
-	WakeupID                 string                   `json:"wakeup_id,omitempty"`
-	WakeupSystemRule         string                   `json:"wakeup_system_rule,omitempty"` // a platform rule (e.g. child_done) started the run
-	WakeupJoined             string                   `json:"wakeup_joined,omitempty"`      // wakeups that joined this run instead of queuing their own
-	HandoffNote              string                   `json:"handoff_note,omitempty"`       // legacy assignment handoff instruction; rendered only in the per-turn prompt
+	QuickCreateDueDate            string                 `json:"quick_create_due_date,omitempty"`            // explicit calendar due date selected in quick-create
+	QuickCreateAttachmentIDs      []string               `json:"quick_create_attachment_ids,omitempty"`      // attachments uploaded in the quick-create prompt and bound by issue create
+	QuickCreateSourceContext      json.RawMessage        `json:"quick_create_source_context,omitempty"`      // immutable historical context, separate from the new instruction
+	WakeupID                      string                 `json:"wakeup_id,omitempty"`
+	WakeupSystemRule              string                 `json:"wakeup_system_rule,omitempty"` // a platform rule (e.g. child_done) started the run
+	WakeupJoined                  string                 `json:"wakeup_joined,omitempty"`      // wakeups that joined this run instead of queuing their own
+	HandoffNote                   string                 `json:"handoff_note,omitempty"`       // legacy assignment handoff instruction; rendered only in the per-turn prompt
+
+	ChatSource *protocol.ChatSource `json:"chat_source,omitempty"`
+	// ChatFeishuSource is the Feishu ids of the message a Feishu chat task
+	// answers. Older servers omit it and the prompt then lists no ids.
+	ChatFeishuSource *protocol.FeishuSource `json:"chat_feishu_source,omitempty"`
 
 	SquadID               string `json:"squad_id,omitempty"`                // when the picker was a squad, the squad's UUID; Agent is still the resolved leader
 	SquadName             string `json:"squad_name,omitempty"`              // display name for the picker squad, used in prompt text
@@ -320,28 +301,6 @@ type SkillRefData struct {
 	SizeBytes   int64              `json:"size_bytes"`
 	FileCount   int                `json:"file_count"`
 	Files       []SkillFileRefData `json:"files,omitempty"`
-}
-
-// EnterpriseSkillRefData is one claim-issued platform-published skill ref
-// (enterprise_skills): id is the platform publish_id and hash pins the
-// skill manifest digest, so it resolves through the same pinned-version
-// path as a source-"enterprise" agent skill ref.
-type EnterpriseSkillRefData struct {
-	Source  string `json:"source"`
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Version string `json:"version"`
-	Hash    string `json:"hash"`
-}
-
-// EnterpriseLeaseData mirrors the claim payload's enterprise_lease: the
-// server-minted platform grant for an enterprise task. lease_token is
-// presented back as X-Enterprise-Lease on renewal; grant_id selects the
-// platform grant row.
-type EnterpriseLeaseData struct {
-	GrantID        string `json:"grant_id"`
-	LeaseToken     string `json:"lease_token"`
-	LeaseExpiresAt string `json:"lease_expires_at"`
 }
 
 type SkillFileRefData struct {

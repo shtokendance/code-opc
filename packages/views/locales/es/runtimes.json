@@ -33,7 +33,7 @@
       "other_machine_hint": "Ejecuta dos comandos en esa máquina",
       "cloud_services": "Servicios en la nube",
       "qoder_manage_hint": "Conectado · gestionar la conexión",
-      "cloud_runtime_hint": "Aprovisiona un nodo en la nube alojado por Multica"
+      "cloud_runtime_hint": "Aprovisiona un nodo en la nube alojado por CodeOPC"
     },
     "columns": {
       "name": "Nombre",
@@ -270,7 +270,7 @@
   "connect": {
     "title": "Añadir una máquina",
     "description": "Ejecuta estos dos comandos en la máquina que quieras añadir. La detectaremos en cuanto el daemon se conecte.",
-    "step1_label": "Instala la CLI de Multica",
+    "step1_label": "Instala la CLI de CodeOPC",
     "platform_group": "Elige tu plataforma",
     "platform_macos_linux": "macOS / Linux",
     "platform_windows": "Windows",
@@ -334,11 +334,11 @@
     "cli_version_label": "Versión de la CLI:",
     "version_unknown": "desconocida",
     "managed_by_desktop": "Gestionado por el escritorio",
-    "managed_by_desktop_title": "El binario de la CLI lo gestiona Multica Desktop: actualiza la app de escritorio para actualizar la CLI.",
+    "managed_by_desktop_title": "El binario de la CLI lo gestiona CodeOPC Desktop: actualiza la app de escritorio para actualizar la CLI.",
     "read_only": "Solo lectura",
     "read_only_title": "Solo los propietarios del runtime y los administradores del espacio de trabajo pueden actualizar la CLI.",
     "local_build": "Compilación local",
-    "local_build_title": "Este runtime informa de una versión que no es de release, así que Multica no puede saber si hay una actualización disponible. Actualízalo desde la propia máquina.",
+    "local_build_title": "Este runtime informa de una versión que no es de release, así que CodeOPC no puede saber si hay una actualización disponible. Actualízalo desde la propia máquina.",
     "latest": "Última",
     "available": "disponible",
     "action": "Actualizar",
@@ -388,17 +388,18 @@
     "pending_health_warning": "Esperando la sincronización del daemon",
     "pending_health_error": "Error de registro",
     "pending_health_disabled": "Desactivado",
-    "pending_cli_unknown": "esperando"
+    "pending_cli_unknown": "esperando",
+    "col_rate_limits": "Límites"
   },
   "profiles": {
     "cta": "Añadir runtime",
     "add_custom": "Añadir runtime personalizado",
     "this_machine": "esta máquina",
     "unassigned_title": "Runtimes personalizados sin máquina",
-    "unassigned_description": "Estos runtimes del espacio de trabajo no están conectados a ninguna máquina. Conecta una máquina con los comandos correspondientes, o usa las acciones de la fila para editarlos o eliminarlos.",
+    "unassigned_description": "Vuelve a conectar la máquina asignada, o edita un runtime antiguo para asignarle una máquina.",
     "dialog_title": "Runtimes personalizados",
-    "dialog_description": "Las definiciones de runtimes personalizados son de todo el espacio de trabajo y se sincronizan con cada máquina conectada. Una máquina registra el runtime cuando el comando está disponible allí.",
-    "create_dialog_description": "Configura un comando personalizado desde {{machine}}. La definición se sincroniza en todo el espacio de trabajo y solo se registra en las máquinas donde ese comando está disponible.",
+    "dialog_description": "Cada runtime personalizado pertenece a una sola máquina.",
+    "create_dialog_description": "Solo {{machine}} registrará este comando personalizado.",
     "learn_more": "Ver guía de configuración",
     "close": "Cerrar",
     "add_new": "Runtime personalizado nuevo",
@@ -410,7 +411,7 @@
     "builtin_section_aria": "Familias de protocolos integrados compatibles",
     "builtin_reference": "Referencia",
     "empty_title": "Crea tu primer runtime personalizado",
-    "empty_description": "Elige una familia de protocolos base y luego indica a Multica el comando que debe ejecutar.",
+    "empty_description": "Elige una familia de protocolos base y luego indica a CodeOPC el comando que debe ejecutar.",
     "badge_builtin": "Integrado",
     "badge_custom": "Personalizado",
     "badge_disabled": "Desactivado",
@@ -436,6 +437,9 @@
       "step_family_hint": "Selecciona la CLI con la que es compatible este comando.",
       "step_details_label": "Configura el runtime",
       "step_progress": "Paso {{current}} de {{total}}",
+      "machine_label": "Máquina (opcional)",
+      "machine_placeholder": "Mantener las máquinas actuales",
+      "machine_hint": "Al seleccionar una máquina se eliminan las copias sin uso de las otras máquinas.",
       "family_label": "Runtime base",
       "family_locked_hint": "El runtime base no se puede cambiar después de la creación.",
       "display_name_label": "Nombre visible",
@@ -477,7 +481,6 @@
   },
   "usage": {
     "period_label": "Periodo",
-    "dimension_label": "Dimensión",
     "kpi_cost_label": "Coste · {{days}}d",
     "kpi_cost_delta": "{{sign}}{{pct}}% vs anterior",
     "kpi_cache_label": "Ahorro por caché · {{days}}d",
@@ -485,8 +488,6 @@
     "kpi_tokens_label": "Tokens · {{days}}d",
     "kpi_tokens_hint": "entrada {{input}} · salida {{output}}",
     "when_title": "Cuándo gastó este runtime",
-    "when_tab_daily": "Diario",
-    "when_tab_weekly": "Semanal",
     "when_tab_heatmap": "Mapa de calor",
     "daily_metric_cost": "Coste",
     "daily_metric_tokens": "Tokens",
@@ -522,6 +523,7 @@
     "cost_by_title_model": "Coste por modelo",
     "cost_by_tab_agent": "Por agente",
     "cost_by_tab_model": "Por modelo",
+    "cost_by_label": "Agrupar por",
     "cost_by_caption_agent_one": "{{count}} agente en este runtime",
     "cost_by_caption_agent_other": "{{count}} agentes en este runtime",
     "cost_by_caption_model_one": "{{count}} modelo usado",
@@ -537,7 +539,7 @@
   },
   "qoder": {
     "title": "Runtime de Qoder Cloud Agents",
-    "description": "Conecta Qoder Cloud Agents. Multica gestiona la ejecución y guarda las credenciales cifradas. Los administradores del espacio de trabajo pueden cambiar esta configuración.",
+    "description": "Conecta Qoder Cloud Agents. CodeOPC gestiona la ejecución y guarda las credenciales cifradas. Los administradores del espacio de trabajo pueden cambiar esta configuración.",
     "loading": "Cargando…",
     "unavailable": "Hace falta configurar el servidor: define MULTICA_VCS_SECRET_KEY.",
     "online": "En línea",
@@ -580,7 +582,7 @@
     "cloud_description": "Ejecuta agentes en Qoder Cloud mediante una conexión compartida, sin mantener un host local.",
     "configure_credentials": "Configurar credenciales",
     "add_agent": "Añadir agente",
-    "add_agent_description": "Crea un agente de Multica vinculado a un agente existente de Qoder Cloud Agents. Usará el entorno y las credenciales configurados para Qoder Cloud.",
+    "add_agent_description": "Crea un agente de CodeOPC vinculado a un agente existente de Qoder Cloud Agents. Usará el entorno y las credenciales configurados para Qoder Cloud.",
     "agent_name": "Nombre del agente",
     "cancel": "Cancelar",
     "shared_credentials_hint": "Las credenciales se comparten en todo este espacio de trabajo. Los PAT se cifran y no se vuelven a mostrar después de guardarlos.",
@@ -593,7 +595,7 @@
     "concurrency_hint": "Las ejecuciones que superen este límite esperan en la cola.",
     "run_timeout": "Tiempo de espera de ejecución (minutos)",
     "run_timeout_hint": "Una ejecución que siga en marcha pasado ese tiempo se cancela y se marca como fallida.",
-    "data_disclosure_title": "Qué envía Multica a Qoder",
+    "data_disclosure_title": "Qué envía CodeOPC a Qoder",
     "data_disclosure": "El título y la descripción de la tarea, los comentarios relevantes, el contexto del proyecto y las instrucciones del agente. Los tokens de GitHub solo se usan para montar el repositorio durante una ejecución.",
     "usage": "{{active}} de {{limit}} en ejecución · {{queued}} en cola",
     "open_settings": "Abrir ajustes",
@@ -625,7 +627,7 @@
       "description_agents_other": "Estos {{count}} agentes conservan sus instrucciones y su historial, pero no pueden recibir ejecuciones nuevas hasta que se reanude Qoder o pasen a otro runtime."
     },
     "connect_title": "Conectar Qoder Cloud Agents",
-    "connect_description": "Multica realiza las ejecuciones en los sandboxes de Qoder.",
+    "connect_description": "CodeOPC realiza las ejecuciones en los sandboxes de Qoder.",
     "page": {
       "configuration": "Configuración",
       "agents_title": "Agentes",
@@ -683,18 +685,51 @@
       },
       "remote": {
         "title": "Otra máquina, dos comandos",
-        "description": "Instala la CLI en un servidor u otro ordenador y ejecuta multica setup para conectarlo."
+        "description": "Instala la CLI en un servidor u otro ordenador y ejecuta codeopc setup para conectarlo."
       },
       "cloud": {
         "title": "O usa un nodo en la nube",
-        "description": "¿Prefieres no gestionar máquinas? Crea un nodo en la nube alojado por Multica."
+        "description": "¿Prefieres no gestionar máquinas? Crea un nodo en la nube alojado por CodeOPC."
       }
     },
     "art": {
       "this_computer": "Este ordenador · App de escritorio",
       "detected": "Herramientas detectadas",
       "run_there": "Ejecutar en esa máquina",
-      "connected": "{{name}} conectado a Multica"
+      "connected": "{{name}} conectado a CodeOPC"
     }
+  },
+  "rate_limits": {
+    "title": "Límites",
+    "caption": "Los informa la CLI mientras se ejecutan tareas",
+    "updated": "Actualizado {{ago}}",
+    "empty_title": "Aún no hay datos de límites",
+    "empty_hint": "Se registran la próxima vez que este runtime ejecute una tarea. Las cuentas con clave de API no tienen límites de plan.",
+    "window_session": "Sesión",
+    "window_session_hours": "Sesión de {{hours}} h",
+    "window_weekly": "Semanal",
+    "window_weekly_opus": "Semanal · Opus",
+    "window_weekly_sonnet": "Semanal · Sonnet",
+    "window_generic": "Otro límite",
+    "short_session": "Sesión",
+    "short_weekly": "Semana",
+    "short_weekly_opus": "Opus",
+    "short_weekly_sonnet": "Sonnet",
+    "short_generic": "Otro",
+    "used": "{{pct}} % usado",
+    "limited": "Límite alcanzado",
+    "resets_in": "Se restablece en {{duration}}",
+    "resets_at": "Se restablece {{time}}",
+    "reset_since": "Restablecido desde el último informe",
+    "verdict_ahead": "{{pct}} % por delante del ritmo · se agota en unos {{duration}}",
+    "verdict_on_pace": "Al ritmo actual dura hasta el restablecimiento",
+    "verdict_limited": "Se reanuda tras el restablecimiento",
+    "credits": "Créditos",
+    "credits_balance": "Quedan {{balance}}",
+    "credits_unlimited": "Ilimitados",
+    "credits_none": "Ninguno",
+    "duration_minutes": "{{minutes}} min",
+    "duration_hours": "{{hours}} h {{minutes}} min",
+    "duration_days": "{{days}} d {{hours}} h"
   }
 }

@@ -58,13 +58,8 @@ import {
   isAuthStatusError,
   type AuthProbeResult,
 } from "./daemon-auth-probe";
-import {
-  planDaemonTokenSync,
-  shouldRestartDaemonAfterUserSwitch,
-} from "./daemon-token-policy";
-import { syncCliSelfHostConfig } from "./cli-config-sync";
-import { ensureCliInPath } from "./cli-path-installer";
-import type { RuntimeConfig } from "../shared/runtime-config";
+import { daemonSpawnEnv } from "./daemon-spawn-env";
+import { focusEnvironmentAt, type FocusEnvironmentResult } from "./environment-focus";
 
 const POLL_INTERVAL_MS = 5_000;
 const PREFS_PATH = join(homedir(), ".multica", "desktop_prefs.json");
@@ -95,11 +90,6 @@ interface ActiveProfile {
   name: string;
 }
 
-export interface SetupDaemonManagerOptions {
-  runtimeConfigGetter?: () => RuntimeConfig | null;
-}
-
-let getRuntimeConfig: (() => RuntimeConfig | null) | null = null;
 let statusPollTimer: ReturnType<typeof setInterval> | null = null;
 let logTailWatcher: { path: string; listener: StatsListener } | null = null;
 let logTailOwner: Electron.WebContents | null = null;
@@ -238,6 +228,21 @@ async function fetchProfileHealth(
   return probeProfileHealth(active.name, (port) =>
     fetchHealthAtPort(port, timeoutMs),
   );
+}
+
+/** Brings forward a desktop app this profile's daemon detected. */
+async function focusEnvironment(key: unknown): Promise<FocusEnvironmentResult> {
+  if (typeof key !== "string" || key === "" || key.length > 128) {
+    return { ok: false, reason: "failed", error: "invalid environment key" };
+  }
+  const active = await ensureActiveProfile();
+  if (!active) return { ok: false, reason: "unavailable" };
+  const health = await probeProfileHealth(active.name, async (port) => {
+    const payload = await fetchHealthAtPort(port);
+    return payload ? { ...payload, port } : null;
+  });
+  if (!health || health.status !== "running") return { ok: false, reason: "unavailable" };
+  return focusEnvironmentAt(health.port, key);
 }
 
 /**
@@ -738,16 +743,12 @@ async function mintPat(jwt: string): Promise<string> {
  *   mint a fresh PAT, overwriting any stale cached PAT. This is the critical
  *   path: without it, a previous user's PAT would be used by a new session.
  * - If the caller happens to pass a PAT directly, write it through.
- * - Enterprise sessions never write a PAT (BND-161): enterprise daemon task
- *   claims authenticate through platform task leases, so any token left by a
- *   previous personal session is removed instead.
  * - Reports a user mismatch to the caller; the IPC boundary owns the gated
  *   restart so internal callers such as reauthenticate never re-enter it.
  */
 async function syncToken(
   tokenFromRenderer: string,
   userId: string,
-  options: { enterprise?: boolean } = {},
 ): Promise<{ active: ActiveProfile; userChanged: boolean }> {
   const active = await ensureActiveProfile();
   if (!active) {
@@ -758,21 +759,18 @@ async function syncToken(
   }
   const config = await readProfileConfig(active.name);
   const previousUserId = await readProfileUserId(active.name);
-  const userChanged = shouldRestartDaemonAfterUserSwitch(
-    previousUserId,
-    userId,
-  );
-  const plan = planDaemonTokenSync({
-    tokenFromRenderer,
-    cachedToken: config.token,
-    previousUserId,
-    userId,
-    enterprise: options.enterprise === true,
-  });
+  const userChanged = Boolean(previousUserId) && previousUserId !== userId;
+  const sameUserWithCachedPat =
+    !userChanged &&
+    previousUserId === userId &&
+    typeof config.token === "string" &&
+    config.token.startsWith("mul_");
 
   let finalToken: string;
-  if (plan.action === "write") {
-    finalToken = plan.token;
+  if (tokenFromRenderer.startsWith("mul_")) {
+    finalToken = tokenFromRenderer;
+  } else if (sameUserWithCachedPat) {
+    finalToken = config.token as string;
   } else {
     try {
       finalToken = await mintPat(tokenFromRenderer);
@@ -784,6 +782,7 @@ async function syncToken(
       throw err;
     }
   }
+
   config.token = finalToken;
   if (targetApiBaseUrl) config.server_url = targetApiBaseUrl;
   await writeProfileConfig(active.name, config);
@@ -988,7 +987,7 @@ async function probeLocalRuntimes(): Promise<LocalRuntimeProbe> {
 // applied by fix-path in main/index.ts — as a top-level const it would
 // snapshot process.env at import time, before that block runs.
 function desktopSpawnEnv(): NodeJS.ProcessEnv {
-  return { ...process.env, MULTICA_LAUNCHED_BY: "desktop" };
+  return daemonSpawnEnv(process.env);
 }
 
 function scheduleStatusRefresh(): void {
@@ -1303,33 +1302,6 @@ function startPolling(): void {
  * user-triggered `daemon:retry-install`.
  */
 async function bootstrapCli(): Promise<void> {
-  if (getRuntimeConfig) {
-    try {
-      const runtimeConfig = getRuntimeConfig();
-      if (runtimeConfig?.apiUrl && runtimeConfig?.appUrl) {
-        await syncCliSelfHostConfig({
-          apiUrl: runtimeConfig.apiUrl,
-          appUrl: runtimeConfig.appUrl,
-        });
-        if (targetApiBaseUrl !== runtimeConfig.apiUrl) {
-          targetApiBaseUrl = runtimeConfig.apiUrl;
-          invalidateActiveProfile();
-        }
-      }
-    } catch (err) {
-      console.warn("[daemon] failed to sync CLI self-host config:", err);
-    }
-  }
-
-  try {
-    const bundled = bundledCliPath();
-    if (existsSync(bundled)) {
-      await ensureCliInPath(bundled);
-    }
-  } catch (err) {
-    console.warn("[daemon] failed to ensure CLI in PATH:", err);
-  }
-
   const bin = await resolveCliBinary();
   if (!bin) {
     currentState = "cli_not_found";
@@ -1339,15 +1311,6 @@ async function bootstrapCli(): Promise<void> {
   currentState = "stopped";
   sendStatus({ state: "stopped" });
   startPolling();
-
-  const prefs = await loadPrefs();
-  if (prefs.autoStart && !quitting && !autoStartSuppressedAfterQuit) {
-    const health = await fetchHealth();
-    if (!daemonStatusAlive(health.state)) {
-      setDesiredDaemonRunning(true);
-      await startDaemon();
-    }
-  }
 }
 
 function stopPolling(): void {
@@ -1503,11 +1466,9 @@ export function setupDaemonManager(
     const window = windowGetter();
     return window ? [window] : [];
   },
-  options?: SetupDaemonManagerOptions,
 ): void {
   getMainWindow = windowGetter;
   getStatusWindows = statusWindowsGetter;
-  getRuntimeConfig = options?.runtimeConfigGetter ?? null;
 
   ipcMain.handle("daemon:set-target-api-url", async (_e, url: string) => {
     const normalized = url || null;
@@ -1541,6 +1502,7 @@ export function setupDaemonManager(
   });
   ipcMain.handle("daemon:get-status", () => fetchHealth());
   ipcMain.handle("daemon:probe-runtimes", () => probeLocalRuntimes());
+  ipcMain.handle("daemon:focus-environment", (_e, key: unknown) => focusEnvironment(key));
   // The host's OS name, available regardless of daemon state. The Runtimes
   // page uses it as a fallback identity for "this machine" when no
   // app-managed daemon is reporting a device name (e.g. the daemon runs
@@ -1548,10 +1510,8 @@ export function setupDaemonManager(
   ipcMain.handle("daemon:get-host-name", () => hostname());
   ipcMain.handle(
     "daemon:sync-token",
-    async (_event, token: string, userId: string, sessionKind?: string) => {
-      const result = await syncToken(token, userId, {
-        enterprise: sessionKind === "enterprise",
-      });
+    async (_event, token: string, userId: string) => {
+      const result = await syncToken(token, userId);
       if (result.userChanged) {
         await restartDaemonAfterUserSwitch(result.active);
       }

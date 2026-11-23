@@ -11,6 +11,7 @@ const {
   mockRouter,
   mockSearchParams,
   mockLoginWithGoogle,
+  mockLoginWithToken,
   mockListWorkspaces,
   mockListMyInvitations,
   mockSetQueryData,
@@ -23,6 +24,7 @@ const {
     mockRouter: { push: mockPush },
     mockSearchParams: new URLSearchParams(),
     mockLoginWithGoogle: vi.fn(),
+    mockLoginWithToken: vi.fn(),
     mockListWorkspaces: vi.fn(),
     mockListMyInvitations: vi.fn(),
     mockSetQueryData,
@@ -54,7 +56,7 @@ const makeUser = (
 ) => ({
   id: "user-1",
   name: "Test",
-  email: "test@multica.ai",
+  email: "test@codeopc.ai",
   avatar_url: null,
   onboarded_at: null,
   onboarding_questionnaire: { source: ["search"] },
@@ -82,7 +84,10 @@ vi.mock("@multica/core/auth", async () => {
   return {
     ...actual,
     useAuthStore: (selector: (s: unknown) => unknown) =>
-      selector({ loginWithGoogle: mockLoginWithGoogle }),
+      selector({
+        loginWithGoogle: mockLoginWithGoogle,
+        loginWithToken: mockLoginWithToken,
+      }),
   };
 });
 
@@ -103,6 +108,7 @@ vi.mock("@multica/core/api", async () => {
       listWorkspaces: mockListWorkspaces,
       listMyInvitations: mockListMyInvitations,
       googleLogin: vi.fn(),
+      setToken: vi.fn(),
     },
   };
 });
@@ -125,7 +131,7 @@ describe("CallbackPage", () => {
     // doesn't inherit a cap-reached state from a previous run).
     for (let i = window.localStorage.length - 1; i >= 0; i--) {
       const k = window.localStorage.key(i);
-      if (k && k.startsWith("multica.source_backfill.dismiss.")) {
+      if (k && k.startsWith("codeopc.source_backfill.dismiss.")) {
         window.localStorage.removeItem(k);
       }
     }
@@ -481,5 +487,75 @@ describe("CallbackPage", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith(paths.workspace("acme").issues());
     });
+  });
+
+  it("authenticates via direct token without exchanging code (Plan A 零换票)", async () => {
+    mockSearchParams.delete("code");
+    mockSearchParams.set("token", "direct-jwt-token");
+    mockLoginWithToken.mockResolvedValue(
+      makeUser({
+        onboarded_at: "2026-01-01T00:00:00Z",
+      }),
+    );
+    mockListWorkspaces.mockResolvedValue([
+      {
+        id: "ws-1",
+        name: "Acme",
+        slug: "acme",
+        description: null,
+        context: null,
+        settings: {},
+        repos: [],
+        issue_prefix: "ACME",
+        created_at: "",
+        updated_at: "",
+      },
+    ]);
+
+    renderCallback();
+
+    await waitFor(() => {
+      expect(mockLoginWithToken).toHaveBeenCalledWith("direct-jwt-token");
+      expect(mockLoginWithGoogle).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith(paths.workspace("acme").issues());
+    });
+  });
+
+  it("redirects direct token to deep link when platform:desktop is present in state", async () => {
+    const originalLocation = window.location;
+    let assignedHref = "";
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        origin: "http://localhost:3000",
+        get href() {
+          return assignedHref;
+        },
+        set href(val: string) {
+          assignedHref = val;
+        },
+      },
+    });
+
+    try {
+      mockSearchParams.delete("code");
+      mockSearchParams.set("token", "desktop-jwt-token");
+      mockSearchParams.set("state", "platform:desktop");
+
+      renderCallback();
+
+      await waitFor(() => {
+        expect(window.location.href).toBe(
+          "codeopc://auth/callback?token=desktop-jwt-token",
+        );
+        expect(mockLoginWithToken).not.toHaveBeenCalled();
+      });
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 });

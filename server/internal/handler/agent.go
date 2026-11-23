@@ -373,6 +373,8 @@ type TaskIssueStatusData struct {
 // in the per-turn prompt, never in the cached runtime brief.
 type TaskProjectWorkflowData struct {
 	Brief string `json:"brief"`
+	// stepMoved selects the server-side leader briefing without changing the wire.
+	stepMoved bool
 }
 
 // ClaimParentIssue points a sub-issue's run at its parent issue, where the
@@ -395,6 +397,10 @@ type TaskCancellationActor struct {
 }
 
 type AgentTaskResponse struct {
+	// Restricted marks a run on an issue in a private project the caller
+	// cannot see (MUL-8472): only identity, status, timing and usage remain.
+	Restricted bool `json:"restricted,omitempty"`
+
 	StartClaimSupported      bool                   `json:"start_claim_supported,omitempty"`
 	CancelledByCommentChange bool                   `json:"cancelled_by_comment_change,omitempty"`
 	CancelledBy              *TaskCancellationActor `json:"cancelled_by,omitempty"`
@@ -406,6 +412,7 @@ type AgentTaskResponse struct {
 	WorkspaceID          string                 `json:"workspace_id"`
 	WorkspaceSlug        string                 `json:"workspace_slug,omitempty"`
 	IssueIdentifier      string                 `json:"issue_identifier,omitempty"`
+	IssueTitle           string                 `json:"issue_title,omitempty"`
 	RemoteMCPConnections []remotemcp.Connection `json:"remote_mcp_connections,omitempty"`
 	// PluginHookTools are the workspace's agent-trigger plugin hooks, which the
 	// daemon renders as MCP tools for this task. Resolved at claim time so
@@ -458,6 +465,7 @@ type AgentTaskResponse struct {
 	ProjectID          string                   `json:"project_id,omitempty"`          // issue's project, when present
 	ProjectTitle       string                   `json:"project_title,omitempty"`       // for surfacing in agent context
 	ProjectDescription string                   `json:"project_description,omitempty"` // durable project-level context injected into the brief
+	ProjectArchived    bool                     `json:"project_archived,omitempty"`    // project is archived: the brief tells the agent not to file new issues into it
 	ProjectResources   []ProjectResourceData    `json:"project_resources,omitempty"`   // resources attached to the project
 	CreatedAt          string                   `json:"created_at"`
 	PriorSessionID     string                   `json:"prior_session_id,omitempty"` // session ID from a previous task on same issue
@@ -476,35 +484,6 @@ type AgentTaskResponse struct {
 	// (no-gap) case and for old daemons.
 	PriorSessionResumeUnavailable bool   `json:"prior_session_resume_unavailable,omitempty"`
 	WorkDir                       string `json:"work_dir,omitempty"` // local working directory pinned for this task; populated once the daemon reports it
-	// ManagedMcpStatus marks enterprise tasks only: ok (non-empty managed
-	// MCP set), empty (workspace resolution succeeded and legitimately
-	// produced an empty set) or failed_closed (resolution failed and the
-	// mcp_config was zeroed to {} — the daemon must NOT fall back to any
-	// local MCP configuration). Personal tasks never set this field.
-	ManagedMcpStatus string `json:"managed_mcp_status,omitempty"`
-	// Enterprise marks an enterprise-protocol task: the runtime workspace is
-	// platform-mirrored and the claim was authorized by a platform lease.
-	// The daemon tightens managed execution parameters on this signal
-	// (permission mode, approval policy, auto-accept gating) and resolves
-	// enterprise skill refs through the pinned-version path. Personal tasks
-	// never set this field.
-	Enterprise bool `json:"enterprise,omitempty"`
-	// EnterpriseLease is the platform grant the SERVER minted for this claim
-	// (INT-102). The daemon renews it for the life of the task via
-	// POST .../enterprise-lease/renew; a renewal refusal (entitlement
-	// revoked, lease expired) stops the task's cloud calls. Nil for personal
-	// tasks.
-	EnterpriseLease *EnterpriseLease `json:"enterprise_lease,omitempty"`
-	// EnterpriseSkills lists the platform-published skills entitled to the
-	// task's originating enterprise user, each pinned to the manifest digest
-	// the platform attests (source "enterprise"; the daemon resolves them
-	// through the pinned-version path exactly like agent skill refs). Only
-	// enterprise tasks set these fields; EnterpriseSkillsStatus reports ok
-	// (non-empty), empty (entitled to nothing) or unavailable (the platform
-	// listing failed — never blocks the claim, the daemon simply runs
-	// without platform skills).
-	EnterpriseSkills       []EnterpriseSkillRef `json:"enterprise_skills,omitempty"`
-	EnterpriseSkillsStatus string               `json:"enterprise_skills_status,omitempty"`
 	// RelativeWorkDir is a privacy-safe display form of WorkDir intended for
 	// the UI. For standard tasks it strips the daemon's workspaces root while
 	// preserving either the legacy or readable workspace/task segments; for local_directory
@@ -581,8 +560,11 @@ type AgentTaskResponse struct {
 	ChatChannelDeliversFiles bool                 `json:"chat_channel_delivers_files,omitempty"` // server capability: THIS deployment can put a file the agent produced into THIS conversation — the adapter goes back for the bound attachment AND object storage exists to go back to. Absent/false on a server predating it, which is the safe reading: the agent is told to describe its file in words. Never inferred daemon-side from chat_channel_type; see handler.Handler.channelDeliversFiles
 	ChatType                 string               `json:"chat_type,omitempty"`                   // channel_chat_session_binding.chat_type — "group" for a shared room, "p2p" for a 1:1 with the bot. Lets the per-turn prompt tell the agent who else can read its replies; empty for a web-only chat
 	ChatNoticeLocale         string               `json:"chat_notice_locale,omitempty"`          // locale for bridge-generated delivery notices; optional and ignored by installed daemons
+	ChatSource               *protocol.ChatSource `json:"chat_source,omitempty"`
 	ChatInThread             bool                 `json:"chat_in_thread,omitempty"`              // true when the latest @mention was a thread reply; tells the agent to start with `multica chat thread` vs `multica chat history`
 	ChatMessage              string               `json:"chat_message,omitempty"`                // user message for chat tasks
+	ChatSkillMessage         *string              `json:"chat_skill_message,omitempty"`          // verified member-authored input eligible for explicit skill selection
+	ChatResumeMessage        *string              `json:"chat_resume_message,omitempty"`         // excludes guidance already delivered to the resumed session
 	ChatMessageAttachments   []ChatAttachmentMeta `json:"chat_message_attachments,omitempty"`    // attachments on the user message — agent calls `multica attachment download <id>` per entry
 	ChatIntro                bool                 `json:"chat_intro,omitempty"`                  // legacy compatibility for historical is_agent_intro sessions; new agent creation no longer creates these chats
 	AutopilotRunID           string               `json:"autopilot_run_id,omitempty"`            // non-empty for autopilot-spawned tasks
@@ -655,6 +637,10 @@ type AgentTaskResponse struct {
 	// owning user; the daemon must not fall back to its own credential. See
 	// MUL-3292.
 	AuthToken string `json:"auth_token,omitempty"`
+
+	// ChatFeishuSource is the Feishu ids of the message this task answers,
+	// from its frozen delivery. Absent for other surfaces.
+	ChatFeishuSource *protocol.FeishuSource `json:"chat_feishu_source,omitempty"`
 }
 
 // TaskAttribution is the wire shape of a run's accountable-human provenance
@@ -1747,6 +1733,12 @@ func (h *Handler) CreateAgent(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to save agent access")
 		return
 	}
+	if len(allowlist) > 0 {
+		if err := syncAgentAppsFromAllowlist(r.Context(), qtx, created, allowlist, parseUUID(ownerID)); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to save agent apps")
+			return
+		}
+	}
 	for _, skillID := range skillUUIDs {
 		if err := qtx.AddAgentSkill(r.Context(), db.AddAgentSkillParams{
 			AgentID: created.ID,
@@ -2549,6 +2541,14 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 			h.TaskService.NotifyRuntimeMayHaveWork(pendingMovedTo)
 		}
 	}
+	// A cap change can make the agent's queued work claimable right away
+	// (#10455). Nudge its runtime now that the write is visible, as a runtime
+	// cap change does, instead of leaving the queue to the daemon's next poll.
+	// A runtime switch above already woke the same runtime.
+	capChanged := req.MaxConcurrentTasks != nil && *req.MaxConcurrentTasks != existing.MaxConcurrentTasks
+	if capChanged && updated.RuntimeID.Valid && updated.RuntimeID != pendingMovedTo && h.TaskService != nil {
+		h.TaskService.NotifyRuntimeCapacityChanged(updated.RuntimeID)
+	}
 
 	// Nullable runtime overrides: null/empty in the request means explicitly
 	// clear the field. COALESCE in UpdateAgent cannot set a column to NULL, so
@@ -2582,6 +2582,13 @@ func (h *Handler) UpdateAgent(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			slog.Warn("clear agent composio_toolkit_allowlist failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 			writeError(w, http.StatusInternalServerError, "failed to clear composio_toolkit_allowlist")
+			return
+		}
+	}
+	if shouldClearComposioAllowlist || params.ComposioToolkitAllowlist != nil {
+		if err := syncAgentAppsFromAllowlist(r.Context(), h.Queries, updated, params.ComposioToolkitAllowlist, parseUUID(requestUserID(r))); err != nil {
+			slog.Warn("update agent: sync agent apps failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
+			writeError(w, http.StatusInternalServerError, "failed to update agent apps")
 			return
 		}
 	}
@@ -3027,6 +3034,9 @@ func (h *Handler) ListAgentTasks(w http.ResponseWriter, r *http.Request) {
 		PageLimit: int32(limit + 1),
 	})
 	if err != nil {
+		if writeQueryCancellation(w, r, err) {
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "failed to list agent tasks")
 		return
 	}
@@ -3049,20 +3059,37 @@ func (h *Handler) ListAgentTasks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err := h.redactForeignChatTaskContent(r.Context(), requestUserID(r), tasks, resp); err != nil {
+		if writeQueryCancellation(w, r, err) {
+			return
+		}
 		slog.Warn("list agent tasks: resolve chat owners failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 		writeError(w, http.StatusInternalServerError, "failed to list agent tasks")
 		return
 	}
 	h.hydrateTaskSupplementMetadata(r.Context(), r, agent.WorkspaceID, tasks, resp)
+	if err := h.redactHiddenProjectTasks(r, workspaceID, tasks, resp); err != nil {
+		if writeQueryCancellation(w, r, err) {
+			return
+		}
+		slog.Warn("list agent tasks: resolve project access failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
+		writeError(w, http.StatusInternalServerError, "failed to list agent tasks")
+		return
+	}
 	h.hydrateTaskAttributions(r.Context(), attributionsOf(resp))
 	if includeUsage {
 		if err := h.hydrateAgentTaskUsage(r.Context(), agent.ID, taskIDs, resp); err != nil {
+			if writeQueryCancellation(w, r, err) {
+				return
+			}
 			slog.Warn("list agent task usage failed", append(logger.RequestAttrs(r), "error", err, "agent_id", id)...)
 			writeError(w, http.StatusInternalServerError, "failed to list agent task usage")
 			return
 		}
 	}
 
+	if writeQueryCancellation(w, r, r.Context().Err()) {
+		return
+	}
 	if nextCursor != "" {
 		w.Header().Set(HeaderAgentTasksNextCursor, nextCursor)
 	}
@@ -3206,18 +3233,44 @@ func (h *Handler) ListWorkspaceWorkingAgents(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Issues in private projects the caller cannot see (MUL-8472) are left
+	// out of issue_ids; the agent and its running count stay, as on the
+	// redacted run list.
+	hidden, ok := h.requestHiddenProjects(w, r, workspaceID)
+	if !ok {
+		return
+	}
+	var issueIDs []pgtype.UUID
+	for _, row := range rows {
+		issueIDs = append(issueIDs, row.IssueIds...)
+	}
+	hiddenIssues, err := h.hiddenIssueIDs(r, hidden, issueIDs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to resolve project access")
+		return
+	}
+
 	resp := make([]WorkspaceWorkingAgent, 0, len(rows))
 	for _, row := range rows {
 		agentID := uuidToString(row.ID)
 		if _, ok := allowed[agentID]; !ok {
 			continue
 		}
+		visibleIssues := row.IssueIds
+		if len(hiddenIssues) > 0 {
+			visibleIssues = make([]pgtype.UUID, 0, len(row.IssueIds))
+			for _, id := range row.IssueIds {
+				if _, hide := hiddenIssues[id]; !hide {
+					visibleIssues = append(visibleIssues, id)
+				}
+			}
+		}
 		resp = append(resp, WorkspaceWorkingAgent{
 			ID:               agentID,
 			Name:             row.Name,
 			AvatarURL:        h.resolveAvatarURLPtr(textToPtr(row.AvatarUrl)),
 			RunningTaskCount: row.RunningTaskCount,
-			IssueIDs:         uuidStringsOrEmpty(row.IssueIds),
+			IssueIDs:         uuidStringsOrEmpty(visibleIssues),
 		})
 	}
 
@@ -3352,6 +3405,11 @@ func (h *Handler) ListWorkspaceAgentTaskSnapshot(w http.ResponseWriter, r *http.
 	}
 	if err := h.redactForeignChatTaskContent(r.Context(), requestUserID(r), kept, resp); err != nil {
 		slog.Warn("agent task snapshot: resolve chat owners failed", append(logger.RequestAttrs(r), "error", err)...)
+		writeError(w, http.StatusInternalServerError, "failed to list agent task snapshot")
+		return
+	}
+	if err := h.redactHiddenProjectTasks(r, workspaceID, kept, resp); err != nil {
+		slog.Warn("agent task snapshot: resolve project access failed", append(logger.RequestAttrs(r), "error", err)...)
 		writeError(w, http.StatusInternalServerError, "failed to list agent task snapshot")
 		return
 	}

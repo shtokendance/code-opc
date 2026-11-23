@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -21,17 +23,26 @@ import (
 //
 // `Enabled` is only meaningful on the agent-scoped list, where it reflects the
 // binding's toggle; it is omitted on the workspace library listing.
+type WorkspaceMcpToolSummary struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description,omitempty"`
+	InputSchema json.RawMessage `json:"input_schema,omitempty"`
+}
+
 type WorkspaceMcpServerResponse struct {
-	ID          string `json:"id"`
-	WorkspaceID string `json:"workspace_id"`
-	Name        string `json:"name"`
-	Transport   string `json:"transport"`
-	Enabled     *bool  `json:"enabled,omitempty"`
+	ID          string                    `json:"id"`
+	WorkspaceID string                    `json:"workspace_id"`
+	Name        string                    `json:"name"`
+	Transport   string                    `json:"transport"`
+	Enabled     *bool                     `json:"enabled,omitempty"`
 	// AgentCount is how many live agents the entry is assigned to. Only the
 	// workspace library listing reports it; per-agent responses omit it.
-	AgentCount *int64 `json:"agent_count,omitempty"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	AgentCount  *int64                    `json:"agent_count,omitempty"`
+	Source      string                    `json:"source,omitempty"`
+	Description string                    `json:"description,omitempty"`
+	Tools       []WorkspaceMcpToolSummary `json:"tools,omitempty"`
+	CreatedAt   string                    `json:"created_at"`
+	UpdatedAt   string                    `json:"updated_at"`
 }
 
 // mcpTransportOf classifies a server entry for display, and — because the
@@ -116,6 +127,12 @@ func (h *Handler) ListWorkspaceMcpServers(w http.ResponseWriter, r *http.Request
 		count := agentCounts[item.ID]
 		item.AgentCount = &count
 		resp = append(resp, item)
+	}
+	ws, err := h.Queries.GetWorkspace(r.Context(), idUUID)
+	if err != nil {
+		slog.Warn("failed to load workspace for workspace mcp aggregation", "workspace_id", workspaceID, "error", err)
+	} else {
+		resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -358,6 +375,12 @@ func (h *Handler) ListAgentMcpServers(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:   timestampToString(row.UpdatedAt),
 		})
 	}
+	ws, err := h.Queries.GetWorkspace(r.Context(), agent.WorkspaceID)
+	if err != nil {
+		slog.Warn("failed to load workspace for agent mcp aggregation", "workspace_id", uuidToString(agent.WorkspaceID), "error", err)
+	} else {
+		resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
+	}
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -541,5 +564,84 @@ func (h *Handler) writeAgentMcpServers(w http.ResponseWriter, r *http.Request, a
 			UpdatedAt:   timestampToString(row.UpdatedAt),
 		})
 	}
+	if agent, err := h.Queries.GetAgent(r.Context(), agentID); err == nil {
+		if ws, err := h.Queries.GetWorkspace(r.Context(), agent.WorkspaceID); err == nil {
+			resp = h.appendEnterpriseMcpServers(r.Context(), ws, resp)
+		}
+	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// ResolveTenantFromDeptCode maps a department code to an enterprise platform tenant ID.
+func ResolveTenantFromDeptCode(deptCode string) string {
+	if deptCode == "296492" || deptCode == "10001" {
+		return deptCode
+	}
+	if n, err := strconv.ParseInt(deptCode, 10, 64); err == nil {
+		if n < 100000 {
+			return strconv.FormatInt(20000+n, 10)
+		}
+		return "296492"
+	}
+	return deptCode
+}
+
+// ResolveWorkspaceTenant maps workspace slug to enterprise tenant ID.
+func ResolveWorkspaceTenant(slug string) string {
+	if strings.HasPrefix(slug, "ent-") {
+		return strings.TrimPrefix(slug, "ent-")
+	}
+	if strings.HasPrefix(slug, "dept-") {
+		return ResolveTenantFromDeptCode(strings.TrimPrefix(slug, "dept-"))
+	}
+	return "296492"
+}
+
+func (h *Handler) appendEnterpriseMcpServers(ctx context.Context, workspace db.Workspace, resp []WorkspaceMcpServerResponse) []WorkspaceMcpServerResponse {
+	if !strings.HasPrefix(workspace.Slug, "dept-") && !strings.HasPrefix(workspace.Slug, "ent-") && workspace.Slug != "default" {
+		return resp
+	}
+	tenant := ResolveWorkspaceTenant(workspace.Slug)
+
+	client := h.getPlatformClient()
+	if client == nil {
+		return resp
+	}
+	services, err := client.ListServices(ctx, tenant, true)
+	if err != nil {
+		slog.Warn("failed to fetch enterprise mcp services",
+			"workspace_id", uuidToString(workspace.ID),
+			"slug", workspace.Slug,
+			"tenant", tenant,
+			"error", err,
+		)
+		return resp
+	}
+
+	trueVal := true
+	for _, s := range services {
+		tools := make([]WorkspaceMcpToolSummary, len(s.Tools))
+		for i, t := range s.Tools {
+			tools[i] = WorkspaceMcpToolSummary{
+				Name:        t.Name,
+				Description: t.Description,
+				InputSchema: t.InputSchema,
+			}
+		}
+		name := s.Name
+		if name == "" {
+			name = s.ServiceID
+		}
+		item := WorkspaceMcpServerResponse{
+			ID:          "enterprise-" + s.ServiceID,
+			WorkspaceID: uuidToString(workspace.ID),
+			Name:        name,
+			Transport:   "remote_bridge",
+			Source:      "enterprise",
+			Enabled:     &trueVal,
+			Tools:       tools,
+		}
+		resp = append(resp, item)
+	}
+	return resp
 }

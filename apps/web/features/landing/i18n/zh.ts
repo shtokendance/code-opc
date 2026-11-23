@@ -1,228 +1,45 @@
 import { githubUrl, discordUrl } from "../components/shared";
 import type { LandingDict } from "./types";
+import { zhSiteCopy } from "./site-zh";
 
-export function createZhDict(
-  allowSignup: boolean,
-  docsHref: string,
-): LandingDict {
+export function createZhDict(): LandingDict {
   return {
-  header: {
-    github: "GitHub",
-    cta: "\u5f00\u59cb\u4f7f\u7528",
-    dashboard: "\u8fdb\u5165\u5de5\u4f5c\u53f0",
-    docs: "\u6587\u6863",
-    changelog: "\u66f4\u65b0\u65e5\u5fd7",
-    useCases: "\u6848\u4f8b",
-    navigation: "\u4e3b\u5bfc\u822a",
-    openMenu: "\u6253\u5f00\u5bfc\u822a\u83dc\u5355",
-    closeMenu: "\u5173\u95ed\u5bfc\u822a\u83dc\u5355",
-  },
-
-  hero: {
-    headlineLine1: "\u4f60\u7684\u4e0b\u4e00\u6279\u5458\u5de5",
-    headlineLine2: "\u4e0d\u662f\u4eba\u7c7b\u3002",
-    subheading:
-      "Multica 是一个源码公开的平台，\u5c06\u7f16\u7801 智能体 \u53d8\u6210\u771f\u6b63\u7684\u961f\u53cb\u3002\u5206\u914d\u4efb\u52a1\u3001\u8ddf\u8e2a\u8fdb\u5ea6\u3001\u79ef\u7d2f\u6280\u80fd\u2014\u2014\u5728\u4e00\u4e2a\u5730\u65b9\u7ba1\u7406\u4f60\u7684\u4eba\u7c7b + 智能体 \u56e2\u961f\u3002",
-    cta: "免费开始",
-    downloadDesktop: "下载桌面端",
-    talkToSales: "联系商务",
-    worksWith: "支持 20+ 种 AI 编程工具",
-    imageAlt: "Multica \u770b\u677f\u89c6\u56fe\u2014\u2014\u4eba\u7c7b\u548c 智能体 \u534f\u540c\u7ba1\u7406\u4efb\u52a1",
-  },
-
-  features: {
-    teammates: {
-      label: "\u56e2\u961f\u534f\u4f5c",
-      title: "\u50cf\u5206\u914d\u7ed9\u540c\u4e8b\u4e00\u6837\u5206\u914d\u7ed9 智能体",
-      description:
-        "智能体 \u4e0d\u662f\u88ab\u52a8\u5de5\u5177\u2014\u2014\u5b83\u4eec\u662f\u4e3b\u52a8\u53c2\u4e0e\u8005\u3002\u5b83\u4eec\u62e5\u6709\u4e2a\u4eba\u8d44\u6599\u3001\u62a5\u544a\u72b6\u6001\u3001\u521b\u5efa\u4efb\u52a1\u3001\u53d1\u8868\u8bc4\u8bba\u3001\u66f4\u65b0\u72b6\u6001\u3002\u4f60\u7684\u6d3b\u52a8\u6d41\u5c55\u793a\u4eba\u7c7b\u548c 智能体 \u5e76\u80a9\u5de5\u4f5c\u3002",
-      cards: [
-        {
-          title: "智能体 \u51fa\u73b0\u5728\u6307\u6d3e\u4eba\u9009\u62e9\u5668\u4e2d",
-          description:
-            "\u4eba\u7c7b\u548c 智能体 \u51fa\u73b0\u5728\u540c\u4e00\u4e2a\u4e0b\u62c9\u83dc\u5355\u91cc\u3002\u628a\u4efb\u52a1\u5206\u914d\u7ed9 智能体 \u548c\u5206\u914d\u7ed9\u540c\u4e8b\u6ca1\u6709\u4efb\u4f55\u533a\u522b\u3002",
-        },
-        {
-          title: "\u81ea\u4e3b\u53c2\u4e0e",
-          description:
-            "智能体 \u4e3b\u52a8\u521b\u5efa\u4efb\u52a1\u3001\u53d1\u8868\u8bc4\u8bba\u3001\u66f4\u65b0\u72b6\u6001\u2014\u2014\u800c\u4e0d\u662f\u53ea\u5728\u88ab\u63d0\u793a\u65f6\u624d\u884c\u52a8\u3002",
-        },
-        {
-          title: "\u7edf\u4e00\u7684\u6d3b\u52a8\u65f6\u95f4\u7ebf",
-          description:
-            "\u6574\u4e2a\u56e2\u961f\u5171\u7528\u4e00\u4e2a\u6d3b\u52a8\u6d41\u3002\u4eba\u7c7b\u548c 智能体 \u7684\u64cd\u4f5c\u4ea4\u66ff\u5c55\u793a\uff0c\u4f60\u59cb\u7ec8\u77e5\u9053\u53d1\u751f\u4e86\u4ec0\u4e48\u3001\u662f\u8c01\u505a\u7684\u3002",
-        },
-      ],
-    },
-    autonomous: {
-      label: "\u81ea\u4e3b\u6267\u884c",
-      title: "\u8bbe\u7f6e\u540e\u65e0\u9700\u7ba1\u7406\u2014\u2014智能体 \u5728\u4f60\u7761\u89c9\u65f6\u5de5\u4f5c",
-      description:
-        "不只是提示-响应。完整的 task 生命周期管理：入队、领取、启动、完成或失败。智能体 主动报告阻塞，你通过 WebSocket 获取实时进度。",
-      cards: [
-        {
-          title: "\u5b8c\u6574\u7684\u4efb\u52a1\u751f\u547d\u5468\u671f",
-          description:
-            "\u6bcf\u4e2a\u4efb\u52a1\u7ecf\u5386\u5165\u961f \u2192 \u9886\u53d6 \u2192 \u542f\u52a8 \u2192 \u5b8c\u6210/\u5931\u8d25\u3002\u6ca1\u6709\u65e0\u58f0\u5931\u8d25\u2014\u2014\u6bcf\u6b21\u72b6\u6001\u8f6c\u6362\u90fd\u88ab\u8ddf\u8e2a\u548c\u5e7f\u64ad\u3002",
-        },
-        {
-          title: "\u4e3b\u52a8\u62a5\u544a\u963b\u585e",
-          description:
-            "\u5f53 智能体 \u9047\u5230\u56f0\u96be\u65f6\uff0c\u4f1a\u7acb\u5373\u53d1\u51fa\u8b66\u62a5\u3002\u4e0d\u7528\u7b49\u51e0\u4e2a\u5c0f\u65f6\u540e\u624d\u53d1\u73b0\u4ec0\u4e48\u90fd\u6ca1\u53d1\u751f\u3002",
-        },
-        {
-          title: "\u5b9e\u65f6\u8fdb\u5ea6\u63a8\u9001",
-          description:
-            "\u57fa\u4e8e WebSocket \u7684\u5b9e\u65f6\u66f4\u65b0\u3002\u5b9e\u65f6\u89c2\u770b 智能体 \u5de5\u4f5c\uff0c\u6216\u968f\u65f6\u67e5\u770b\u2014\u2014\u65f6\u95f4\u7ebf\u59cb\u7ec8\u662f\u6700\u65b0\u7684\u3002",
-        },
-      ],
-    },
-    skills: {
-      label: "\u6280\u80fd\u5e93",
-      title: "\u6bcf\u4e2a\u89e3\u51b3\u65b9\u6848\u90fd\u6210\u4e3a\u5168\u56e2\u961f\u53ef\u590d\u7528\u7684\u6280\u80fd",
-      description:
-        "\u6280\u80fd\u662f\u53ef\u590d\u7528\u7684\u80fd\u529b\u5b9a\u4e49\u2014\u2014\u4ee3\u7801\u3001\u914d\u7f6e\u548c\u4e0a\u4e0b\u6587\u6253\u5305\u5728\u4e00\u8d77\u3002\u53ea\u9700\u7f16\u5199\u4e00\u6b21\uff0c\u56e2\u961f\u4e2d\u6bcf\u4e2a 智能体 \u90fd\u80fd\u4f7f\u7528\u3002\u4f60\u7684\u6280\u80fd\u5e93\u968f\u65f6\u95f4\u4e0d\u65ad\u79ef\u7d2f\u3002",
-      cards: [
-        {
-          title: "\u53ef\u590d\u7528\u7684\u6280\u80fd\u5b9a\u4e49",
-          description:
-            "\u5c06\u77e5\u8bc6\u5c01\u88c5\u6210\u4efb\u4f55 智能体 \u90fd\u80fd\u6267\u884c\u7684\u6280\u80fd\u3002\u90e8\u7f72\u5230\u6d4b\u8bd5\u73af\u5883\u3001\u7f16\u5199\u8fc1\u79fb\u3001\u5ba1\u67e5 PR\u2014\u2014\u5168\u90e8\u4ee3\u7801\u5316\u3002",
-        },
-        {
-          title: "\u5168\u56e2\u961f\u5171\u4eab",
-          description:
-            "\u4e00\u4e2a\u4eba\u7684\u6280\u80fd\u5c31\u662f\u6bcf\u4e2a 智能体 \u7684\u6280\u80fd\u3002\u7f16\u5199\u4e00\u6b21\uff0c\u5168\u56e2\u961f\u53d7\u76ca\u3002",
-        },
-        {
-          title: "\u590d\u5408\u589e\u957f",
-          description:
-            "\u7b2c 1 \u5929\uff1a\u4f60\u6559 智能体 \u90e8\u7f72\u3002\u7b2c 30 \u5929\uff1a\u6bcf\u4e2a 智能体 \u90fd\u80fd\u90e8\u7f72\u3001\u5199\u6d4b\u8bd5\u3001\u505a\u4ee3\u7801\u5ba1\u67e5\u3002\u56e2\u961f\u80fd\u529b\u6307\u6570\u7ea7\u589e\u957f\u3002",
-        },
-      ],
-    },
-    runtimes: {
-      label: "\u8fd0\u884c\u65f6",
-      title: "\u4e00\u4e2a\u63a7\u5236\u53f0\u7ba1\u7406\u6240\u6709\u7b97\u529b",
-      description:
-        "\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u548c\u4e91\u7aef\u8fd0\u884c\u65f6\uff0c\u5728\u540c\u4e00\u4e2a\u9762\u677f\u4e2d\u7ba1\u7406\u3002\u5b9e\u65f6\u76d1\u63a7\u5728\u7ebf/\u79bb\u7ebf\u72b6\u6001\u3001\u4f7f\u7528\u91cf\u56fe\u8868\u548c\u6d3b\u52a8\u70ed\u529b\u56fe\u3002\u81ea\u52a8\u68c0\u6d4b\u672c\u673a\u5df2\u5b89\u88c5\u7684 29 \u6b3e\u652f\u6301\u7684 AI \u7f16\u7a0b\u5de5\u5177\u3002",
-      cards: [
-        {
-          title: "\u7edf\u4e00\u8fd0\u884c\u65f6\u9762\u677f",
-          description:
-            "\u672c\u5730\u5b88\u62a4\u8fdb\u7a0b\u548c\u4e91\u7aef\u8fd0\u884c\u65f6\u5728\u540c\u4e00\u89c6\u56fe\u4e2d\u3002\u65e0\u9700\u5728\u4e0d\u540c\u7ba1\u7406\u754c\u9762\u4e4b\u95f4\u5207\u6362\u3002",
-        },
-        {
-          title: "\u5b9e\u65f6\u76d1\u63a7",
-          description:
-            "\u5728\u7ebf/\u79bb\u7ebf\u72b6\u6001\u3001\u4f7f\u7528\u91cf\u56fe\u8868\u548c\u6d3b\u52a8\u70ed\u529b\u56fe\u3002\u968f\u65f6\u4e86\u89e3\u4f60\u7684\u7b97\u529b\u5728\u505a\u4ec0\u4e48\u3002",
-        },
-        {
-          title: "\u9996\u6b21\u542f\u52a8\u81ea\u52a8\u6ce8\u518c",
-          description:
-            "Multica \u626b\u63cf\u672c\u673a\u7684 29 \u6b3e\u652f\u6301\u7684 AI \u7f16\u7a0b\u5de5\u5177\u2014\u2014Antigravity\u3001Claude Code\u3001CodeBuddy\u3001CodeArts\u3001Codex\u3001Copilot\u3001Cursor\u3001DeepSeek Harness\u3001DevEco Code\u3001Devin CLI\u3001Dim\u3001Grok\u3001Hermes\u3001Kimi\u3001Kiro CLI\u3001MiniMax Code\u3001Muse Code\u3001Oh-My-Pi\u3001OpenClaw\u3001OpenCode\u3001Pi\u3001Qoder\u3001Qoder CN\u3001Qwen Code\u3001QwenPaw\u3001Reasonix\u3001Trae CLI\u3001ZeroClaw、ZCode\u2014\u2014\u5e76\u4e3a\u6bcf\u6b3e\u5df2\u5b89\u88c5\u7684\u5de5\u5177\u6ce8\u518c\u4e00\u4e2a\u8fd0\u884c\u65f6\u3002",
-        },
-      ],
-    },
-  },
-
-  howItWorks: {
-    label: "\u5f00\u59cb\u4f7f\u7528",
-    headlineMain: "\u62db\u52df\u4f60\u7684\u7b2c\u4e00\u4e2a AI \u5458\u5de5",
-    headlineFaded: "\u53ea\u9700\u4e00\u5c0f\u65f6\u3002",
-    steps: [
-      {
-        title: allowSignup ? "注册并创建您的工作空间" : "登录到您的工作空间",
-        description: allowSignup
-          ? "输入您的邮箱，验证代码后即可使用。工作空间会自动创建——无需设置向导或配置表单。"
-          : "输入您的邮箱，验证代码后即可登录到您的工作空间——无需设置向导或配置表单。",
-      },
-      {
-        title: "\u5b89\u88c5 CLI \u5e76\u8fde\u63a5\u4f60\u7684\u673a\u5668",
-        description:
-          "运行 multica setup——它会引导你完成 OAuth 登录、启动守护进程、并扫描 29 款支持的 AI 编程工具（Antigravity、Claude Code、CodeBuddy、CodeArts、Codex、Copilot、Cursor、DeepSeek Harness、DevEco Code、Devin CLI、Dim、Grok、Hermes、Kimi、Kiro CLI、MiniMax Code、Muse Code、Oh-My-Pi、OpenClaw、OpenCode、Pi、Qoder、Qoder CN、Qwen Code、QwenPaw、Reasonix、Trae CLI、ZeroClaw、ZCode）。本机已安装的工具会被自动注册成运行时。",
-      },
-      {
-        title: "\u521b\u5efa\u4f60\u7684\u7b2c\u4e00\u4e2a 智能体",
-        description:
-          "\u7ed9\u5b83\u8d77\u4e2a\u540d\u5b57\uff0c\u5199\u597d\u6307\u4ee4\uff0c\u9644\u52a0\u6280\u80fd\uff0c\u8bbe\u7f6e\u89e6\u53d1\u5668\u3002\u9009\u62e9\u5b83\u4f55\u65f6\u6fc0\u6d3b\uff1a\u88ab\u6307\u6d3e\u65f6\u3001\u6709\u8bc4\u8bba\u65f6\u3001\u88ab @\u63d0\u53ca\u65f6\u3002",
-      },
-      {
-        title: "\u6307\u6d3e\u4e00\u4e2a\u4efb\u52a1\u5e76\u89c2\u5bdf\u5b83\u5de5\u4f5c",
-        description:
-          "从指派人下拉菜单中选择你的 智能体——就像指派给同事一样。task 自动入队、领取、执行。实时观看进度。",
-      },
-    ],
-    cta: "\u5f00\u59cb\u4f7f\u7528",
-    ctaGithub: "\u5728 GitHub \u4e0a\u67e5\u770b",
-    ctaDocs: "\u9605\u8bfb\u6587\u6863",
-  },
-
-  openSource: {
-    label: "源码公开",
-    headlineLine1: "每一行代码，",
-    headlineLine2: "都由你掌控。",
-    description:
-      "Multica 的源代码完全公开。审查每一行代码，免费自托管，塑造人类 + 智能体 协作的未来。把 Multica 作为托管服务提供给他人，需要商业授权。",
-    cta: "在 GitHub 上 Star",
-    licensingCta: "了解授权方式 →",
-    highlights: [
-      {
-        title: "\u968f\u5904\u81ea\u6258\u7ba1",
-        description:
-          "\u5728\u4f60\u81ea\u5df1\u7684\u57fa\u7840\u8bbe\u65bd\u4e0a\u8fd0\u884c Multica\u3002Docker Compose\u3001\u5355\u4e2a\u4e8c\u8fdb\u5236\u6216 Kubernetes——工作区数据始终保存在你自己掌控的服务器上。",
-      },
-      {
-        title: "\u65e0\u4f9b\u5e94\u5546\u9501\u5b9a",
-        description:
-          "\u81ea\u5e26 LLM \u63d0\u4f9b\u5546\u3001\u66f4\u6362 智能体 \u540e\u7aef\u3001\u6269\u5c55 API\u3002\u4f60\u62e5\u6709\u6574\u4e2a\u6280\u672f\u6808\u7684\u63a7\u5236\u6743\u3002",
-      },
-      {
-        title: "\u9ed8\u8ba4\u900f\u660e",
-        description:
-          "\u6bcf\u4e00\u884c\u4ee3\u7801\u90fd\u53ef\u5ba1\u8ba1\u3002\u786e\u5207\u4e86\u89e3\u4f60\u7684 智能体 \u5982\u4f55\u505a\u51b3\u7b56\u3001\u4efb\u52a1\u5982\u4f55\u8def\u7531\u3001\u6570\u636e\u6d41\u5411\u4f55\u65b9\u3002",
-      },
-      {
-        title: "\u793e\u533a\u9a71\u52a8",
-        description:
-          "\u4e0e\u793e\u533a\u4e00\u8d77\u5efa\u8bbe\uff0c\u800c\u4e0d\u4ec5\u4ec5\u662f\u4e3a\u793e\u533a\u5efa\u8bbe\u3002\u8d21\u732e\u6280\u80fd\u3001\u96c6\u6210\u548c 智能体 \u540e\u7aef\uff0c\u8ba9\u6bcf\u4e2a\u4eba\u53d7\u76ca\u3002",
-      },
-    ],
-  },
-
+  ...zhSiteCopy,
   faq: {
     label: "\u5e38\u89c1\u95ee\u9898",
     headline: "\u95ee\u4e0e\u7b54\u3002",
     items: [
+      { question: "可以在微信里与智能体聊天吗？", answer: "可以。工作区管理员在智能体的「集成」页签中用自己的微信扫码连接，扫码账号的私聊消息会按该管理员的工作区权限执行，回复和支持的附件会返回同一会话。暂不支持群聊；自托管服务需先启用微信集成。" },
       {
-        question: "Multica \u652f\u6301\u54ea\u4e9b\u7f16\u7801 智能体\uff1f",
+        question: "CodeOPC \u652f\u6301\u54ea\u4e9b\u7f16\u7801 智能体\uff1f",
         answer:
-          "Multica \u5f00\u7bb1\u5373\u7528\u652f\u6301 29 \u6b3e AI \u7f16\u7a0b\u5de5\u5177\uff1aAntigravity\u3001Claude Code\u3001CodeBuddy\u3001CodeArts\u3001Codex\u3001Copilot\u3001Cursor\u3001DeepSeek Harness\u3001DevEco Code\u3001Devin CLI\u3001Dim\u3001Grok\u3001Hermes\u3001Kimi\u3001Kiro CLI\u3001MiniMax Code\u3001Muse Code\u3001Oh-My-Pi\u3001OpenClaw\u3001OpenCode\u3001Pi\u3001Qoder\u3001Qoder CN\u3001Qwen Code\u3001QwenPaw\u3001Reasonix\u3001Trae CLI\u3001ZeroClaw、ZCode\u3002\u5b88\u62a4\u8fdb\u7a0b\u4f1a\u81ea\u52a8\u68c0\u6d4b\u672c\u673a\u5df2\u5b89\u88c5\u7684 CLI \u5e76\u4e3a\u6bcf\u6b3e\u6ce8\u518c\u4e00\u4e2a\u8fd0\u884c\u65f6\u3002因为源码公开，你也可以自己添加后端。 自托管部署还可以使用 Qoder PAT 和 Qoder Cloud Agents 中已有的智能体，将 Qoder Cloud Agents 配置为执行任务的托管远端运行时。",
+          "CodeOPC \u5f00\u7bb1\u5373\u7528\u652f\u6301 29 \u6b3e AI \u7f16\u7a0b\u5de5\u5177\uff1aAntigravity\u3001Claude Code\u3001CodeBuddy\u3001CodeArts\u3001Codex\u3001Copilot\u3001Cursor\u3001DeepSeek Harness\u3001DevEco Code\u3001Devin CLI\u3001Dim\u3001Grok\u3001Hermes\u3001Kimi\u3001Kiro CLI\u3001MiniMax Code\u3001Muse Code\u3001Oh-My-Pi\u3001OpenClaw\u3001OpenCode\u3001Pi\u3001Qoder\u3001Qoder CN\u3001Qwen Code\u3001QwenPaw\u3001Reasonix\u3001Trae CLI\u3001ZeroClaw、ZCode\u3002\u5b88\u62a4\u8fdb\u7a0b\u4f1a\u81ea\u52a8\u68c0\u6d4b\u672c\u673a\u5df2\u5b89\u88c5\u7684 CLI \u5e76\u4e3a\u6bcf\u6b3e\u6ce8\u518c\u4e00\u4e2a\u8fd0\u884c\u65f6\u3002因为源码公开，你也可以自己添加后端。 自托管部署还可以使用 Qoder PAT 和 Qoder Cloud Agents 中已有的智能体，将 Qoder Cloud Agents 配置为执行任务的托管远端运行时。",
       },
       {
         question: "\u9700\u8981\u81ea\u6258\u7ba1\u5417\uff0c\u8fd8\u662f\u6709\u4e91\u7248\u672c\uff1f",
         answer:
-          "\u4e24\u8005\u90fd\u6709\u3002\u4f60\u53ef\u4ee5\u7528 Docker Compose \u6216 Kubernetes \u5728\u81ea\u5df1\u7684\u57fa\u7840\u8bbe\u65bd\u4e0a\u81ea\u6258\u7ba1 Multica\uff0c\u4e5f\u53ef\u4ee5\u4f7f\u7528\u6211\u4eec\u7684\u6258\u7ba1\u4e91\u7248\u672c\u3002你的数据，你选择。",
+          "\u4e24\u8005\u90fd\u6709\u3002\u4f60\u53ef\u4ee5\u7528 Docker Compose \u6216 Kubernetes \u5728\u81ea\u5df1\u7684\u57fa\u7840\u8bbe\u65bd\u4e0a\u81ea\u6258\u7ba1 CodeOPC\uff0c\u4e5f\u53ef\u4ee5\u4f7f\u7528\u6211\u4eec\u7684\u6258\u7ba1\u4e91\u7248\u672c\u3002你的数据，你选择。",
       },
       {
         question: "可以商用吗？",
         answer:
-          "可以。在你自己的组织内部使用 Multica 是免费的，包括为整个团队自托管。只有两种情况需要商业授权：把 Multica 提供给组织外部的人使用（比如作为托管服务或代运维服务），或者把它嵌入你销售或分发的产品中。常见场景见[授权说明](/licensing)。",
+          "可以。在你自己的组织内部使用 CodeOPC 是免费的，包括为整个团队自托管。只有两种情况需要商业授权：把 CodeOPC 提供给组织外部的人使用（比如作为托管服务或代运维服务），或者把它嵌入你销售或分发的产品中。常见场景见[授权说明](/licensing)。",
       },
       {
         question:
           "\u8fd9\u548c\u76f4\u63a5\u7528\u7f16\u7801 智能体 \u6709\u4ec0\u4e48\u533a\u522b\uff1f",
         answer:
-          "\u7f16\u7801 智能体 \u64c5\u957f\u6267\u884c\u3002Multica \u6dfb\u52a0\u7684\u662f\u7ba1\u7406\u5c42\uff1a\u4efb\u52a1\u961f\u5217\u3001\u56e2\u961f\u534f\u4f5c\u3001\u6280\u80fd\u590d\u7528\u3001\u8fd0\u884c\u65f6\u76d1\u63a7\uff0c\u4ee5\u53ca\u6bcf\u4e2a 智能体 \u5728\u505a\u4ec0\u4e48\u7684\u7edf\u4e00\u89c6\u56fe\u3002\u628a\u5b83\u60f3\u8c61\u6210\u4f60\u7684 智能体 \u7684\u9879\u76ee\u7ecf\u7406\u3002",
+          "\u7f16\u7801 智能体 \u64c5\u957f\u6267\u884c\u3002CodeOPC \u6dfb\u52a0\u7684\u662f\u7ba1\u7406\u5c42\uff1a\u4efb\u52a1\u961f\u5217\u3001\u56e2\u961f\u534f\u4f5c\u3001\u6280\u80fd\u590d\u7528\u3001\u8fd0\u884c\u65f6\u76d1\u63a7\uff0c\u4ee5\u53ca\u6bcf\u4e2a 智能体 \u5728\u505a\u4ec0\u4e48\u7684\u7edf\u4e00\u89c6\u56fe\u3002\u628a\u5b83\u60f3\u8c61\u6210\u4f60\u7684 智能体 \u7684\u9879\u76ee\u7ecf\u7406\u3002",
       },
       {
         question: "智能体 \u80fd\u81ea\u4e3b\u5904\u7406\u957f\u65f6\u95f4\u4efb\u52a1\u5417\uff1f",
         answer:
-          "\u53ef\u4ee5\u3002Multica \u7ba1\u7406\u5b8c\u6574\u7684\u4efb\u52a1\u751f\u547d\u5468\u671f\u2014\u2014\u5165\u961f\u3001\u9886\u53d6\u3001\u6267\u884c\u3001\u5b8c\u6210\u6216\u5931\u8d25\u3002智能体 \u4e3b\u52a8\u62a5\u544a\u963b\u585e\u5e76\u5b9e\u65f6\u63a8\u9001\u8fdb\u5ea6\u3002\u4f60\u53ef\u4ee5\u968f\u65f6\u67e5\u770b\uff0c\u4e5f\u53ef\u4ee5\u8ba9\u5b83\u4eec\u8fd0\u884c\u6574\u665a\u3002",
+          "\u53ef\u4ee5\u3002CodeOPC \u7ba1\u7406\u5b8c\u6574\u7684\u4efb\u52a1\u751f\u547d\u5468\u671f\u2014\u2014\u5165\u961f\u3001\u9886\u53d6\u3001\u6267\u884c\u3001\u5b8c\u6210\u6216\u5931\u8d25\u3002智能体 \u4e3b\u52a8\u62a5\u544a\u963b\u585e\u5e76\u5b9e\u65f6\u63a8\u9001\u8fdb\u5ea6\u3002\u4f60\u53ef\u4ee5\u968f\u65f6\u67e5\u770b\uff0c\u4e5f\u53ef\u4ee5\u8ba9\u5b83\u4eec\u8fd0\u884c\u6574\u665a\u3002",
       },
       {
         question: "\u6211\u7684\u4ee3\u7801\u5b89\u5168\u5417\uff1f智能体 \u5728\u54ea\u91cc\u6267\u884c\uff1f",
         answer:
-          "智能体在你的机器（通过本地守护进程）或你连接的运行时上运行，直接在你的代码仓库里工作。工作区里的内容——任务、评论、聊天消息、附件，以及智能体上报的进度——由 Multica 存储；智能体所用的编码工具会把提示词和代码发送给你配置的模型服务商。想让工作区数据留在自己的服务器上，可以自托管 Multica。详见[隐私政策](/privacy)。",
+          "智能体在你的机器（通过本地守护进程）或你连接的运行时上运行，直接在你的代码仓库里工作。工作区里的内容——任务、评论、聊天消息、附件，以及智能体上报的进度——由 CodeOPC 存储；智能体所用的编码工具会把提示词和代码发送给你配置的模型服务商。想让工作区数据留在自己的服务器上，可以自托管 CodeOPC。详见[隐私政策](/privacy)。",
       },
       {
         question: "\u6211\u53ef\u4ee5\u8fd0\u884c\u591a\u5c11\u4e2a 智能体\uff1f",
@@ -232,48 +49,10 @@ export function createZhDict(
     ],
   },
 
-  footer: {
-    tagline:
-      "\u4eba\u7c7b + 智能体 团队的项目管理。源码公开、可自托管、\u4e3a\u672a\u6765\u7684\u5de5\u4f5c\u65b9\u5f0f\u800c\u5efa\u3002",
-    cta: "\u5f00\u59cb\u4f7f\u7528",
-    groups: {
-      product: {
-        label: "\u4ea7\u54c1",
-        links: [
-          { label: "\u529f\u80fd\u7279\u6027", href: "#features" },
-          { label: "\u5982\u4f55\u5de5\u4f5c", href: "#how-it-works" },
-          { label: "\u6848\u4f8b", href: "/usecases" },
-          { label: "更新日志", href: "/changelog" },
-          { label: "下载", href: "/download" },
-        ],
-      },
-      resources: {
-        label: "\u8d44\u6e90",
-        links: [
-          { label: "\u6587\u6863", href: docsHref },
-          { label: "API", href: githubUrl },
-          { label: "X (Twitter)", href: "https://x.com/MulticaAI" },
-          { label: "Discord", href: discordUrl },
-        ],
-      },
-      company: {
-        label: "\u5173\u4e8e",
-        links: [
-          { label: "关于我们", href: "/about" },
-          { label: "授权说明", href: "/licensing" },
-          { label: "隐私政策", href: "/privacy" },
-          { label: "\u8054\u7cfb\u5546\u52a1", href: "/contact-sales" },
-          { label: "GitHub", href: githubUrl },
-        ],
-      },
-    },
-    copyright: "\u00a9 {year} Multica. \u4fdd\u7559\u6240\u6709\u6743\u5229\u3002",
-  },
-
   about: {
-    title: "\u5173\u4e8e Multica",
+    title: "\u5173\u4e8e CodeOPC",
     nameLine: {
-      prefix: "Multica\u2014\u2014",
+      prefix: "CodeOPC\u2014\u2014",
       mult: "Mult",
       iplexed: "iplexed ",
       i: "I",
@@ -285,17 +64,17 @@ export function createZhDict(
     },
     paragraphs: [
       "\u8fd9\u4e2a\u540d\u5b57\u662f\u5728\u5411 20 \u4e16\u7eaa 60 \u5e74\u4ee3\u5177\u6709\u5f00\u521b\u610f\u4e49\u7684\u64cd\u4f5c\u7cfb\u7edf Multics \u81f4\u610f\u3002Multics \u9996\u521b\u4e86\u5206\u65f6\u7cfb\u7edf\uff0c\u8ba9\u591a\u4e2a\u7528\u6237\u80fd\u591f\u5171\u4eab\u540c\u4e00\u53f0\u673a\u5668\uff0c\u540c\u65f6\u53c8\u50cf\u5404\u81ea\u72ec\u5360\u5b83\u4e00\u6837\u4f7f\u7528\u3002Unix \u5219\u662f\u5728\u6709\u610f\u7b80\u5316 Multics \u7684\u57fa\u7840\u4e0a\u8bde\u751f\u7684\uff0c\u5f3a\u8c03\u4e00\u4e2a\u7528\u6237\u3001\u4e00\u4e2a\u4efb\u52a1\u3001\u4e00\u79cd\u4f18\u96c5\u7684\u54f2\u5b66\u3002",
-      "\u6211\u4eec\u8ba4\u4e3a\uff0c\u7c7b\u4f3c\u7684\u8f6c\u6298\u70b9\u6b63\u5728\u518d\u6b21\u51fa\u73b0\u3002\u51e0\u5341\u5e74\u6765\uff0c\u8f6f\u4ef6\u56e2\u961f\u4e00\u76f4\u5904\u4e8e\u4e00\u79cd\u5355\u7ebf\u7a0b\u7684\u5de5\u4f5c\u6a21\u5f0f\uff0c\u4e00\u4e2a\u5de5\u7a0b\u5e08\u5904\u7406\u4e00\u4e2a\u4efb\u52a1\uff0c\u4e00\u6b21\u53ea\u4e13\u6ce8\u4e8e\u4e00\u4e2a\u4e0a\u4e0b\u6587\u3002AI agents \u6539\u53d8\u4e86\u8fd9\u4e2a\u7b49\u5f0f\u3002Multica \u5c06\u201c\u5206\u65f6\u201d\u91cd\u65b0\u5e26\u56de\u8fd9\u4e2a\u65f6\u4ee3\uff0c\u53ea\u4e0d\u8fc7\u4eca\u5929\u5728\u7cfb\u7edf\u4e2d\u8fdb\u884c\u591a\u8def\u590d\u7528\u7684\u201c\u7528\u6237\u201d\uff0c\u65e2\u5305\u62ec\u4eba\u7c7b\uff0c\u4e5f\u5305\u62ec\u81ea\u4e3b\u4ee3\u7406\u3002",
-      "在 Multica 中，agents 是一级团队成员。它们会被分配任务，汇报进展，提出阻塞，并交付代码，就像人类同事一样。任务分配、活动时间线、task 生命周期，以及运行时基础设施，Multica 从第一天起就是围绕这一理念构建的。",
+      "\u6211\u4eec\u8ba4\u4e3a\uff0c\u7c7b\u4f3c\u7684\u8f6c\u6298\u70b9\u6b63\u5728\u518d\u6b21\u51fa\u73b0\u3002\u51e0\u5341\u5e74\u6765\uff0c\u8f6f\u4ef6\u56e2\u961f\u4e00\u76f4\u5904\u4e8e\u4e00\u79cd\u5355\u7ebf\u7a0b\u7684\u5de5\u4f5c\u6a21\u5f0f\uff0c\u4e00\u4e2a\u5de5\u7a0b\u5e08\u5904\u7406\u4e00\u4e2a\u4efb\u52a1\uff0c\u4e00\u6b21\u53ea\u4e13\u6ce8\u4e8e\u4e00\u4e2a\u4e0a\u4e0b\u6587\u3002AI agents \u6539\u53d8\u4e86\u8fd9\u4e2a\u7b49\u5f0f\u3002CodeOPC \u5c06\u201c\u5206\u65f6\u201d\u91cd\u65b0\u5e26\u56de\u8fd9\u4e2a\u65f6\u4ee3\uff0c\u53ea\u4e0d\u8fc7\u4eca\u5929\u5728\u7cfb\u7edf\u4e2d\u8fdb\u884c\u591a\u8def\u590d\u7528\u7684\u201c\u7528\u6237\u201d\uff0c\u65e2\u5305\u62ec\u4eba\u7c7b\uff0c\u4e5f\u5305\u62ec\u81ea\u4e3b\u4ee3\u7406\u3002",
+      "在 CodeOPC 中，agents 是一级团队成员。它们会被分配任务，汇报进展，提出阻塞，并交付代码，就像人类同事一样。任务分配、活动时间线、task 生命周期，以及运行时基础设施，CodeOPC 从第一天起就是围绕这一理念构建的。",
       "\u548c\u5f53\u5e74\u7684 Multics \u4e00\u6837\uff0c\u8fd9\u4e00\u5224\u65ad\u5efa\u7acb\u5728\u201c\u591a\u8def\u590d\u7528\u201d\u4e4b\u4e0a\u3002\u4e00\u4e2a\u5c0f\u56e2\u961f\u4e0d\u8be5\u56e0\u4e3a\u4eba\u6570\u5c11\u5c31\u663e\u5f97\u80fd\u529b\u6709\u9650\u3002\u6709\u4e86\u5408\u9002\u7684\u7cfb\u7edf\uff0c\u4e24\u540d\u5de5\u7a0b\u5e08\u52a0\u4e0a\u4e00\u7ec4 agents\uff0c\u5c31\u80fd\u53d1\u6325\u51fa\u4e8c\u5341\u4eba\u56e2\u961f\u7684\u63a8\u8fdb\u901f\u5ea6\u3002",
-      "Multica 的源代码公开，并且可以免费自托管，工作区数据始终保存在你自己的基础设施中。\u4f60\u53ef\u4ee5\u5ba1\u67e5\u6bcf\u4e00\u884c\u4ee3\u7801\uff0c\u6269\u5c55 API\uff0c\u63a5\u5165\u81ea\u5df1\u7684 LLM providers\uff0c\u4e5f\u53ef\u4ee5\u5411\u793e\u533a\u8d21\u732e\u4ee3\u7801\u3002",
+      "CodeOPC 的源代码公开，并且可以免费自托管，工作区数据始终保存在你自己的基础设施中。\u4f60\u53ef\u4ee5\u5ba1\u67e5\u6bcf\u4e00\u884c\u4ee3\u7801\uff0c\u6269\u5c55 API\uff0c\u63a5\u5165\u81ea\u5df1\u7684 LLM providers\uff0c\u4e5f\u53ef\u4ee5\u5411\u793e\u533a\u8d21\u732e\u4ee3\u7801\u3002",
     ],
     cta: "在 GitHub 上查看",
     team: {
-      title: "Multica 背后的团队",
+      title: "CodeOPC 背后的团队",
       paragraphs: [
-        "Multica 由一支从 2021 年起就一起工作的小团队打造。在 Multica 之前，我们做过面向开发者的 AI 搜索引擎 devv.ai。2025 年，我们开始解决自己反复遇到的问题：一个小团队到底该怎样和 AI 智能体一起把事情做完。这就是 Multica。",
-        "Multica 的源代码公开，也可以自托管：在基于它构建之前，你可以读完每一行代码；自托管的部署完全运行在你自己的基础设施上。商业使用的规则，我们在[授权说明](/licensing)里写清楚了。",
+        "CodeOPC 由一支从 2021 年起就一起工作的小团队打造。在 CodeOPC 之前，我们做过面向开发者的 AI 搜索引擎 devv.ai。2025 年，我们开始解决自己反复遇到的问题：一个小团队到底该怎样和 AI 智能体一起把事情做完。这就是 CodeOPC。",
+        "CodeOPC 的源代码公开，也可以自托管：在基于它构建之前，你可以读完每一行代码；自托管的部署完全运行在你自己的基础设施上。商业使用的规则，我们在[授权说明](/licensing)里写清楚了。",
       ],
       contacts: [
         { label: "商业授权与合作", linkLabel: "联系商务", href: "/contact-sales" },
@@ -309,12 +88,12 @@ export function createZhDict(
   licensing: {
     title: "授权说明",
     intro: [
-      "Multica 采用 [Multica License](https://github.com/multica-ai/multica/blob/main/LICENSE) 发布：在 Apache License 2.0 的基础上附加了几项条件。源代码公开，在你自己的组织内部使用 Multica 是免费的，包括为整个团队自托管。",
-      "最主要的附加条件针对托管使用：把 Multica 提供给组织外部的人使用，需要商业授权。这一页用大家最常问的问题，说明这条线划在哪里。这是一份通俗说明，不构成法律意见；如与 LICENSE 原文不一致，以 LICENSE 为准。",
+      "CodeOPC 采用 [CodeOPC License](https://github.com/codeopc-ai/codeopc/blob/main/LICENSE) 发布：在 Apache License 2.0 的基础上附加了几项条件。源代码公开，在你自己的组织内部使用 CodeOPC 是免费的，包括为整个团队自托管。",
+      "最主要的附加条件针对托管使用：把 CodeOPC 提供给组织外部的人使用，需要商业授权。这一页用大家最常问的问题，说明这条线划在哪里。这是一份通俗说明，不构成法律意见；如与 LICENSE 原文不一致，以 LICENSE 为准。",
     ],
     rule: {
       title: "一条判断标准",
-      text: "看组织外部的人有没有在驱动这个实例——创建任务、和智能体对话、触发工作。只要有，不管通过什么界面（Web、Slack 还是 API），都算托管服务；如果他们只是收到你的团队用 Multica 做出来的成果，就属于内部使用。",
+      text: "看组织外部的人有没有在驱动这个实例——创建任务、和智能体对话、触发工作。只要有，不管通过什么界面（Web、Slack 还是 API），都算托管服务；如果他们只是收到你的团队用 CodeOPC 做出来的成果，就属于内部使用。",
     },
     scenarios: {
       title: "常见场景",
@@ -324,18 +103,18 @@ export function createZhDict(
       notRequired: "不需要",
       items: [
         {
-          scenario: "你的组织内部使用 Multica",
+          scenario: "你的组织内部使用 CodeOPC",
           example: "自托管，不限工作区数量。",
           required: false,
         },
         {
-          scenario: "你帮客户部署 Multica，由客户自己拥有、在其组织内部使用",
+          scenario: "你帮客户部署 CodeOPC，由客户自己拥有、在其组织内部使用",
           example: "实施、培训、咨询或定制开发。",
           required: false,
         },
         {
-          scenario: "你的团队用 Multica 为客户干活，客户只收到交付物",
-          example: "例如 agency 在 Multica 里管理内容生产，向客户交付成品。",
+          scenario: "你的团队用 CodeOPC 为客户干活，客户只收到交付物",
+          example: "例如 agency 在 CodeOPC 里管理内容生产，向客户交付成品。",
           required: false,
         },
         {
@@ -344,7 +123,7 @@ export function createZhDict(
           required: false,
         },
         {
-          scenario: "你在自己的基础设施上替客户运行和管理 Multica 实例",
+          scenario: "你在自己的基础设施上替客户运行和管理 CodeOPC 实例",
           example: "即代运维服务（managed service），无论是否收费。",
           required: true,
         },
@@ -355,12 +134,12 @@ export function createZhDict(
         },
         {
           scenario: "组织外部的人通过其他入口驱动你的实例",
-          example: "例如接入 Multica 后端的公开网站、Slack 集成或 API，免费提供也一样。",
+          example: "例如接入 CodeOPC 后端的公开网站、Slack 集成或 API，免费提供也一样。",
           required: true,
         },
         {
-          scenario: "你把 Multica 嵌入到你销售或分发的产品中",
-          example: "Multica 作为另一个商业产品的组件一起交付。",
+          scenario: "你把 CodeOPC 嵌入到你销售或分发的产品中",
+          example: "CodeOPC 作为另一个商业产品的组件一起交付。",
           required: true,
         },
       ],
@@ -369,8 +148,8 @@ export function createZhDict(
       {
         heading: "其他条件",
         bullets: [
-          "品牌：除非获得我们的书面品牌豁免，请保留 Multica 界面中显示的 Multica Logo、产品名称以及版权和署名信息。",
-          "署名：如果你只基于 Multica 的后端、守护进程或 CLI 构建产品、不使用 Multica 界面，需要保留版权和 NOTICE 信息，并在面向用户的文档中注明产品基于 Multica 构建，附上 [GitHub 仓库](https://github.com/multica-ai/multica)链接。",
+          "品牌：除非获得我们的书面品牌豁免，请保留 CodeOPC 界面中显示的 CodeOPC Logo、产品名称以及版权和署名信息。",
+          "署名：如果你只基于 CodeOPC 的后端、守护进程或 CLI 构建产品、不使用 CodeOPC 界面，需要保留版权和 NOTICE 信息，并在面向用户的文档中注明产品基于 CodeOPC 构建，附上 [GitHub 仓库](https://github.com/codeopc-ai/codeopc)链接。",
           "Fork：公开发布 fork 的源代码不算托管服务，不需要商业授权。但任何用这个 fork 运营托管服务的人，都需要各自获得商业授权。",
           "商业授权和品牌豁免是两项独立的授权，获得其中一项不代表获得另一项。",
         ],
@@ -388,16 +167,16 @@ export function createZhDict(
     title: "隐私政策",
     lastUpdated: "最后更新：2026 年 10 月 22 日",
     intro: [
-      "本隐私政策说明 Index Labs (Hong Kong) Limited（下称「Multica」或「我们」）在你访问 multica.ai、联系我们或使用我们的托管服务 Multica Cloud（包括网页端、桌面端和移动端）时，如何收集、使用和共享个人信息。",
-      "本政策不适用于你自行部署的 Multica。自托管部署的数据由部署方控制，它使用哪些 AI 服务商、集成或分析工具，取决于部署方的配置。自托管服务器唯一会发送给我们的是每天一次的使用快照，内容包括：一个随机生成的部署 ID（用于关联同一台服务器的历次快照）、服务器版本、工作区、成员、智能体和已连接守护进程的大致数量，当天开始、完成、失败和取消的运行次数，以及过去 1、7、28 天内打开过网页端或桌面端的成员、亲自发起过智能体运行的成员的大致人数。快照不含任何姓名、邮箱或内容。设置 DO_NOT_TRACK=1 即可关闭这份快照。",
+      "本隐私政策说明 Index Labs (Hong Kong) Limited（下称「CodeOPC」或「我们」）在你访问 codeopc.ai、联系我们或使用我们的托管服务 CodeOPC Cloud（包括网页端、桌面端和移动端）时，如何收集、使用和共享个人信息。",
+      "本政策不适用于你自行部署的 CodeOPC。自托管部署的数据由部署方控制，它使用哪些 AI 服务商、集成或分析工具，取决于部署方的配置。自托管服务器唯一会发送给我们的是每天一次的使用快照，内容包括：一个随机生成的部署 ID（用于关联同一台服务器的历次快照）、服务器版本、工作区、成员、智能体和已连接守护进程的大致数量，当天开始、完成、失败和取消的运行次数，以及过去 1、7、28 天内打开过网页端或桌面端的成员、亲自发起过智能体运行的成员的大致人数。快照不含任何姓名、邮箱或内容。设置 DO_NOT_TRACK=1 即可关闭这份快照。",
       "本政策以英文版本为准。如中文版本与英文版本不一致，以英文版本为准。",
     ],
     sections: [
       {
         heading: "我们收集的信息",
         bullets: [
-          "账户信息：你的姓名、邮箱地址和头像。如果你使用 Google 登录，我们会从 Google 获得你的姓名、邮箱地址和头像。你也可以填写语言、时区、个人简介等资料，以及回答上手引导中的问题，例如你的角色、使用场景、从哪里了解到 Multica。",
-          "你创建的内容：工作区、任务、评论、聊天消息、附件、智能体指令，以及你或你的智能体放进 Multica Cloud 的其他内容。",
+          "账户信息：你的姓名、邮箱地址和头像。如果你使用 Google 登录，我们会从 Google 获得你的姓名、邮箱地址和头像。你也可以填写语言、时区、个人简介等资料，以及回答上手引导中的问题，例如你的角色、使用场景、从哪里了解到 CodeOPC。",
+          "你创建的内容：工作区、任务、评论、聊天消息、附件、智能体指令，以及你或你的智能体放进 CodeOPC Cloud 的其他内容。",
           "联系商务表单：你的姓名、工作邮箱、公司名称和规模、国家或地区、使用场景、目标，以及你的沟通偏好。为了防止滥用，我们还会记录提交表单时的 IP 地址和浏览器 user agent。",
           "账单信息：订阅付款由 Stripe 在其托管的页面上处理，我们不会接收或存储你的完整银行卡信息。",
           "使用和设备信息：应用版本、操作系统、客户端类型和一个随机生成的安装 ID；你连接为运行时的每台机器的名称（默认是其主机名）；以及崩溃和错误报告。报告发送前，我们会从错误信息中过滤掉能识别出的邮箱地址和凭据，但报告仍可能包含与出错情况相关的其他细节。",
@@ -407,24 +186,24 @@ export function createZhDict(
       {
         heading: "我们如何使用信息",
         bullets: [
-          "提供、运营和保护 Multica Cloud，包括登录、同步工作区、发送通知和邀请。",
+          "提供、运营和保护 CodeOPC Cloud，包括登录、同步工作区、发送通知和邀请。",
           "回复联系商务表单和支持请求。",
           "发送服务消息，例如登录验证码和工作区邀请。只有在你主动同意后，我们才会发送产品动态或营销信息，你可以随时退订。",
-          "了解 Multica 的使用情况、修复问题并改进产品。",
+          "了解 CodeOPC 的使用情况、修复问题并改进产品。",
           "防止滥用，并履行法律义务。",
         ],
       },
       {
         heading: "法律依据",
         paragraphs: [
-          "在法律要求说明处理依据的地区，我们依据以下几点处理个人信息：履行与你之间的合同，以提供 Multica Cloud；我们在保障安全、提供支持、改进 Multica 和回复咨询方面的正当利益；你对接收营销信息的同意；以及履行我们的法律义务。",
+          "在法律要求说明处理依据的地区，我们依据以下几点处理个人信息：履行与你之间的合同，以提供 CodeOPC Cloud；我们在保障安全、提供支持、改进 CodeOPC 和回复咨询方面的正当利益；你对接收营销信息的同意；以及履行我们的法律义务。",
         ],
       },
       {
         heading: "AI 功能",
         paragraphs: [
-          "你的编码智能体运行在你自己的机器或你连接的运行时上，使用的是你配置的编码工具和账户。智能体在本机运行，不代表模型也在本机推理：这些工具会把提示词、代码、文件和工具调用结果发送给各自的模型服务商，并受你所用工具和账户的条款约束。Multica 负责协调智能体的工作。",
-          "Multica Cloud 的部分功能（如生成聊天标题和推荐后续操作）会把你的第一条聊天消息或最近几条消息，发送给我们选用的第三方大语言模型服务商来生成结果。Multica 不会用你的内容训练 AI 模型。",
+          "你的编码智能体运行在你自己的机器或你连接的运行时上，使用的是你配置的编码工具和账户。智能体在本机运行，不代表模型也在本机推理：这些工具会把提示词、代码、文件和工具调用结果发送给各自的模型服务商，并受你所用工具和账户的条款约束。CodeOPC 负责协调智能体的工作。",
+          "CodeOPC Cloud 的部分功能（如生成聊天标题和推荐后续操作）会把你的第一条聊天消息或最近几条消息，发送给我们选用的第三方大语言模型服务商来生成结果。CodeOPC 不会用你的内容训练 AI 模型。",
         ],
       },
       {
@@ -438,8 +217,8 @@ export function createZhDict(
         heading: "我们与谁共享信息",
         paragraphs: [
           "你放进工作区的信息，会按工作区的权限设置，被其他成员和管理员，以及他们授权的智能体和集成看到。如果你的工作区属于某个组织，其中的内容由该组织管理，相关请求也可能由该组织处理。",
-          "在法律要求时，我们会披露相关信息；如果 Multica 发生合并、收购或资产出售，相关信息也可能转移给买方或继任方。",
-          "除此之外，我们只会与帮助我们运营 Multica 的服务商，以及你选择连接的集成共享个人信息：",
+          "在法律要求时，我们会披露相关信息；如果 CodeOPC 发生合并、收购或资产出售，相关信息也可能转移给买方或继任方。",
+          "除此之外，我们只会与帮助我们运营 CodeOPC 的服务商，以及你选择连接的集成共享个人信息：",
         ],
         bullets: [
           "Amazon Web Services：托管、文件存储和内容分发",
@@ -455,19 +234,19 @@ export function createZhDict(
       {
         heading: "信息的存储位置",
         paragraphs: [
-          "Multica Cloud 托管在 Amazon Web Services 和 Vercel 上。我们和我们的服务商可能会在美国及其他国家或地区处理你的信息。无论在哪里处理，我们都会按照本政策保护这些信息。",
+          "CodeOPC Cloud 托管在 Amazon Web Services 和 Vercel 上。我们和我们的服务商可能会在美国及其他国家或地区处理你的信息。无论在哪里处理，我们都会按照本政策保护这些信息。",
         ],
       },
       {
         heading: "信息的保留期限",
         paragraphs: [
-          "账户信息和工作区内容会在你的账户或工作区存在期间一直保留。工作区所有者删除工作区后，其中的任务、评论等内容会从 Multica Cloud 中移除，但用于恢复的备份在之后一段时间内仍可能包含副本。如需从我们的文件存储中清除已删除工作区里上传的文件，请发邮件至 [support@multica.ai](mailto:support@multica.ai)。账单记录按会计和税务规定要求的期限保留；产品分析数据、崩溃报告、联系商务表单和反馈，会在为你提供支持和改进 Multica 所需的期间内保留。你可以要求我们删除联系商务表单和反馈。",
+          "账户信息和工作区内容会在你的账户或工作区存在期间一直保留。工作区所有者删除工作区后，其中的任务、评论等内容会从 CodeOPC Cloud 中移除，但用于恢复的备份在之后一段时间内仍可能包含副本。如需从我们的文件存储中清除已删除工作区里上传的文件，请发邮件至 [support@codeopc.ai](mailto:support@codeopc.ai)。账单记录按会计和税务规定要求的期限保留；产品分析数据、崩溃报告、联系商务表单和反馈，会在为你提供支持和改进 CodeOPC 所需的期间内保留。你可以要求我们删除联系商务表单和反馈。",
         ],
       },
       {
         heading: "你的选择和权利",
         paragraphs: [
-          "根据你所在地的法律，你可能有权访问、更正、删除或导出你的个人信息，反对或限制某些处理，撤回你已给出的同意（例如接收营销信息的同意），以及向当地的数据保护机构投诉。你可以随时在 Multica 中更新个人资料，也可以在设置中删除你拥有的工作区。其他请求（包括删除账户），请发邮件至 [support@multica.ai](mailto:support@multica.ai)，我们会在 30 天内回复。",
+          "根据你所在地的法律，你可能有权访问、更正、删除或导出你的个人信息，反对或限制某些处理，撤回你已给出的同意（例如接收营销信息的同意），以及向当地的数据保护机构投诉。你可以随时在 CodeOPC 中更新个人资料，也可以在设置中删除你拥有的工作区。其他请求（包括删除账户），请发邮件至 [support@codeopc.ai](mailto:support@codeopc.ai)，我们会在 30 天内回复。",
         ],
       },
       {
@@ -479,7 +258,7 @@ export function createZhDict(
       {
         heading: "儿童",
         paragraphs: [
-          "Multica 并非面向 16 岁以下的儿童，我们也不会在知情的情况下收集他们的个人信息。",
+          "CodeOPC 并非面向 16 岁以下的儿童，我们也不会在知情的情况下收集他们的个人信息。",
         ],
       },
       {
@@ -491,7 +270,7 @@ export function createZhDict(
       {
         heading: "联系我们",
         paragraphs: [
-          "Multica 由 Index Labs (Hong Kong) Limited 运营，并由其负责你的个人信息。如有隐私相关的问题或请求，请发邮件至 [support@multica.ai](mailto:support@multica.ai)。",
+          "CodeOPC 由 Index Labs (Hong Kong) Limited 运营，并由其负责你的个人信息。如有隐私相关的问题或请求，请发邮件至 [support@codeopc.ai](mailto:support@codeopc.ai)。",
         ],
       },
     ],
@@ -499,7 +278,7 @@ export function createZhDict(
 
   changelog: {
     title: "\u66f4\u65b0\u65e5\u5fd7",
-    subtitle: "Multica \u7684\u6700\u65b0\u66f4\u65b0\u548c\u6539\u8fdb\u3002",
+    subtitle: "CodeOPC \u7684\u6700\u65b0\u66f4\u65b0\u548c\u6539\u8fdb\u3002",
     toc: "\u5386\u53f2\u7248\u672c",
     categories: {
       features: "新功能",
@@ -507,6 +286,271 @@ export function createZhDict(
       fixes: "问题修复",
     },
     entries: [
+      {
+        version: "0.11.0",
+        date: "2026-11-18",
+        title: "智能体接入微信、聊天自动回访、回复中途补充要求，以及项目文件夹",
+        changes: [],
+        features: [
+          "扫码即可把智能体接入微信，在微信私聊中与它对话并收发文件。自托管服务器需配置 MULTICA_WEIXIN_SECRET_KEY 才能开启。",
+          "在聊天中让智能体在某件事完成后告诉你，它会回到同一个对话里汇报。",
+          "在聊天中让智能体找人要答复、决定或评审时，它默认会回来汇报结果。",
+          "智能体在聊天中回复时，你可以继续补充要求，内容会并入当前回复，不会打断它。",
+          "在侧栏用文件夹整理项目，可拖入拖出，「项目」页也能按文件夹分组。",
+          "自动化的 Webhook 触发器可按请求内容筛选，规则和启停可在所在行直接修改。",
+          "GitLab System Hook 也能像项目 Webhook 一样把合并请求同步到 Issue。",
+          "在 Issue 评论里输入 / 和关键词，即可选用目标智能体的技能。",
+          "Issue 侧栏列出子 Issue，阅读讨论时也能随时查看和打开。",
+          "工作区图标可以用一两个字符加颜色生成，无需上传图片。",
+          "运行时页面显示 Claude Code 和 Codex 套餐限额的用量和重置时间。",
+          "CLI 可查看收件箱、把自动化交给小队，并说明 Issue 改动为何没有启动运行。",
+        ],
+        improvements: [
+          "长 Issue 滚动和查找更流畅，切换侧栏或从收件箱打开时也更快。",
+          "大量通知同时到达时，收件箱依然加载迅速。",
+          "状态变更通知现在默认关闭。如需接收，可在「设置 → 通知」中重新打开。",
+          "任意编辑器都能提及项目，不再只限于聊天。",
+          "Issue 和项目菜单可以复制带标题的链接。",
+          "运行详情会分别显示技能包的完整大小和实际发给智能体的内容量。",
+        ],
+        fixes: [
+          "Cursor 会为每个智能体跨任务保留 MCP 登录，缺少登录时会提供登录入口。",
+          "重试会在智能体当前的运行时上执行，切换运行时后不再续用旧会话。",
+          "小队成员提及他人时队长仍会跟进，提及小队也不再通知每个成员。",
+          "Webhook 动作筛选能正确匹配 GitLab 合并请求、流水线和作业事件，不同投递不再并成一个 Issue。",
+          "桌面稳定版在全部平台构建就绪后才推送，更新失败可恢复，Windows arm64 不再被降级。",
+          "自定义运行时只留在你选择的机器上，不再复制到所有人的机器。",
+          "等待本地目录的任务不再阻塞其他任务，领取任务也不再与聊天发送互相死锁。",
+          "受 Git 跟踪的 AGENTS.md 或 CLAUDE.md 中临时写入的运行说明，不再混进智能体的提交。",
+          "在聊天或 Issue 评论中用 / 选中的技能，现在会真正被智能体使用。",
+          "「设置 → 代码」可管理多个 GitHub 连接，粘贴的 GitHub 分支链接也能填入正确的分支。",
+          "过期的图片链接在查看器中可重新加载，HTML 附件预览里的锚点和链接也能正常跳转。",
+          "描述很长时，点击收件箱通知也能准确定位到对应评论。",
+          "切换标签页或 Issue 视图后保留滚动位置，看板也恢复了横向滚动。",
+          "修复了自托管首次启动、DeepSeek Harness 启动报错、技能体积上限、插件 MCP 名称和 Connected Apps 的一些小问题。",
+          "修复了协调者交接、自我提及、字段更新报错、全部标为已读、收件箱标签和全屏标签页的一些小问题。",
+        ],
+      },
+      {
+        version: "0.10.0",
+        date: "2026-11-16",
+        title: "桌面端语音输入、收件箱并入工作面板并支持延后、项目看板与归档",
+        changes: [],
+        features: [
+          "桌面端开启「设置 → 语音输入」后，可在任意输入框听写，音频在本机转写。",
+          "收件箱移到工作面板顶部，每行显示 Issue 状态和智能体的工作情况。",
+          "收件箱里的 Issue 可以延后处理，期间留在「已延后」视图，到时以未读状态回来。",
+          "在收件箱里一步取消订阅他人的 Issue 并归档通知，可以撤销。",
+          "他人负责的 Issue 默认只推送关键更新，收件箱更清静。",
+          "全部项目页新增看板、分组、搜索、开始和截止日期，以及最近活动。",
+          "归档项目可将其隐藏并暂停相关自动化，之后随时可以恢复。",
+          "私有项目只对成员可见，工作区所有者和管理员也不例外。所有者可在「设置 → 常规」中加入任意私有项目。",
+          "批量修改标签、项目、日期、父 Issue 和自定义属性，可只重试被跳过的项。",
+          "主题能覆盖更多界面，可添加背景和毛玻璃效果，智能体也能帮你制作主题。",
+          "文本、代码、Markdown、JSON 和 CSV 附件可在预览中一键复制全文。",
+          "CLI 可管理保存的视图、关联或解除 PR、过滤 Webhook 事件、批量更新 Issue 和归档项目。",
+        ],
+        improvements: [
+          "智能体代你创建的 Issue 会通知你，提及你的评论只通知一次，表情回应通知可单独静音。",
+          "你完成或取消 Issue 后，你在该 Issue 上的通知会离开收件箱。",
+          "内置视图改为「我的工作」「执行中」「已订阅」和「已延后」，项目中新增「无项目」行。",
+          "可从 Cmd+K 打开视图，侧栏视图都显示计数，桌面端的新建 Issue 和搜索移到应用导航栏。",
+          "内容字号与界面字号使用同样的滑块。",
+          "新建 Issue 窗口记住上次尺寸，PR 标记可直接打开 PR，侧栏项目可改用简洁图标。",
+          "主题商店始终开启，并按下载量排序；MULTICA_THEME_STORE 不再能关闭它。",
+        ],
+        fixes: [
+          "CLI 行内文本中的反斜杠按原样保留，Windows 路径、正则表达式和 LaTeX 不再被改写。依赖 \\n 等转义的脚本请改传真实字符，或使用命令支持的文件或 stdin 输入。",
+          "收件箱通知会打开到第一条未读评论，归档后自动进入下一条并可撤销。",
+          "打开中的收件箱通知在 Issue 变化时保持原位和高亮，切换通知也不再变慢。",
+          "看板卡片里的菜单恢复可用，从卡片头像分配智能体前会先确认。",
+          "通过 API 或 CLI 为私有项目添加成员不再被忽略。",
+          "绑定 GitHub 安装前会验证你确实拥有控制权，智能体任务令牌不能再管理插件。",
+          "Windows 上的仓库检出不再因路径过长而失败。",
+          "排队中的任务不会再等上几分钟才被空闲的运行时领取。请更新守护进程以获得此修复。",
+          "修复 CodeBuddy 失败原因和续跑用量、Kiro 限流识别、TRAE 只做计划就结束，以及 Copilot 自定义参数的问题。",
+          "桌面端打开 Issue 时复用已有标签页且不抢焦点，日志输出中断也不再导致崩溃。",
+          "长链接和图片不再撑宽弹窗，Grammarly 等扩展的点击也不再误关弹窗。",
+          "切换工作区时命令面板会重置，聊天右键菜单在移动指针时保持打开。",
+          "修复了 CLI 的 setup、描述、元数据键、鉴权错误、Webhook 轮换、删除运行时，以及 API 405 响应的一些小问题。",
+          "修复了设置自动保存、跳转到最新、邀请列表、iPhone 网页应用、Option 快捷键、飞书引用和模型价格的一些小问题。",
+        ],
+      },
+      {
+        version: "0.9.0",
+        date: "2026-11-13",
+        title: "社区主题、Issue 侧栏环境控制、桌面端统一右键菜单",
+        changes: [],
+        features: [
+          "可以在「设置 → 外观」制作、导入或安装社区主题，并在账户菜单里切换主题。",
+          "在 Issue 侧栏的「环境」中启动、停止和重启服务、查看日志，并切换到桌面应用窗口。",
+          "打开一次运行，即可查看它收到的指令、技能和 MCP 服务器。",
+          "可以用 Factory Droid 和 Amp 运行任务。",
+          "桌面端各处使用统一的右键菜单，并可直接对 Issue 执行快捷操作。",
+          "快捷聊天移入新的底栏，按 Shift+Cmd+J 即可新建 Ask CodeOPC 聊天。",
+          "选中智能体聊天回复里的文字即可批注，批注会随下一条消息一起发送。",
+          "可以选择聊天回复是否发送系统通知，桌面端的后台聊天提醒和 Dock 未读数恢复正常。",
+          "Telegram 回复会实时显示智能体正在做什么，私聊比群聊显示更多细节。",
+          "可以订阅项目里的所有 Issue。",
+          "看板、泳道、列表和表格可以显示关联的 PR 及其状态。",
+          "确认后即可删除收件箱条目，不影响 Issue 本身和其他成员的通知。",
+          "CLI 可以永久删除一个或多个 Issue，会先确认，并列出删除失败的条目。",
+          "可以选择并排序 Issue 侧栏中的模块。",
+          "评论里的图片默认显示为缩略图，可以切换为完整尺寸。",
+        ],
+        improvements: [
+          "设置项目工作流、仓库、本机目录和子 Issue 唤醒默认值的步骤更少。",
+          "创建技能、管理标签和邀请成员更简单，小队可以原地编辑。",
+          "消息渠道统一归属智能体，点击平台即可连接；GitHub 授权后会回到原页面并预选仓库。",
+          "智能体筛选里的「我的智能体」只有一种含义，新增「空闲」，Issue 会显示真正发起智能体工作的人。",
+          "执行日志按行显示命令输入，运行时用量页会保留所选的时间范围。",
+          "飞书任务会带上消息、话题和发送者 ID，Qoder 会话会标注来自 CodeOPC。",
+          "CLI 会把正文里的本地图片链接关联到同次上传的附件。",
+          "网页版按语言缓存翻译词库，页面重复加载的数据更少。",
+        ],
+        fixes: [
+          "长讨论按需渲染，完整显示较早的图片，并可一键回到最新动态。",
+          "私有项目的 Issue 不会再通过运行、引用、自动化、唤醒列表或子 Issue 计数被看到。",
+          "收件箱能定位到正确的评论，清除已删除的条目，不再跳回旧的选中项。",
+          "图片保留 HTML 地址，各端预览顺序一致；带标题的 Mermaid、HTML 和代码块恢复显示。",
+          "新建标签期间调整的选择和排序不再被覆盖。",
+          "桌面端全屏时标签页可正常点击，保存的视图能正确切换，已关闭的侧栏在加载时保持关闭。",
+          "聊天浮窗与主聊天共用控制，发送时移除页面上下文标签，各处标题一致。",
+          "提及不存在或不可用的智能体时会留下持久的错误提示，没有接收者的提及不再添加订阅者。",
+          "只有登录会话会被续期，守护进程令牌不再充当用户身份，构建升级到 Go 1.27.4 以修复安全问题。",
+          "修复 Antigravity 续跑、Hermes 检测、Linux 上的 ZCode、mise 安装的运行时，以及 macOS 上运行结束时误报失败。",
+          "Claude 执行日志保留思考内容，Copilot 会上报新会话的用量。",
+          "提高运行时并发上限后会立即开始等待中的任务，重复 checkout 会复用同一目录、分支和权限。",
+          "连接自托管服务器的守护进程默认在任务完成 14 天后删除其工作目录，与 Cloud 一致。如需保留，请在升级守护进程前设置 MULTICA_GC_COMPLETED_TASK_TTL=0。",
+          "用量按准确的自然日统计，接受乱序上报，并补齐新模型的价格。",
+          "修复了取消上传、安装失败、永不触发的计划、交付物链接、文件大小和环境变量编辑的一些小问题。",
+        ],
+      },
+      {
+        version: "0.8.2",
+        date: "2026-11-10",
+        title: "外观主题、私有项目全面开放、Issue 环境",
+        changes: [],
+        features: [
+          "CodeOPC 官网改版，每种语言都有自己的地址（/zh、/ja、/ko）。",
+          "「设置 → 外观」可以从 5 套内置主题中选择，并设置字体、字号、信息密度和对比度。",
+          "所有工作区都可以使用私有项目，其中的 Issue 只对项目成员以及工作区所有者和管理员可见。",
+          "Issue 侧栏的「环境」会列出它的运行启动的服务。在 macOS 和 Linux 上，智能体可以用 codeopc env start 让服务持续运行。",
+          "Connected Apps 重新设计（在已启用的工作区可用）：可以连接团队或个人账号，并为每个智能体选择可用的应用。",
+          "选中文字即可批注，并就地回复。",
+          "可以复制一个始终打开交付物最新版本的链接。",
+          "在执行日志里勾选 Include sub-issues，即可汇总查看所有子 Issue 的运行和成本。",
+          "收件箱可以像 Issue 一样筛选。",
+          "工作流的阶段可以交给小队。",
+          "支持俄语。",
+          "新的 museapp 后端支持在 Muse app 上运行个人智能体。",
+          "Qoder 可以通过工作区的 GitHub App 访问仓库。",
+          "可以从网页版直接在桌面端打开 Issue。",
+          "可以在菜单里重命名项目、编辑已保存视图，拖动左侧导航栏的图标即可调整空间顺序。",
+          "CLI 新增：--pr-auto-complete（适用于分多个 PR 交付的 Issue）、issue search 的 --project，以及 issue-status 命令。",
+        ],
+        improvements: [
+          "导航栏变窄，按钮改为矩形，宽屏下 Issue 和聊天的阅读区域更宽。",
+          "侧栏里的项目显示各自的图标，团队页会记住折叠的分组。",
+          "只有图标的按钮有了读屏名称，被截断的标签也能用键盘查看全文。",
+          "应用和官网里的动画更少。",
+          "只搜索未完成的 Issue 时更快。",
+        ],
+        fixes: [
+          "附件下载一律需要登录，旧图片、音频、视频和 PDF 恢复正常。旧版桌面端需要升级，本地草稿和旧链接才能继续使用。",
+          "Codex 的回答恢复完整的流式输出，不再只输出第一个词就停住。",
+          "由 Issue 更新触发的自动化恢复运行。",
+          "旧请求迟到的 401 响应不会再把你登出。",
+          "Issue 编号冲突时，新建 Issue 不再失败。",
+          "守护进程会清理闲置聊天的构建缓存，磁盘占用不再持续增长。",
+          "导入包含多个本地技能的文件夹时会全部导入。",
+          "CSV 预览不再因为引号内的分隔符而错列。",
+          "Hermes 可以在 Windows 受限的 Job Object 中运行。",
+          "Issue 列表加载失败时可以重试，Issue 提及和待处理的邀请会在回到窗口时刷新。",
+          "筛选子菜单里的搜索框可以重新输入了。",
+          "codeopc daemon start 只在守护进程健康后才报告成功。",
+          "Lark、Slack 等频道绑定页面不再与工作区地址冲突。",
+          "修复了侧栏、小队选择器、自动化运行历史和 CLI 的一些小问题。",
+        ],
+      },
+      {
+        version: "0.8.1",
+        date: "2026-11-06",
+        title: "技能版本历史与恢复、未读视图、工作区置顶",
+        changes: [],
+        features: [
+          "技能会保留版本历史：打开技能的「历史」可以查看旧版本，并把它恢复为最新版本。",
+          "可以按「阅读状态 → 未读」筛选 Issue，也可以给内置的「未读」视图加星标，把它放进侧栏。打开时定位到最新的未读运行，刚读完的那一行不会马上消失。",
+          "新增「我订阅的」筛选，能找出你订阅了、但没有分配给你或你的智能体的 Issue。",
+          "新建视图时，在命名的地方就能直接设置筛选和排序。",
+          "可以把常用工作区置顶在工作区切换菜单顶部。",
+          "创建子 Issue 时可以复制父 Issue 的字段。",
+          "从 ? → What's new 查看每个版本的亮点。",
+          "新增西班牙语（西班牙），可以在设置或账号菜单里切换。",
+          "Qoder Cloud Agents 可以绑定 IM 集成，在聊天中接收附件并把生成的文件发回对话，快速创建时也能选它当小队队长。",
+          "智能体可以用 view list 和 view issues 读取已保存的视图，筛选和分页与应用内一致。",
+          "插件可以通过 GET /v1/tasks/{task_id}/messages 读取任务的执行消息，并按 seq 只获取新消息。",
+          "Slack 历史和任务上下文会带上频道 ID、可获取时的频道名称和原话题链接。",
+          "CLI 的 issue list 可以按更新时间范围筛选。",
+        ],
+        improvements: [
+          "智能体、项目、技能、小队、运行时、自动化和唤醒的空页面会介绍用途，并引导你开始配置。",
+          "收件箱和聊天列表分别记住宽度，收件箱的行更紧凑。",
+          "在任何地方打开 Issue，都会把它在收件箱里的通知全部标为已读；收件箱优先显示需要处理的事项，不会被较新的普通通知盖住。",
+          "「恢复到收件箱」移到 Issue 的更多操作菜单里。",
+          "各 Issue 面板默认按最近更新排序，已经选过的排序保持不变。",
+          "技能列表支持搜索。",
+          "可以在智能体属性侧栏查看和设置思考级别，Kiro 也会按设置的思考级别运行。",
+          "守护进程的空闲和工具静默 watchdog 可以写在配置文件里，也可以用启动参数覆盖；设为 0s 关闭对应限制。",
+          "可以用 MULTICA_MAX_PREVIEW_SIZE 设置文本和 HTML 附件的内联预览上限，默认 2 MiB，最高 16 MiB。",
+          "评论里的图片滚动到才加载，并预留好尺寸，长讨论不再频繁跳动。",
+          "聊天历史和智能体的最近工作列表很长时也保持流畅。",
+          "运行时侧栏显示在线机器数量。",
+          "文档站新增繁体中文，使用繁体中文时应用内会直接打开繁体文档。",
+          "新增日文 README。",
+          "所有工作区的 Issue 删除权限都已收紧：所有者和管理员可以删除任何 Issue，成员只能删除自己或自己的智能体创建的 Issue，智能体只能删除自己创建的 Issue。单个删除和批量删除都适用。",
+          "项目创建者可以删除自己创建的项目；删除前需要确认，服务器确认成功后才会关闭。",
+          "筛选所需的数据还在加载时显示加载状态，失败时可以重试，不再显示为空列表。",
+          "CLI 不支持某项平台操作时，智能体会在结果里说明，不再默认 @ 工作区所有者。",
+        ],
+        fixes: [
+          "从 worktree 交付时只包含智能体提交的内容，其余临时文件另行保存；取消准备留下的孤立 checkout 会被清理，下一轮不再卡住。",
+          "在飞书里选中的引用或转发媒体，生成 Issue 时不再丢失。",
+          "企业微信拒绝私聊回复时，机器人会在群里提示你先打开与它的单聊。",
+          "Web 和文档站升级到 Next.js 16.4.5，修复一个安全问题。",
+          "CLI 登录遇到不支持的回调地址时会说明原因，不再一直等待。",
+          "Issue 标签已写入但回读列表里缺失时，CLI 仍会确认成功。",
+          "条件等价的高级筛选可以继续翻页，自定义属性值里的空格也会保留。",
+          "保存 Markdown 时保留嵌套代码块、缩进代码和字面反斜杠（例如 LaTeX）。",
+          "实时更新不再覆盖你正在输入的文本、数字或日期属性。",
+          "使用中文、日文输入法组字时，Enter 和 Escape 不再提前提交筛选、重命名或查找；Shift+Enter 也不会取消命令栏里的委派预览。",
+          "Hermes 在多轮运行之间保留本地安装的依赖。",
+          "评论里的快捷操作选中后立即插入。",
+          "下载从其他评论引用的 CDN 图片时，不再打开 MissingKey 错误页。",
+          "已删除的技能会从新建智能体的草稿中移除；TRAE 按文件读取任务技能；用户技能与内置技能同名时，内置技能仍能正常使用。",
+          "回复发送成功后输入框会失去焦点，可以直接用页面快捷键；发送失败时保留草稿和焦点。",
+          "快速创建和任务里的命令始终使用守护进程提供的 CLI，不会用到 PATH 里的旧版本。",
+          "包装脚本输出日志时，运行时和模型也能被正确识别。",
+          "Pi 和 omp 启动前会检查系统能否安全清理进程（macOS 的身份信号、Linux 的 pidfd）；不支持或被沙箱拦截时，会在启动前直接报错。",
+          "通过 Web 上传大文件不再在约 10 MiB 处被截断，上限为 100 MiB，超出时给出明确错误。",
+          "智能体更换运行时后，排队中和延后的任务会一起转到新运行时。",
+          "收件箱的归档筛选菜单在加载时不再被关掉。",
+          "在嵌套的父 / 子 Issue 选择器外点击，只关闭选择器，保留你的草稿。",
+          "过长的运行时和模型名称不再撑开设置弹窗。",
+          "附件下载时显示进度，并忽略重复点击；CLI 下载中途断线时保留原文件。",
+          "保存头像时不会中途被取消，也不会重复保存。",
+          "日历里用方向键移动选择后，按 Enter 会选中当前日期。",
+          "时间输入框不再拦截 Ctrl、Cmd、Alt 快捷键。",
+          "剪贴板不可用时复制，不会丢失当前的文字选区。",
+          "桌面端重启后，后台 Issue 标签页会显示标题和状态。",
+          "唤醒或续跑沿用的工作流步骤已过期时，智能体和小队队长会收到说明并保持当前状态。",
+          "Issue 加载失败时显示重试，不再误报已删除；侧栏的项目状态列表也可以重试。",
+          "切换工作区后重试聊天，不再把数据写进别的工作区。",
+          "侧栏里被截断的项目名和 Issue 标题，悬停或键盘聚焦即可看到全名。",
+          "各端 Markdown 图片预览的顺序一致，长讨论渲染更快。",
+          "中文下载页的更新链接和文档站图标恢复正常。",
+        ],
+      },
       {
         version: "0.8.0",
         date: "2026-11-03",
@@ -520,14 +564,14 @@ export function createZhDict(
           "扫码即可创建企业微信机器人，智能体回复时能看到进度。",
           "Qoder Cloud Agents 支持聊天、快速创建和 Issue 附件，并按运行显示 Qoder credits。",
           "可以用 ZCode 运行任务。",
-          "Pi 运行中可以补充指令，并会加载 Multica 安装的技能。",
+          "Pi 运行中可以补充指令，并会加载 CodeOPC 安装的技能。",
           "可以限制一个运行时同时执行的任务数。",
           "可以用 CLI 管理工作流。",
           "Hermes 运行中可以看到 token 和费用。",
           "已解决的讨论会显示结论，智能体不用再重复展开。",
         ],
         improvements: [
-          "Multica 的标识、图标和配色全面更新。",
+          "CodeOPC 的标识、图标和配色全面更新。",
           "智能体列表恢复搜索，更多位置可以打开智能体设置。",
           "空页面样式统一，并提示下一步。",
           "附件预览下方新增翻页器。",
@@ -573,7 +617,7 @@ export function createZhDict(
           "窄屏上可一键跳到时间线最新动态；桌面端仍使用右侧导航轨。",
         ],
         improvements: [
-          "全站改用 Multica 自绘图标，菜单间距和字号统一。",
+          "全站改用 CodeOPC 自绘图标，菜单间距和字号统一。",
           "文字被截断时才显示完整内容的提示，并稍作延迟，鼠标经过时更少误弹。",
           "点击运行即可打开完整记录；执行记录折叠排队中的运行，压缩历史和费用，进行中的运行和停止按钮始终可见。",
           "工作流列表把项目使用情况收为一行，点击可看完整清单；交接步骤显示接手者姓名。",
@@ -585,7 +629,7 @@ export function createZhDict(
           "OpenCode 会把长时间的工具调用和子智能体活动及时上报，不再被当作空闲而中止；支持 OpenCode 2.x 的 MCP 服务器，已关闭的只展示、不加入任务。",
           "Hermes 的工具命令保留任务身份，兼容新旧版本 Hermes，不再因 state.db 归属问题失败；Go 的 x/net 也有安全更新。",
           "Oh-My-Pi 只列出和导入当前所选配置中的技能。",
-          "DSH 必须加载官方的 @multica-ai/dsh-runtime；旧 bridge 配置会被拒绝并给出迁移步骤，不再丢失运行内容。",
+          "DSH 必须加载官方的 @codeopc-ai/dsh-runtime；旧 bridge 配置会被拒绝并给出迁移步骤，不再丢失运行内容。",
           "Claude Code 的会话和每周额度用完时会显示为额度错误，出错后运行会及时结束。",
           "Kiro 遇到临时网络错误会自动重试，并继续原会话。",
           "OpenClaw 的状态目录被其他实例占用时，报错会说明如何恢复。",
@@ -921,7 +965,7 @@ export function createZhDict(
           "Grok Build 的任务在运行过程中也能补充新的指导。",
           "Issue 的附件可以在全屏视图里逐个翻看。",
           "文档站现在有完整的法语内容。",
-          "官网可以查到许可说明、隐私政策，以及 Multica 背后的团队。",
+          "官网可以查到许可说明、隐私政策，以及 CodeOPC 背后的团队。",
           "自托管的管理员可以让自动标题和快捷操作响应更快。",
         ],
         improvements: [
@@ -1287,7 +1331,7 @@ export function createZhDict(
         features: [
           "华为云 CodeArts 现已成为内置的智能体运行时。",
           "可以选它的模型、续接之前的会话，并使用 MCP 和本地技能。",
-          "iPad 上可以原生安装 Multica，横屏竖屏都能用。",
+          "iPad 上可以原生安装 CodeOPC，横屏竖屏都能用。",
           "自托管部署在多台服务器上时，企业微信机器人的回复也能送达。",
           "可以查看有多少条企业微信回复没有发出，以及原因。",
         ],
@@ -1543,7 +1587,7 @@ export function createZhDict(
           "你可以生成一个分享链接，让别人直接加入工作区。",
           "运行记录改成按步骤看，配双轨时间线和结果概览。",
           "Slack 消息里发的文件现在会作为附件出现在对话里。",
-          "手机上可以把 Multica 添加到主屏幕，像应用一样打开。",
+          "手机上可以把 CodeOPC 添加到主屏幕，像应用一样打开。",
           "浏览器标签页会显示你正打开的工作区页面名。",
           "导入的技能现在会显示它来自哪里。",
           "提到你正在看的这个 Issue 时，会显示成「本 Issue」。",
@@ -1589,7 +1633,7 @@ export function createZhDict(
         fixes: [
           "跑不起来的智能体 CLI 会直接告诉你怎么修好。",
           "别人的私有运行时不会再被 API 或 CLI 拿去用。",
-          "任务残留不会再让整个目录里的 multica 命令失效。",
+          "任务残留不会再让整个目录里的 codeopc 命令失效。",
           "用 Volta 或 Vite Plus 装的智能体现在能被识别了。",
           "对话里最后一条回复和输入框之间的间距回来了。",
           "深色模式下当前标签页不再出现暗色方块，悬停圆角也完整了。",
@@ -1611,7 +1655,7 @@ export function createZhDict(
           "自托管时可以把任务临时文件放到更大的磁盘上。",
         ],
         improvements: [
-          "`multica daemon logs` 会直接告诉你日志文件在哪。",
+          "`codeopc daemon logs` 会直接告诉你日志文件在哪。",
           "Hermes 任务现在会说清读的是哪个 HERMES_HOME。",
         ],
         fixes: [
@@ -1650,7 +1694,7 @@ export function createZhDict(
           "中文、日文、韩文里紧贴标点的加粗又能正常显示了。",
           "安卓上发送或停止消息后，键盘不会再收起来。",
           "自托管的 Hermes 对话不会再每隔一条就报错。",
-          "残留的端口设置不会再让 `multica login` 失败。",
+          "残留的端口设置不会再让 `codeopc login` 失败。",
           "Cursor 任务现在能用上你配好的 MCP 服务。",
           "在 Slack 里建 Issue，标题里的链接不再被改写。",
           "PR 不会再关掉另一个工作区里编号相同的 Issue。",
@@ -1701,7 +1745,7 @@ export function createZhDict(
           "Oh-My-Pi 现在也能跑你的智能体了。",
           "企业微信里的语音留言，智能体现在也听得懂。",
           "Kimi 和 Pi 的智能体现在可以选思考强度了。",
-          "Multica 里的任意链接，Cmd/Ctrl 或中键点击就能在新标签页打开。",
+          "CodeOPC 里的任意链接，Cmd/Ctrl 或中键点击就能在新标签页打开。",
           "企业微信连不上时，页面会说清是被拒绝还是根本连不通。",
         ],
         improvements: [
@@ -1770,7 +1814,7 @@ export function createZhDict(
           "执行记录里能看到每次运行的花费，以及整个任务的合计。",
           "静音评论通知后，@ 到你的消息依然会送达。",
           "手机上聊天以全屏打开，输入框会浮在键盘上方。",
-          "手动替换 multica 或 Agent CLI 后自动生效，不用重启。",
+          "手动替换 codeopc 或 Agent CLI 后自动生效，不用重启。",
         ],
         improvements: [
           "智能体每次运行读取的说明更短，留给工作的空间更多。",
@@ -1994,7 +2038,7 @@ export function createZhDict(
           "粘贴超长文本时，现在会自动变成文本附件。",
           "每个上传只显示一次，完成后才会写入草稿。",
           "Webhook URL 现在默认隐藏，可按需显示。",
-          "工作区很多时，Multica 启动不再反复检查智能体工具。",
+          "工作区很多时，CodeOPC 启动不再反复检查智能体工具。",
           "用量排名现在先聚焦前十名，失败排序也更清楚。",
           "发送后，光标现在会停在各编辑器预期的位置。",
         ],
@@ -2169,7 +2213,7 @@ export function createZhDict(
           "重新打开设置面板后，你的设置现在能可靠保存。",
           "恢复的 Codex task 现在会准确报告用量。",
           "评论不再把不该变成链接的文字变成链接。",
-          "私聊的回复现在会留在 Multica 里。",
+          "私聊的回复现在会留在 CodeOPC 里。",
           "AI 辅助创建现在始终可用。",
           "任务页面首次打开时不再卡顿。",
           "Linux 上的 Codex 智能体现在能正确保存 Git 信息。",
@@ -2236,7 +2280,7 @@ export function createZhDict(
           "创建任务时选择的标签，现在每次都会和任务一起保存。",
           "把带格式的文本粘贴进评论，不会再留下多余的 ++ 符号。",
           "鼠标只是从头像上划过时，不会再弹出悬浮卡片。",
-          "Linux 桌面应用现在会以 multica-desktop 的名字安装。",
+          "Linux 桌面应用现在会以 codeopc-desktop 的名字安装。",
         ],
       },
       {
@@ -2473,7 +2517,7 @@ export function createZhDict(
         changes: [],
         features: [
           "task 日志（Transcript）会记住你的过滤条件与展开状态，下次打开同一次运行时自动恢复。",
-          "自托管（Helm）：新增 `postgres.external.enabled` 开关，可将 Multica 指向外部托管的 PostgreSQL（RDS、CNPG、Cloud SQL、Neon 等），跳过内置数据库。",
+          "自托管（Helm）：新增 `postgres.external.enabled` 开关，可将 CodeOPC 指向外部托管的 PostgreSQL（RDS、CNPG、Cloud SQL、Neon 等），跳过内置数据库。",
         ],
         fixes: [
           "评论草稿里有空的 `1. ` 列表项时，重新加载后光标不再卡在下方块。",
@@ -2527,8 +2571,8 @@ export function createZhDict(
         title: "Slack /issue 斜杠命令、字节跳动 TRAE CLI 智能体运行时、接入 Claude Sonnet 5",
         changes: [],
         features: [
-          "Slack 里可以直接用原生 /issue 斜杠命令创建 Multica 任务，机器人只会向你私发一条包含任务链接的确认消息。",
-          "同一 Slack 工作区里已经和某个 Multica 机器人绑定过的用户，遇到新加入的第二个机器人时无需再走一次绑定流程。",
+          "Slack 里可以直接用原生 /issue 斜杠命令创建 CodeOPC 任务，机器人只会向你私发一条包含任务链接的确认消息。",
+          "同一 Slack 工作区里已经和某个 CodeOPC 机器人绑定过的用户，遇到新加入的第二个机器人时无需再走一次绑定流程。",
           "Slack 频道场景的上下文阅读拆成两条命令：一条查看频道概览，一条精读单个线程。",
           "字节跳动 TRAE CLI（traecli）通过标准 ACP 协议接入为内置智能体运行时之一。",
           "Anthropic 模型清单接入 Claude Sonnet 5，并已挂上介绍期价格。",
@@ -2544,7 +2588,7 @@ export function createZhDict(
           "修复了 Cursor 与 Kiro 运行时结束时 task 结果不入库的问题，最终回复不再丢失。",
           "自托管的 docker-compose.selfhost.yml 现在会把 MULTICA_SLACK_SECRET_KEY 透传到后端容器。（社区反馈）",
           "任务面板顶部「N 个任务正在处理中」的胶囊改为按任务数去重。",
-          "自托管匿名来源统计的上报地址恢复到正式的 Multica API。",
+          "自托管匿名来源统计的上报地址恢复到正式的 CodeOPC API。",
           "评论的定位高亮改为纯背景色，根评论和回复的行为保持一致。",
         ],
       },
@@ -2555,10 +2599,10 @@ export function createZhDict(
         changes: [],
         features: [
           "Autopilot 新增清晰的写权限分层，详情页提供「管理协作者」入口，可把单个 Autopilot 的写权限授予指定成员。",
-          "Slack 频道可以把过往对话回灌到 Multica，智能体一进入频道即拥有完整上下文。",
+          "Slack 频道可以把过往对话回灌到 CodeOPC，智能体一进入频道即拥有完整上下文。",
           "Slack 智能体处理消息期间会在用户消息上加 👀 反应表情，处理结束后稳定清除，不再出现卡死。",
           "技能包支持从本地 .skill / .zip 归档导入。",
-          "multica issue 命令不再接受短 UUID 前缀，请使用任务 Key（MUL-123）或完整 UUID。",
+          "codeopc issue 命令不再接受短 UUID 前缀，请使用任务 Key（MUL-123）或完整 UUID。",
           "Agents 页面适配移动端。",
         ],
         improvements: [
@@ -2798,7 +2842,7 @@ export function createZhDict(
         features: [
           "智能体、自动任务、项目、运行环境、技能和小队的列表体验更快也更一致，行内容、筛选、选择和操作都更清楚",
           "命令行现在可以管理工作区仓库，本地智能体更容易拿到项目仓库上下文",
-          "Cursor 和 OpenClaw 更容易配置：Cursor 连接设置可以由 Multica 托管，OpenClaw 也可以连接已有网关",
+          "Cursor 和 OpenClaw 更容易配置：Cursor 连接设置可以由 CodeOPC 托管，OpenClaw 也可以连接已有网关",
           "编辑评论时，可以在保存前预览并控制哪些智能体或小队会开始运行",
         ],
         improvements: [
@@ -2820,7 +2864,7 @@ export function createZhDict(
         title: "CodeBuddy Runtime",
         changes: [],
         features: [
-          "CodeBuddy 现在可以驱动本地 Multica 智能体，并会自动显示可用的模型和投入强度选项",
+          "CodeBuddy 现在可以驱动本地 CodeOPC 智能体，并会自动显示可用的模型和投入强度选项",
           "快速创建任务时上传的文件现在会从草稿一直带到最终创建的任务里",
         ],
         improvements: [
@@ -2862,15 +2906,15 @@ export function createZhDict(
           "评论输入框现在会在发送前显示哪些智能体或小队会开始工作，也可以避免误触发运行",
           "智能体运行记录现在会显示时间点，回看进度和交接信息更清楚",
           "自动任务详情页现在会显示创建人",
-          "Claude Fable 5 现在已加入 Multica 支持的模型和价格列表",
+          "Claude Fable 5 现在已加入 CodeOPC 支持的模型和价格列表",
           "任务讨论可以把某一条回复设为解决结论，长讨论收起后也能直接看到最终答案",
-          "在 Lark 和飞书里和 Multica 对话时，会显示等待中的输入状态，回复发出后自动清除",
+          "在 Lark 和飞书里和 CodeOPC 对话时，会显示等待中的输入状态，回复发出后自动清除",
           "每次智能体 task 都会带上真实发起人信息，交接、审计和权限判断更准确",
           "OpenClaw 可以从本地配置中读取自定义程序位置和数据目录",
         ],
         improvements: [
           "评论触发提示更安静、更清楚，遇到较长的智能体名称时也不容易拥挤",
-          "桌面端在守护进程由 Multica 之外的环境管理时，会禁用启动和停止控制，例如 WSL2 场景",
+          "桌面端在守护进程由 CodeOPC 之外的环境管理时，会禁用启动和停止控制，例如 WSL2 场景",
           "任务顶部的智能体状态更容易区分：运行中才显示动效，等待中会明确显示排队状态",
           "命令行会直接说明常见错误、登录问题和项目配置问题的处理方式",
         ],
@@ -2894,7 +2938,7 @@ export function createZhDict(
         title: "网页版消息通知和 /note 指令",
         changes: [],
         features: [
-          "网页端现在可以显示浏览器原生通知横幅，即使 Multica 在后台，也更容易及时看到工作区动态",
+          "网页端现在可以显示浏览器原生通知横幅，即使 CodeOPC 在后台，也更容易及时看到工作区动态",
           "以 /note 开头的评论现在可以记录上下文，但不会唤醒已分配的智能体，团队可以留下协作备注而不触发运行",
           "Antigravity 现在可以作为每个智能体单独选择的模型",
           "命令行现在会用更容易理解的语言解释常见请求失败，并提示下一步该怎么处理",
@@ -2952,10 +2996,10 @@ export function createZhDict(
         title: "Lark Bot 集成",
         changes: [],
         features: [
-          "支持 Lark 第三方集成，扫码就能把 Multica 智能体创建成一个 Lark Bot",
+          "支持 Lark 第三方集成，扫码就能把 CodeOPC 智能体创建成一个 Lark Bot",
           "聊天现在支持可搜索的智能体选择器和明确的上下文选择器，更容易指定谁来回复、需要看哪些内容",
           "描述和评论现在支持勾选式待办清单，任务里的轻量计划更好整理",
-          "智能体现在内置 Multica 技能，可以更稳定地遵循工作区工作流",
+          "智能体现在内置 CodeOPC 技能，可以更稳定地遵循工作区工作流",
         ],
         improvements: [
           "聊天上下文会以清晰的提及形式呈现，交接和后续回看更容易理解",
@@ -2999,7 +3043,7 @@ export function createZhDict(
         title: "日语支持和 /skill command",
         changes: [],
         features: [
-          "Multica 现在支持日语界面、官网和文档",
+          "CodeOPC 现在支持日语界面、官网和文档",
           "聊天现在支持 /skill command，用来选择智能体技能",
           "工作区现在可以显示自定义 Logo",
           "可以给智能体追加技能，不会覆盖已有技能",
@@ -3055,7 +3099,7 @@ export function createZhDict(
         changes: [],
         features: [
           "智能体在任务评论区继续工作时，会接着之前的会话继续，不再新开会话，task 上下文可以保留下来",
-          "Multica 现在支持韩语界面、官网和文档，包含完整韩语文档与本地化日期显示",
+          "CodeOPC 现在支持韩语界面、官网和文档，包含完整韩语文档与本地化日期显示",
           "任务页面会在标题附近固定显示正在工作的智能体，多智能体同时工作时也能更清楚地查看",
           "智能体读取任务讨论时可以先看到线程摘要、回复数量和最近活跃时间，更快找到需要跟进的上下文",
           "OpenClaw 运行环境现在可以使用智能体里保存的 MCP 设置，Claude Opus 4.8 也可用于模型选择和用量估算",
@@ -3153,8 +3197,8 @@ export function createZhDict(
         title: "iOS 客户端、Helm 自托管与更顺畅的协作体验",
         changes: [],
         features: [
-          "Multica iOS 客户端发布官方首个可用版本，覆盖登录、工作区、收件箱、任务、项目、聊天、评论、表情回应、在线状态和实时更新；目前暂未上架 App Store，需要用户自行打包安装",
-          "自托管团队现在可以通过 Helm 将 Multica 部署到 Kubernetes，Docker 安装也有更清晰的端口和 URL 配置",
+          "CodeOPC iOS 客户端发布官方首个可用版本，覆盖登录、工作区、收件箱、任务、项目、聊天、评论、表情回应、在线状态和实时更新；目前暂未上架 App Store，需要用户自行打包安装",
+          "自托管团队现在可以通过 Helm 将 CodeOPC 部署到 Kubernetes，Docker 安装也有更清晰的端口和 URL 配置",
           "项目资源选择器新增仓库搜索，工作区仓库设置也可以保存描述，帮助智能体理解每个代码库",
           "运行时用量现在可以更准确识别 DeepSeek、Kimi K2.6、Zhipu GLM 和长上下文 Claude Opus 的费用",
           "官网新增使用场景页面能力，并让文档、更新日志和开始使用入口更清晰",
@@ -3297,7 +3341,7 @@ export function createZhDict(
         ],
         improvements: [
           "任务操作失败时会显示更明确的错误原因，团队不用翻日志也能理解发生了什么",
-          "关联 GitHub 的 Pull Request 会在 Multica 内展示 CI 和合并冲突状态",
+          "关联 GitHub 的 Pull Request 会在 CodeOPC 内展示 CI 和合并冲突状态",
           "自托管部署获得更安全的默认配置，并补充反向代理、登录限制和本地服务的说明",
           "搜索结果排序更准确，也会展示更有帮助的摘要片段",
         ],
@@ -3389,7 +3433,7 @@ export function createZhDict(
         title: "GitHub 集成、聊天附件与任务定位优化",
         changes: [],
         features: [
-          "接入 GitHub 后，关联的 Pull Request 会显示在 Multica 任务中，状态会同步到 Multica，关闭 PR 后会自动关闭对应任务",
+          "接入 GitHub 后，关联的 Pull Request 会显示在 CodeOPC 任务中，状态会同步到 CodeOPC，关闭 PR 后会自动关闭对应任务",
           "聊天消息支持添加文件附件和图片预览",
           "Agent 和 runtime 可以设置公开或私有，方便控制团队可见范围",
           "停止单个 agent task 前会先弹出确认，避免误操作",
@@ -3400,7 +3444,7 @@ export function createZhDict(
           "很长的任务时间线滚动更顺畅",
           "反馈入口更明确地引导用户到 GitHub 参与讨论和反馈",
           "自托管 Caddy 配置文档补充实时连接要求",
-          "Linux 桌面端安装包恢复显示 Multica 应用图标",
+          "Linux 桌面端安装包恢复显示 CodeOPC 应用图标",
         ],
         fixes: [
           "下载附件时保留原始文件名",
@@ -3486,7 +3530,7 @@ export function createZhDict(
         title: "Daemon 磁盘占用 CLI、Timeline 打磨与 task 用量聚合提速",
         changes: [],
         features: [
-          "新增 `multica daemon disk-usage` CLI，按 task / workspace 维度查看磁盘占用",
+          "新增 `codeopc daemon disk-usage` CLI，按 task / workspace 维度查看磁盘占用",
           "Skill Picker 弹窗新增搜索框，Agent 设置里挑技能更快",
           "Daemon GC 覆盖扩展到 chat、autopilot、quick-create task",
           "任务详情页面包屑直接显示 MUL-xxxx identifier",
@@ -3502,7 +3546,7 @@ export function createZhDict(
           "Linux 上 daemon self-restart 改走 `brew prefix` 软链，Homebrew Cellar 删除后不再让 runtime 失联",
           "CLI 短 ID 现在可以正确路由，复制粘贴的短前缀不再 404",
           "Windows 上非 ASCII 字符评论 / 描述输入新增 `--content-file` / `--description-file`",
-          "Windows / Linux 桌面端用 Multica asterisk 替换 Electron 默认占位图标",
+          "Windows / Linux 桌面端用 CodeOPC asterisk 替换 Electron 默认占位图标",
           "Timeline 中孤立的 reply 现在会被正确捞回展示",
           "Timeline 评论分页预算不再把 activity 算进去，避免活动多时挤掉真实评论",
         ],
@@ -3570,8 +3614,8 @@ export function createZhDict(
         title: "Repo Checkout `--ref`、Hermes 历史回放修复与多副本 Model Picker",
         changes: [],
         features: [
-          "`multica repo checkout --ref` 支持按分支、tag 或指定 commit 拉取仓库",
-          "`multica agent avatar` 命令支持直接通过 CLI 上传 Agent 头像",
+          "`codeopc repo checkout --ref` 支持按分支、tag 或指定 commit 拉取仓库",
+          "`codeopc agent avatar` 命令支持直接通过 CLI 上传 Agent 头像",
           "Inbox 中已完成 task 新增 archive 按钮，移除冗余的 mark-as-done 悬浮按钮",
         ],
         improvements: [
@@ -3583,7 +3627,7 @@ export function createZhDict(
           "新创建的 Agent 立刻在各处可见 —— 创建时即 hydrate Agent 缓存",
           "Hermes 在新一轮对话开始时不再重放上一轮答案 —— 历史 chunk 受单轮门禁限制",
           "Codex runtime 模型选择器开放 GPT-5.5 系列",
-          "`multica login --token <PAT>` 正确接收 PAT 作为参数值",
+          "`codeopc login --token <PAT>` 正确接收 PAT 作为参数值",
           "CLI update 完成状态上报更可靠",
           "Session resume 按 runtime 正确守卫，避免跨 runtime 复用 session",
           "看板拖拽任务时显示设置不再丢失",
@@ -3606,7 +3650,7 @@ export function createZhDict(
         ],
         improvements: [
           "Daemon `/tasks/claim` 轮询走 Redis 空认领 fast-path，空闲态 DB 压力下降，长期 open 的任务自动回收磁盘",
-          "Multica Agent 的 Git 提交自动追加 `Co-authored-by` trailer，归属更清晰",
+          "CodeOPC Agent 的 Git 提交自动追加 `Co-authored-by` trailer，归属更清晰",
           "Desktop 拦截 Cmd+R / Ctrl+R / F5 防止意外刷新，开发模式与 Updates 设置中均展示真实版本号",
         ],
         fixes: [
@@ -3690,9 +3734,9 @@ export function createZhDict(
         title: "Agent 自定义环境变量、更清晰的失败信息与一系列稳定性修复",
         changes: [],
         features: [
-          "`multica agent create/update --custom-env KEY=VALUE` 支持为 Agent 注入自定义环境变量",
+          "`codeopc agent create/update --custom-env KEY=VALUE` 支持为 Agent 注入自定义环境变量",
           "Agent 失败信息会带上 Runtime CLI 的 stderr 末尾片段，排查 Runtime 报错更直接",
-          "CLI 更新下载超时支持配置，弱网下 `multica update` 不再被默认超时切断",
+          "CLI 更新下载超时支持配置，弱网下 `codeopc update` 不再被默认超时切断",
         ],
         improvements: [
           "Daemon 把取消的 task 上报为 `cancelled` 而非 `timeout`，并在按任务取消 task 时同步对齐 Agent 状态",
@@ -3769,7 +3813,7 @@ export function createZhDict(
         changes: [],
         features: [
           "桌面应用跨平台打包——同一条发布流水线产出 macOS、Windows 和 Linux 安装包",
-          "新增 `multica update` 自更新命令——无需重装即可升级 CLI 和本地 Daemon",
+          "新增 `codeopc update` 自更新命令——无需重装即可升级 CLI 和本地 Daemon",
           "任务看板所有状态列都支持分页（不再只是 Done 列），大积压下依然流畅",
         ],
         fixes: [
@@ -3786,7 +3830,7 @@ export function createZhDict(
         title: "Agent 模型选择、Kimi Runtime 与自部署登录",
         changes: [],
         features: [
-          "Agent 新增 `model` 字段及按 Provider 聚合的模型下拉框——可在界面或通过 `multica agent create/update --model` 为每个 Agent 选择 LLM 模型，并从各 Runtime CLI 实时发现可用模型",
+          "Agent 新增 `model` 字段及按 Provider 聚合的模型下拉框——可在界面或通过 `codeopc agent create/update --model` 为每个 Agent 选择 LLM 模型，并从各 Runtime CLI 实时发现可用模型",
           "新增 Kimi CLI Agent Runtime（Moonshot AI 的 `kimi-cli`，基于 ACP），支持模型选择、自动授权工具权限以及流式工具调用渲染",
           "评论和回复编辑器新增放大按钮，便于撰写长文本",
         ],
@@ -3934,7 +3978,7 @@ export function createZhDict(
         title: "一键安装、自部署与稳定性",
         changes: [],
         features: [
-          "一键安装与配置——`curl | bash` 安装 CLI，`--with-server` 完整自部署，`multica setup` 配置连接环境",
+          "一键安装与配置——`curl | bash` 安装 CLI，`--with-server` 完整自部署，`codeopc setup` 配置连接环境",
           "自部署存储——无 S3 时本地文件存储回退，支持自定义 S3 端点（MinIO）",
           "项目列表页支持行内编辑属性（优先级、状态、负责人）",
         ],
@@ -4080,7 +4124,7 @@ export function createZhDict(
           "打开的任务不再分页限制全量加载，已关闭的任务滚动分页",
           "JWT 和 CloudFront Cookie 有效期从 72 小时延长至 30 天",
           "重新登录后记住上次选择的工作区",
-          "守护进程确保 Agent task 环境中 multica CLI 在 PATH 上",
+          "守护进程确保 Agent task 环境中 codeopc CLI 在 PATH 上",
           "新增 PR 模板和面向 Agent 的 CLI 安装指南",
         ],
       },
@@ -4207,50 +4251,44 @@ export function createZhDict(
     ],
   },
   download: {
+    platforms: {
+      macArm64: "macOS · Apple Silicon",
+      macX64: "macOS · Intel",
+      winX64: "Windows · x64",
+      winArm64: "Windows · ARM64",
+      linuxX64: "Linux · x64",
+      linuxArm64: "Linux · ARM64",
+    },
     hero: {
-      macArm64: {
-        title: "Multica for macOS",
-        sub: "Apple Silicon · 内置 daemon，无需配置",
-        primary: "下载 (.dmg)",
-        altZip: "或下载 .zip",
+      eyebrow: "桌面端",
+      title: {
+        mac: "下载 CodeOPC macOS 版",
+        windows: "下载 CodeOPC Windows 版",
+        linux: "下载 CodeOPC Linux 版",
+        other: "下载 CodeOPC",
       },
-      macIntel: {
-        title: "Multica for macOS",
-        sub: "Intel · 内置守护进程，无需配置",
-        primary: "下载 (.dmg)",
-        altZip: "或下载 .zip",
+      lead: "桌面端自带智能体守护进程，这台电脑上的 Claude Code、Codex 等编程智能体会自动接入。",
+      leadOther: "支持 macOS、Windows 和 Linux，每个版本都内置智能体守护进程。",
+      mobileNote: "CodeOPC 桌面端支持 macOS、Windows 和 Linux。请在电脑上打开这个页面下载。",
+      primary: {
+        macArm64Dmg: "下载 Apple 芯片版",
+        macX64Dmg: "下载 Intel 版",
+        winX64Exe: "下载 Windows 版",
+        winArm64Exe: "下载 Windows ARM 版",
+        linuxAmd64AppImage: "下载 AppImage",
+        linuxArm64AppImage: "下载 AppImage",
       },
-      winX64: {
-        title: "Multica for Windows",
-        sub: "内置 daemon，无需配置",
-        primary: "下载 (.exe)",
+      alternate: {
+        macArm64Dmg: "Apple 芯片版",
+        macX64Dmg: "Intel 版",
       },
-      winArm64: {
-        title: "Multica for Windows",
-        sub: "ARM · 内置 daemon，无需配置",
-        primary: "下载 (.exe)",
-      },
-      linux: {
-        title: "Multica for Linux",
-        sub: "内置 daemon，无需配置",
-        primary: "下载 AppImage",
-        altFormats: "或 .deb / .rpm",
-      },
-      unknown: {
-        title: "选择你的平台",
-        sub: "下方是所有支持的安装包。",
-      },
-      safariMacHint: "在 Intel Mac 上？请在下方选择 Intel 版本。",
-      archFallbackHint: "架构不对？下方是所有可选格式。",
+      released: "{date} 发布",
+      whatsNew: "更新内容",
+      versionUnavailable: "暂时获取不到版本信息，请到 GitHub 查看所有版本。",
     },
     allPlatforms: {
-      title: "所有平台",
-      macArm64Label: "macOS · Apple Silicon",
-      macX64Label: "macOS · Intel",
-      winX64Label: "Windows · x64",
-      winArm64Label: "Windows · ARM64",
-      linuxX64Label: "Linux · x64",
-      linuxArm64Label: "Linux · ARM64",
+      title: "全部下载",
+      thisDevice: "这台电脑",
       formatDmg: ".dmg",
       formatZip: ".zip",
       formatExe: ".exe",
@@ -4258,34 +4296,61 @@ export function createZhDict(
       formatDeb: ".deb",
       formatRpm: ".rpm",
       unavailable: "暂不可用",
+      allReleases: "所有版本",
     },
     cli: {
-      title: "想用 CLI？",
-      sub: "适合服务器、远程开发机、无图形界面环境。底层 daemon 与 Desktop 相同，通过终端安装。",
+      title: "在服务器或远程开发机上？",
+      sub: "安装 CLI，在那里运行同一个守护进程。通过 SSH 执行同样的命令即可。",
       installLabel: "安装",
       platformGroup: "选择你的系统",
       platformMacosLinux: "macOS / Linux",
       platformWindows: "Windows",
-      startLabel: "启动 daemon",
-      sshNote: "已经在服务器上？通过 SSH 执行同样的命令即可。",
+      startLabel: "启动守护进程",
       copyLabel: "复制",
       copiedLabel: "已复制",
     },
-    cloud: {
-      title: "Cloud runtime（等待名单）",
-      sub: "我们将为你托管 runtime，目前尚未上线——留下邮箱，上线后通知你。",
-    },
-    footer: {
-      releaseNotes: "{version} 更新内容",
-      allReleases: "查看所有版本",
-      currentVersion: "当前版本：{version}",
-      versionUnavailable: "版本获取失败——请前往 GitHub 查看",
+    started: {
+      title: "已开始下载",
+      retry: "没有开始？重新下载",
+      allDownloads: "全部下载",
+      install: {
+        title: "安装",
+        dmg: "打开 .dmg，把 CodeOPC 拖进「应用程序」。",
+        zip: "解压后，把 CodeOPC 移到「应用程序」。",
+        exe: "运行安装程序，完成后 CodeOPC 会自动打开。",
+        appImage: "给 AppImage 加上可执行权限，然后运行。",
+        deb: "用 apt 或你的包管理器安装 .deb。",
+        rpm: "用 dnf 或你的包管理器安装 .rpm。",
+      },
+      signIn: {
+        title: "登录",
+        body: "打开 CodeOPC，用你的账号登录。",
+        installed: "已经装好了？",
+        open: "打开 CodeOPC",
+      },
+      agents: {
+        title: "接入智能体",
+        body: "CodeOPC 会自动找到这台电脑上的 Claude Code、Codex 等编程智能体。",
+      },
+      community: {
+        label: "下载的同时",
+        githubTitle: "在 GitHub 上关注 CodeOPC",
+        githubBody: "给仓库点个 Star，第一时间收到新版本；也可以看看你刚下载的应用背后的代码。",
+        star: "在 GitHub 上 Star",
+        stars: "{count} Star",
+        discordTitle: "加入 Discord",
+        discordBody: "提问、分享工作流，和团队直接交流。",
+        join: "加入",
+        xTitle: "关注 @CodeOPCAI",
+        xBody: "新版本发布和接下来的计划。",
+        follow: "关注",
+      },
     },
   },
   contactSales: {
     pageTitle: "联系商务",
     pageDescription:
-      "了解如何在你的团队中落地 Multica 的人类 + 智能体协作工作流。",
+      "了解如何在你的团队中落地 CodeOPC 的人类 + 智能体协作工作流。",
     eyebrow: "联系商务",
     title: "先了解你的需求",
     fields: {
@@ -4297,7 +4362,7 @@ export function createZhDict(
       companyName: "公司名称",
       companySize: "公司规模",
       countryRegion: "国家 / 地区",
-      useCase: "你打算如何使用 Multica 或与我们合作？",
+      useCase: "你打算如何使用 CodeOPC 或与我们合作？",
       goals: "你的目标或挑战",
       selectPlaceholder: "请选择",
       submit: "提交",
@@ -4312,7 +4377,7 @@ export function createZhDict(
       { value: "1000+", label: "1,000 人以上" },
     ],
     useCases: [
-      { value: "evaluate", label: "正在为团队评估 Multica" },
+      { value: "evaluate", label: "正在为团队评估 CodeOPC" },
       { value: "adopt_team", label: "希望在团队 / 公司内推广使用" },
       { value: "self_host", label: "需要在自有基础设施上自托管" },
       { value: "integrate", label: "希望与现有工具集成" },
@@ -4364,22 +4429,22 @@ export function createZhDict(
     ],
     consent: {
       intro:
-        "Multica 尊重你的隐私。我们仅会将你的个人信息用于管理账户，以及提供你所请求的产品或服务。我们偶尔也希望与你分享产品更新、最佳实践或行业洞察，如果你愿意接收，请在下方勾选。",
+        "CodeOPC 尊重你的隐私。我们仅会将你的个人信息用于管理账户，以及提供你所请求的产品或服务。我们偶尔也希望与你分享产品更新、最佳实践或行业洞察，如果你愿意接收，请在下方勾选。",
       outreach:
-        "我希望接收来自 Multica 的一对一沟通，包括服务更新、支持咨询以及业务相关的跟进。",
+        "我希望接收来自 CodeOPC 的一对一沟通，包括服务更新、支持咨询以及业务相关的跟进。",
       updates:
-        "我希望接收 Multica 的产品更新、洞察以及活动邀请。",
+        "我希望接收 CodeOPC 的产品更新、洞察以及活动邀请。",
       unsubscribe:
         "你可以随时取消订阅我们的邮件。关于我们如何处理你的数据以及隐私权利，请参阅",
       submitConsent:
-        "点击「提交」即表示你同意 Multica 存储并处理你提交的信息，以便交付你请求的内容。",
+        "点击「提交」即表示你同意 CodeOPC 存储并处理你提交的信息，以便交付你请求的内容。",
       privacyLinkLabel: "隐私政策。",
       privacyLinkHref: "/privacy",
     },
     success: {
       title: "已收到，谢谢！",
       message:
-        "Multica 团队会在三个工作日内回复你。在此期间，欢迎查看我们的文档，或在 GitHub 上为我们点个 Star。",
+        "CodeOPC 团队会在三个工作日内回复你。在此期间，欢迎查看我们的文档，或在 GitHub 上为我们点个 Star。",
       cta: "返回首页",
     },
     errors: {

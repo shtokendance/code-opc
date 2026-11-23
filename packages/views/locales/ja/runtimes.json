@@ -33,7 +33,7 @@
       "other_machine_hint": "そのマシンで 2 つのコマンドを実行",
       "cloud_services": "クラウドサービス",
       "qoder_manage_hint": "接続済み · 接続を管理",
-      "cloud_runtime_hint": "Multica がホストするクラウドノードを作成"
+      "cloud_runtime_hint": "CodeOPC がホストするクラウドノードを作成"
     },
     "columns": {
       "name": "名前",
@@ -259,7 +259,7 @@
   "connect": {
     "title": "マシンを追加",
     "description": "追加したいマシンで、この 2 つのコマンドを実行してください。デーモンがオンラインになった瞬間に検出します。",
-    "step1_label": "Multica CLI をインストール",
+    "step1_label": "CodeOPC CLI をインストール",
     "platform_group": "プラットフォームを選択",
     "platform_macos_linux": "macOS / Linux",
     "platform_windows": "Windows",
@@ -323,11 +323,11 @@
     "cli_version_label": "CLI バージョン:",
     "version_unknown": "不明",
     "managed_by_desktop": "デスクトップで管理",
-    "managed_by_desktop_title": "CLI バイナリは Multica Desktop で管理されています。CLI をアップグレードするには Desktop を更新してください。",
+    "managed_by_desktop_title": "CLI バイナリは CodeOPC Desktop で管理されています。CLI をアップグレードするには Desktop を更新してください。",
     "read_only": "読み取り専用",
     "read_only_title": "CLI を更新できるのは、ランタイムの所有者とワークスペース管理者のみです。",
     "local_build": "ローカルビルド",
-    "local_build_title": "このランタイムはリリース版ではないバージョンを報告しているため、Multica はアップグレードの有無を判断できません。マシン上で直接更新してください。",
+    "local_build_title": "このランタイムはリリース版ではないバージョンを報告しているため、CodeOPC はアップグレードの有無を判断できません。マシン上で直接更新してください。",
     "latest": "最新",
     "available": "利用可能",
     "action": "更新",
@@ -376,17 +376,18 @@
     "pending_health_warning": "Daemon 同期待ち",
     "pending_health_error": "登録エラー",
     "pending_health_disabled": "無効",
-    "pending_cli_unknown": "待機中"
+    "pending_cli_unknown": "待機中",
+    "col_rate_limits": "上限"
   },
   "profiles": {
     "cta": "ランタイムを追加",
     "add_custom": "カスタムランタイムを追加",
     "this_machine": "このマシン",
     "unassigned_title": "マシンに接続されていないカスタムランタイム",
-    "unassigned_description": "これらのワークスペースランタイムは、どのマシンにも接続されていません。対応するコマンドがあるマシンを接続するか、行の操作から編集または削除できます。",
+    "unassigned_description": "割り当て済みのマシンを再接続してください。既存の未設定ランタイムは、編集からマシンを指定できます。",
     "dialog_title": "カスタムランタイム",
-    "dialog_description": "カスタムランタイム定義はワークスペース全体に適用され、接続済みのすべてのマシンへ同期されます。コマンドが利用可能なマシンでのみランタイムが登録されます。",
-    "create_dialog_description": "{{machine}} からカスタムコマンドを設定します。定義はワークスペース全体に同期され、そのコマンドを利用できるマシンでのみ登録されます。",
+    "dialog_description": "カスタムランタイムは 1 台のマシンに紐づきます。",
+    "create_dialog_description": "このカスタムコマンドは {{machine}} でのみ登録されます。",
     "learn_more": "設定ガイドを見る",
     "close": "閉じる",
     "add_new": "新しいカスタムランタイム",
@@ -398,7 +399,7 @@
     "builtin_section_aria": "サポートされている組み込みプロトコルファミリー",
     "builtin_reference": "参考",
     "empty_title": "最初のカスタムランタイムを作成",
-    "empty_description": "ベースプロトコルファミリーを選び、Multica が実行するコマンドを指定します。",
+    "empty_description": "ベースプロトコルファミリーを選び、CodeOPC が実行するコマンドを指定します。",
     "badge_builtin": "組み込み",
     "badge_custom": "カスタム",
     "badge_disabled": "無効",
@@ -424,6 +425,9 @@
       "step_family_hint": "このコマンドと互換性のある CLI を選択します。",
       "step_details_label": "ランタイムを設定",
       "step_progress": "ステップ {{current}} / {{total}}",
+      "machine_label": "所属マシン（任意）",
+      "machine_placeholder": "現在のマシンを維持",
+      "machine_hint": "マシンを選ぶと、他のマシンの未使用のコピーが削除されます。",
       "family_label": "ベースランタイム",
       "family_locked_hint": "作成後はベースランタイムを変更できません。",
       "display_name_label": "表示名",
@@ -465,7 +469,6 @@
   },
   "usage": {
     "period_label": "期間",
-    "dimension_label": "ディメンション",
     "kpi_cost_label": "コスト · {{days}} 日",
     "kpi_cost_delta": "前期比 {{sign}}{{pct}}%",
     "kpi_cache_label": "キャッシュによる節約 · {{days}} 日",
@@ -473,8 +476,6 @@
     "kpi_tokens_label": "トークン · {{days}} 日",
     "kpi_tokens_hint": "入力 {{input}} · 出力 {{output}}",
     "when_title": "このランタイムでコストが発生した時期",
-    "when_tab_daily": "日別",
-    "when_tab_weekly": "週別",
     "when_tab_heatmap": "ヒートマップ",
     "daily_metric_cost": "コスト",
     "daily_metric_tokens": "トークン",
@@ -509,6 +510,7 @@
     "cost_by_title_model": "モデル別コスト",
     "cost_by_tab_agent": "エージェント別",
     "cost_by_tab_model": "モデル別",
+    "cost_by_label": "グループ化",
     "cost_by_caption_agent_other": "このランタイムのエージェント {{count}} 個",
     "cost_by_caption_model_other": "使用されたモデル {{count}} 個",
     "daily_breakdown_toggle": "日別内訳テーブル",
@@ -522,7 +524,7 @@
   },
   "qoder": {
     "title": "Qoder Cloud Agents runtime",
-    "description": "Connect Qoder Cloud Agents. Multica manages execution and stores credentials encrypted. Workspace administrators can change this configuration.",
+    "description": "Connect Qoder Cloud Agents. CodeOPC manages execution and stores credentials encrypted. Workspace administrators can change this configuration.",
     "loading": "Loading…",
     "unavailable": "サーバーの設定が必要です：MULTICA_VCS_SECRET_KEY を設定してください。",
     "online": "Online",
@@ -565,7 +567,7 @@
     "cloud_description": "共有接続を使って Qoder クラウドでエージェントを実行します。ローカルホストの管理は不要です。",
     "configure_credentials": "認証情報を設定",
     "add_agent": "エージェントを追加",
-    "add_agent_description": "既存の Qoder Cloud Agents エージェントに関連付ける Multica エージェントを作成します。Qoder クラウドに設定した環境と認証情報を使用します。",
+    "add_agent_description": "既存の Qoder Cloud Agents エージェントに関連付ける CodeOPC エージェントを作成します。Qoder クラウドに設定した環境と認証情報を使用します。",
     "agent_name": "エージェント名",
     "cancel": "キャンセル",
     "shared_credentials_hint": "認証情報はこのワークスペース内で共有します。PAT は暗号化して保存し、再表示しません。",
@@ -577,7 +579,7 @@
     "concurrency_hint": "上限を超えたタスクはキューで待機します。",
     "run_timeout": "実行タイムアウト（分）",
     "run_timeout_hint": "この時間を過ぎても終わらない実行はキャンセルされ、失敗として記録されます。",
-    "data_disclosure_title": "Multica が Qoder に送信する内容",
+    "data_disclosure_title": "CodeOPC が Qoder に送信する内容",
     "data_disclosure": "Issue のタイトルと説明、関連コメント、プロジェクトのコンテキスト、エージェントの指示。GitHub トークンは実行時のリポジトリのマウントにのみ使われます。",
     "usage": "実行中 {{active}}/{{limit}} · 待機 {{queued}}",
     "open_settings": "設定を開く",
@@ -607,7 +609,7 @@
       "description_agents_other": "次の {{count}} 件のエージェントは指示と履歴を保持しますが、Qoder を再開するか別のランタイムに移すまで新しいタスクを受けられません。"
     },
     "connect_title": "Qoder Cloud Agents を接続",
-    "connect_description": "Multica は Qoder のサンドボックスでタスクを実行します。",
+    "connect_description": "CodeOPC は Qoder のサンドボックスでタスクを実行します。",
     "page": {
       "configuration": "設定",
       "agents_title": "エージェント",
@@ -663,18 +665,51 @@
       },
       "remote": {
         "title": "ほかのマシンはコマンド 2 つ",
-        "description": "サーバーや別のコンピューターに CLI をインストールし、multica setup を実行すれば接続できます。"
+        "description": "サーバーや別のコンピューターに CLI をインストールし、codeopc setup を実行すれば接続できます。"
       },
       "cloud": {
         "title": "クラウドノードも使える",
-        "description": "マシンを自分で管理したくないなら、Multica がホストするクラウドノードを作成できます。"
+        "description": "マシンを自分で管理したくないなら、CodeOPC がホストするクラウドノードを作成できます。"
       }
     },
     "art": {
       "this_computer": "このコンピューター · デスクトップ",
       "detected": "検出された harness",
       "run_there": "そのマシンで実行",
-      "connected": "{{name}} が Multica に接続されました"
+      "connected": "{{name}} が CodeOPC に接続されました"
     }
+  },
+  "rate_limits": {
+    "title": "利用上限",
+    "caption": "タスク実行中に CLI が報告",
+    "updated": "{{ago}}に更新",
+    "empty_title": "まだ上限のデータがありません",
+    "empty_hint": "このランタイムが次にタスクを実行したときに記録されます。API キーのアカウントにはプランの上限がありません。",
+    "window_session": "セッション",
+    "window_session_hours": "{{hours}} 時間セッション",
+    "window_weekly": "週間",
+    "window_weekly_opus": "週間 · Opus",
+    "window_weekly_sonnet": "週間 · Sonnet",
+    "window_generic": "その他の上限",
+    "short_session": "セッション",
+    "short_weekly": "週間",
+    "short_weekly_opus": "Opus",
+    "short_weekly_sonnet": "Sonnet",
+    "short_generic": "その他",
+    "used": "{{pct}}% 使用",
+    "limited": "上限に到達",
+    "resets_in": "{{duration}}後にリセット",
+    "resets_at": "{{time}} にリセット",
+    "reset_since": "前回の報告後にリセット済み",
+    "verdict_ahead": "ペースより {{pct}}% 速い · 約 {{duration}}で上限",
+    "verdict_on_pace": "このペースならリセットまで持ちます",
+    "verdict_limited": "リセット後に再開",
+    "credits": "クレジット",
+    "credits_balance": "残り {{balance}}",
+    "credits_unlimited": "無制限",
+    "credits_none": "なし",
+    "duration_minutes": "{{minutes}} 分",
+    "duration_hours": "{{hours}} 時間 {{minutes}} 分",
+    "duration_days": "{{days}} 日 {{hours}} 時間"
   }
 }

@@ -55,6 +55,10 @@ interface LoginPageProps {
   onTokenObtained?: () => void;
   /** Override Google login handler (e.g. desktop opens browser externally). When provided, renders the Google button even if `google` config is omitted. */
   onGoogleLogin?: () => void;
+  /** WeCom enterprise login handler */
+  onWeComLogin?: () => void;
+  /** Hide the email input box & verification form */
+  hideEmailInput?: boolean;
   /** Slot rendered at the bottom of the sign-in card, below the
    *  Google button. The web shell uses it for a "Prefer the desktop
    *  app?" prompt; desktop omits it (a download prompt inside the app
@@ -66,6 +70,7 @@ interface LoginPageProps {
 
 export function redirectToCliCallback(url: string, token: string, state: string) {
   const separator = url.includes("?") ? "&" : "?";
+  // eslint-disable-next-line no-restricted-syntax -- CLI login runs in the web app only; the token must reach the CLI's local listener in this tab
   window.location.href = `${url}${separator}token=${encodeURIComponent(token)}&state=${encodeURIComponent(state)}`;
 }
 
@@ -99,6 +104,8 @@ export function LoginPage({
   cliCallback,
   onTokenObtained,
   onGoogleLogin,
+  onWeComLogin,
+  hideEmailInput,
   extra,
 }: LoginPageProps) {
   const { t } = useT("auth");
@@ -288,6 +295,7 @@ export function LoginPage({
       prompt: "select_account",
     });
     if (google.state) params.set("state", google.state);
+    // eslint-disable-next-line no-restricted-syntax -- web OAuth redirect; Desktop passes onGoogleLogin and returns above
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   };
 
@@ -413,48 +421,59 @@ export function LoginPage({
           <CardTitle className="text-display-sm">
             {t(($) => $.signin.title)}
           </CardTitle>
-          <CardDescription>
-            {t(($) => $.signin.description)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {sessionExpired && (
-            <Alert>
-              <AlertDescription>
-                {t(($) => $.errors.session_expired)}
-              </AlertDescription>
-            </Alert>
+          {!hideEmailInput && (
+            <CardDescription>
+              {t(($) => $.signin.description)}
+            </CardDescription>
           )}
-          <form id="login-form" onSubmit={handleSendCode} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">{t(($) => $.common.email)}</Label>
-              <Input
-                id="login-email"
-                type="email"
-                placeholder={t(($) => $.common.email_placeholder)}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoFocus
-                required
-              />
-            </div>
-            {error && (
-              <p className="text-body text-destructive">{error}</p>
+        </CardHeader>
+        {(sessionExpired || error || !hideEmailInput) && (
+          <CardContent className="space-y-4">
+            {sessionExpired && (
+              <Alert>
+                <AlertDescription>
+                  {t(($) => $.errors.session_expired)}
+                </AlertDescription>
+              </Alert>
             )}
-          </form>
-        </CardContent>
+            {!hideEmailInput && (
+              <form id="login-form" onSubmit={handleSendCode} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">{t(($) => $.common.email)}</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder={t(($) => $.common.email_placeholder)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+                {error && (
+                  <p className="text-body text-destructive">{error}</p>
+                )}
+              </form>
+            )}
+            {hideEmailInput && error && (
+              <p className="text-center text-body text-destructive">{error}</p>
+            )}
+          </CardContent>
+        )}
         <CardFooter className="flex flex-col gap-3">
-          <Button
-            type="submit"
-            form="login-form"
-            className="w-full"
-            size="lg"
-            disabled={!email || loading}
-          >
-            {loading
-              ? t(($) => $.signin.sending)
-              : t(($) => $.signin.continue)}
-          </Button>
+          {!hideEmailInput && (
+            <Button
+              type="submit"
+              form="login-form"
+              className="w-full"
+              size="lg"
+              disabled={!email || loading}
+            >
+              {loading
+                ? t(($) => $.signin.sending)
+                : t(($) => $.signin.continue)}
+            </Button>
+          )}
           {(google || onGoogleLogin) && (
             <Button
               type="button"
@@ -483,6 +502,28 @@ export function LoginPage({
                 />
               </svg>
               {t(($) => $.signin.google)}
+            </Button>
+          )}
+          {onWeComLogin && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              size="lg"
+              onClick={onWeComLogin}
+              disabled={loading}
+            >
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M8.5 3C4.36 3 1 5.91 1 9.5c0 1.99 1.05 3.77 2.7 4.97L3 18l3.87-1.29c.52.14 1.06.21 1.63.21.2 0 .4-.01.6-.03-.26-.75-.4-1.55-.4-2.39 0-3.87 3.58-7 8-7 .27 0 .53.01.8.04C16.48 4.67 12.78 3 8.5 3z"
+                  fill="#07c160"
+                />
+                <path
+                  d="M16.5 8.5c-3.59 0-6.5 2.46-6.5 5.5 0 1.69.89 3.2 2.29 4.22L11.5 21l2.87-.96c.68.3 1.44.46 2.13.46 3.59 0 6.5-2.46 6.5-5.5s-2.91-5.5-6.5-5.5z"
+                  fill="#07c160"
+                />
+              </svg>
+              企业微信登录
             </Button>
           )}
           {extra && <div className="w-full pt-1 text-center">{extra}</div>}

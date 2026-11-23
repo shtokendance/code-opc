@@ -18,6 +18,11 @@ INSERT INTO "user" (name, email, avatar_url)
 VALUES ($1, $2, $3)
 RETURNING *;
 
+-- name: CreateUserWithID :one
+INSERT INTO "user" (id, name, email, avatar_url)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
 -- name: UpdateUser :one
 -- Patches the user-controlled profile fields. Each parameter follows
 -- COALESCE-on-NULL semantics so the handler can omit any field it
@@ -79,6 +84,28 @@ WHERE id = sqlc.arg('id')
   )
 RETURNING *;
 
+-- name: ClaimStarPromptShowing :one
+-- Grants one showing of the star prompt, atomically, so two tabs or devices
+-- reacting to the same moment cannot both show it. No row comes back when the
+-- user already starred, used up the showings, is inside the cooldown, or has
+-- an account newer than the cutoff.
+UPDATE "user" SET
+    star_prompt_shown_count = star_prompt_shown_count + 1,
+    star_prompt_last_shown_at = now()
+WHERE id = sqlc.arg('id')
+  AND star_prompt_starred_at IS NULL
+  AND star_prompt_shown_count < sqlc.arg('max_showings')::int
+  AND created_at <= sqlc.arg('created_before')::timestamptz
+  AND (star_prompt_last_shown_at IS NULL OR star_prompt_last_shown_at <= sqlc.arg('shown_before')::timestamptz)
+RETURNING *;
+
+-- name: MarkStarPromptStarred :one
+-- Keeps the first click time; repeating the call is a no-op.
+UPDATE "user" SET
+    star_prompt_starred_at = COALESCE(star_prompt_starred_at, now())
+WHERE id = $1
+RETURNING *;
+
 -- name: JoinCloudWaitlist :one
 -- Records interest in cloud runtimes. Does NOT mark onboarding
 -- complete — the user still has to pick a real path (CLI / Skip)
@@ -89,45 +116,3 @@ UPDATE "user" SET
     updated_at = now()
 WHERE id = $1
 RETURNING *;
-
--- name: GetUserByEnterpriseSubject :one
--- Enterprise identity lookup for the code-exchange flow: the platform subject
--- is the stable key; the local email is only a placeholder.
-SELECT * FROM "user"
-WHERE enterprise_subject = $1;
-
--- name: CreateEnterpriseUser :one
--- Creates a locally-managed user row for a platform (enterprise) identity.
--- The email is an internal placeholder, not a deliverable mailbox.
-INSERT INTO "user" (name, email, enterprise_subject, enterprise_identity_link_id, enterprise_authz_version, enterprise_session_id)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING *;
-
--- name: UpdateUserEnterpriseIdentity :one
--- Refreshes the platform identity binding on a subsequent exchange: a new
--- session epoch is minted per exchange and the authorization version is
--- re-anchored to whatever the platform currently reports. The platform may
--- also supply the provisioned knowledge user's real display name/email —
--- non-empty values replace the enterprise-<subject> placeholders so the
--- client UI shows the corporate identity; empty strings leave both as-is.
-UPDATE "user" SET
-    enterprise_subject = COALESCE($2, enterprise_subject),
-    enterprise_identity_link_id = COALESCE($3, enterprise_identity_link_id),
-    enterprise_authz_version = COALESCE($4, enterprise_authz_version),
-    enterprise_session_id = COALESCE($5, enterprise_session_id),
-    name = COALESCE(NULLIF($6::text, ''), name),
-    email = COALESCE(NULLIF($7::text, ''), email),
-    updated_at = now()
-WHERE id = $1
-RETURNING *;
-
--- name: UpdateUserEnterpriseAuthzVersion :execrows
--- Re-anchors a user's enterprise authorization version from the platform
--- (revocation propagation path; see EnterpriseVersion middleware refresher).
--- Monotonic: a stale platform read (or a replayed invalidate frame) carrying
--- an older version must never roll the row back, so the write only lands when
--- it moves the version forward. Callers read the row back when they need the
--- winning value.
-UPDATE "user" SET enterprise_authz_version = $2, updated_at = now()
-WHERE id = $1 AND enterprise_subject IS NOT NULL
-  AND (enterprise_authz_version IS NULL OR enterprise_authz_version < $2);

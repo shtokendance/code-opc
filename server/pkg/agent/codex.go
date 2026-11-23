@@ -81,15 +81,18 @@ const (
 	codexVersionDiagnosticTimeout      = 2 * time.Second
 	// Keep a raw agent-message tail small enough that a slow daemon does not
 	// make the stdout reader retain token-sized channel entries indefinitely.
-	// At one sixty-fourth of the scanner's maximum completed-snapshot line, any
-	// reconcilable item occupies at most 65 of the 256 message slots (the leading
-	// delta plus 64 aggregates), reserving the rest for status and tool events.
-	// Since this threshold is 512 KiB, a normal message will not reach it: only
-	// its leading delta is usually handed off during generation, while the
-	// remaining deltas stay pending until item/completed reconciles the item.
-	// A single provider event may be larger, in which case that event is flushed
-	// as one chunk rather than split at an arbitrary byte boundary.
+	// At one sixty-fourth of the scanner's maximum completed-snapshot line, a
+	// burst of deltas costs at most one channel slot per 512 KiB, never one per
+	// token. A normal message will not reach this size; its tail is handed off
+	// on codexAgentMessageFlushInterval instead. A single
+	// provider event may be larger, in which case that event is flushed as one
+	// chunk rather than split at an arbitrary byte boundary.
 	codexAgentMessageAggregateBytes = agentStreamMaxLineBytes / 64
+	// codexAgentMessageFlushInterval is how long pending agent text may wait
+	// before the next delta hands it off. It matches the daemon's 500 ms report
+	// batch, so a long answer streams at the rate the server can show it while
+	// a token burst still costs at most one channel slot per interval.
+	codexAgentMessageFlushInterval = 500 * time.Millisecond
 	// codexGracefulShutdownTimeout bounds how long the lifecycle goroutine
 	// waits for codex to exit on its own after stdin is closed, before forcing
 	// a context-cancel kill. A clean exit lets codex run its shutdown path and
@@ -1281,8 +1284,8 @@ func (b *codexBackend) executeOnce(ctx context.Context, prompt string, opts Exec
 		activeLaunches:           activeLaunches,
 		notificationProtocol:     "unknown",
 		acceptNotification:       turnNotificationGate.accept,
-		enterprise:               opts.Enterprise,
 		guardianRateLimitCircuit: &codexGuardianRateLimitCircuit{},
+		rateLimits:               newRateLimitTracker(opts.OnRateLimits),
 		onGuardianRateLimit: func() {
 			guardianRateLimitTripped.Store(true)
 			b.cfg.Logger.Warn("codex Guardian approval rate-limit circuit opened",
@@ -1615,9 +1618,10 @@ func (b *codexBackend) executeOnce(ctx context.Context, prompt string, opts Exec
 		// Whether that notice asks the agent to tell the USER is the caller's
 		// call, not ours: it depends on whether this surface's conversation is
 		// still readable, which this package cannot see (MUL-5722).
+		turnPrompt := b.skillTurnPrompt(runCtx, c, prompt, opts)
 		turnParams := map[string]any{
 			"threadId": threadID,
-			"input":    codexTurnInput(prompt, opts.ResumeExpected, resumed, opts.ResumeContinuityNotice),
+			"input":    codexTurnInput(turnPrompt, opts.ResumeExpected, resumed, opts.ResumeContinuityNotice),
 		}
 		// Per-turn reasoning override. Mirrors the per-thread injection in
 		// startOrResumeThread; keeping both in sync is enforced by the
@@ -2067,7 +2071,21 @@ func (c *codexClient) startOrResumeThread(ctx context.Context, opts ExecOptions,
 	// Confirmed end-to-end against codex-cli 0.144.6 driving the real
 	// app-server (thread/start -> turn/start) with developerInstructions unset
 	// (MUL-5392).
-	startParams := codexThreadStartParams(opts)
+	startParams := map[string]any{
+		"model":                  nilIfEmpty(opts.Model),
+		"modelProvider":          nil,
+		"profile":                nil,
+		"cwd":                    opts.Cwd,
+		"approvalPolicy":         nil,
+		"sandbox":                nil,
+		"config":                 nil,
+		"baseInstructions":       nil,
+		"developerInstructions":  nil,
+		"compactPrompt":          nil,
+		"includeApplyPatchTool":  nil,
+		"experimentalRawEvents":  false,
+		"persistExtendedHistory": true,
+	}
 	applyCodexReasoningEffort(startParams, opts.ThinkingLevel)
 	applyCodexServiceTier(startParams, opts.ServiceTier)
 	c.threadSetupMethod = "thread/start"
@@ -2422,6 +2440,9 @@ type codexClient struct {
 	onTurnDone               func(aborted bool)
 	guardianRateLimitCircuit *codexGuardianRateLimitCircuit
 	onGuardianRateLimit      func()
+	// rateLimits merges account/rateLimits/updated notifications; nil when
+	// the caller does not collect rate limits.
+	rateLimits *rateLimitTracker
 	// onFinalAnswer fires only for an agent message the app-server itself
 	// labelled `phase: "final_answer"` — the turn's deliverable, as opposed to
 	// the intermediate agent messages that narrate work between tool calls.
@@ -2434,11 +2455,6 @@ type codexClient struct {
 	// replay emitted while thread/resume is restoring prior conversation.
 	// Unit-level protocol tests leave it nil and exercise dispatch directly.
 	acceptNotification func(method string, params map[string]any) bool
-	// enterprise marks a task dispatched under the enterprise protocol
-	// (BND-162). Approval-class app-server requests are never auto-accepted
-	// for such tasks: every exec/patch/permission/elicitation request is
-	// denied so privileged actions cannot self-authorize.
-	enterprise bool
 	// onDiscardedNotification preserves out-of-band safety signals (such as
 	// suppressing an initialize retry after observed activity) without letting
 	// filtered history mutate current-turn output or lifecycle state.
@@ -2449,6 +2465,8 @@ type codexClient struct {
 	// advanced only after onAgentMessageChunk confirms daemon handoff.
 	agentMessageStreams map[string]*codexAgentMessageStream
 	agentMessageOrder   []string
+	// now is the clock for agent-text flush pacing; nil means time.Now.
+	now func() time.Time
 
 	notificationProtocol string // "unknown", "legacy", "raw"
 	turnCompleted        bool
@@ -2468,6 +2486,8 @@ type codexClient struct {
 type codexAgentMessageStream struct {
 	delivered strings.Builder
 	pending   strings.Builder
+	// lastFlush is when pending text was last offered to the daemon channel.
+	lastFlush time.Time
 }
 
 // codexTurnNotificationGate keeps resume-time history replay from mutating the
@@ -2599,6 +2619,10 @@ type pendingRPC struct {
 type rpcResult struct {
 	result json.RawMessage
 	err    error
+	// processExited marks the error codexClient.markProcessExited hands to
+	// every pending request. It is not an answer from the server, so a caller
+	// whose context has already ended reports that instead.
+	processExited bool
 }
 
 type codexHandshakeTimeoutError struct {
@@ -2754,11 +2778,16 @@ func (c *codexClient) request(ctx context.Context, method string, params any) (j
 
 	select {
 	case res := <-pr.ch:
+		if res.processExited && requestCtx.Err() != nil {
+			return nil, codexRequestContextError(requestCtx)
+		}
 		return res.result, res.err
 	case <-processDone:
 		select {
 		case res := <-pr.ch:
-			return res.result, res.err
+			if !res.processExited {
+				return res.result, res.err
+			}
 		default:
 		}
 		c.mu.Lock()
@@ -2837,7 +2866,7 @@ func (c *codexClient) markProcessExited(err error) {
 		}
 	}
 	for id, pr := range c.pending {
-		pr.ch <- rpcResult{err: err}
+		pr.ch <- rpcResult{err: err, processExited: true}
 		delete(c.pending, id)
 	}
 }
@@ -2950,39 +2979,15 @@ func (c *codexClient) handleServerRequest(raw map[string]json.RawMessage) {
 	var method string
 	_ = json.Unmarshal(raw["method"], &method)
 
-	// Auto-approve all exec/patch requests in daemon mode. Enterprise tasks
-	// (BND-162) are the exception: no approval-class request is answered with
-	// an automatic grant. The action is denied, so a privileged operation
-	// cannot self-authorize on a machine it was only leased to prepare —
-	// rerunning it under an authorized identity is the recovery path.
+	// Auto-approve all exec/patch requests in daemon mode
 	switch method {
 	case "item/commandExecution/requestApproval", "execCommandApproval":
-		if c.enterprise {
-			c.cfg.Logger.Warn("codex: denying command approval request on enterprise task", "id", id, "method", method)
-			c.respond(id, map[string]any{"decision": "reject"})
-			return
-		}
 		c.respond(id, map[string]any{"decision": "accept"})
 	case "item/fileChange/requestApproval", "applyPatchApproval":
-		if c.enterprise {
-			c.cfg.Logger.Warn("codex: denying patch approval request on enterprise task", "id", id, "method", method)
-			c.respond(id, map[string]any{"decision": "reject"})
-			return
-		}
 		c.respond(id, map[string]any{"decision": "accept"})
 	case "item/permissions/requestApproval":
-		if c.enterprise {
-			c.cfg.Logger.Warn("codex: denying permissions request on enterprise task", "id", id)
-			c.respond(id, map[string]any{"permissions": map[string]any{}, "scope": "turn"})
-			return
-		}
 		c.respond(id, codexPermissionsApprovalResponse(raw["params"], c.cfg.Logger))
 	case "mcpServer/elicitation/request":
-		if c.enterprise {
-			c.cfg.Logger.Warn("codex: denying MCP elicitation request on enterprise task", "id", id)
-			c.respond(id, map[string]any{"action": "reject"})
-			return
-		}
 		c.respond(id, map[string]any{"action": "accept", "content": nil, "_meta": nil})
 	default:
 		msg := fmt.Sprintf("unsupported codex app-server request: %s", method)
@@ -2990,60 +2995,6 @@ func (c *codexClient) handleServerRequest(raw map[string]json.RawMessage) {
 		c.setTurnError(msg)
 		c.respondError(id, -32601, msg)
 	}
-}
-
-// codexThreadStartParams assembles the thread/start request. Personal tasks
-// inherit approvalPolicy/sandbox from the per-task config.toml (nil here).
-// Enterprise tasks (BND-162) declare their managed parameters explicitly
-// instead of inheriting whatever the user's shared ~/.codex/config.toml
-// happens to hold: approvalPolicy is pinned to the managed value
-// ("untrusted" unless the deployment overrides it). Note "never" produces no
-// approval requests at all; with "on-failure" the app-server's requests would
-// reach the daemon, and the enterprise gate denies them, stalling the task on
-// actions it can never get approved; "untrusted" keeps the session inside
-// the sandbox policy instead. sandbox pins the SAME decision execenv wrote
-// into the task's config.toml so a user-level config cannot loosen the
-// managed session: on macOS that is danger-full-access because Codex's
-// Seatbelt sandbox in workspace-write mode silently ignores
-// sandbox_workspace_write.network_access and the sandboxed CLI cannot reach
-// the Multica API at all (upstream openai/codex#10390); Linux keeps its
-// existing danger-full-access product decision (MUL-5578). When the daemon
-// did not resolve a mode, sandbox stays nil and the task config decides.
-func codexThreadStartParams(opts ExecOptions) map[string]any {
-	params := map[string]any{
-		"model":                  nilIfEmpty(opts.Model),
-		"modelProvider":          nil,
-		"profile":                nil,
-		"cwd":                    opts.Cwd,
-		"approvalPolicy":         nil,
-		"sandbox":                nil,
-		"config":                 nil,
-		"baseInstructions":       nil,
-		"developerInstructions":  nil,
-		"compactPrompt":          nil,
-		"includeApplyPatchTool":  nil,
-		"experimentalRawEvents":  false,
-		"persistExtendedHistory": true,
-	}
-	if opts.Enterprise {
-		params["approvalPolicy"] = managedCodexApprovalPolicy(opts)
-		if mode := strings.TrimSpace(opts.CodexSandboxMode); mode != "" {
-			params["sandbox"] = mode
-		}
-	}
-	return params
-}
-
-// managedCodexApprovalPolicy resolves the thread/start approvalPolicy for an
-// enterprise task. "untrusted" is the managed default: the session stays
-// inside the sandbox policy instead of streaming approval requests the
-// enterprise gate would deny anyway. A deployment may pin another managed
-// value via config; an empty override keeps the default.
-func managedCodexApprovalPolicy(opts ExecOptions) string {
-	if v := strings.TrimSpace(opts.EnterpriseCodexApprovalPolicy); v != "" {
-		return v
-	}
-	return "untrusted"
 }
 
 // codexPermissionsApprovalResponse builds the auto-grant reply for a Codex
@@ -3094,6 +3045,14 @@ func (c *codexClient) handleNotification(raw map[string]json.RawMessage) {
 	var params map[string]any
 	if p, ok := raw["params"]; ok {
 		_ = json.Unmarshal(p, &params)
+	}
+	// Rate limits belong to the account, not to a thread or turn, so they are
+	// read before the thread filter and the current-turn gate. The
+	// notification then continues down the usual path unchanged.
+	if method == "account/rateLimits/updated" {
+		if update, ok := parseCodexRateLimitsUpdated(params); ok {
+			c.rateLimits.apply(update)
+		}
 	}
 	// Filter multiplexed subagent threads before the current-turn gate. The
 	// gate mutates started/turnID on turn/started; letting another thread reach
@@ -3720,9 +3679,11 @@ func (c *codexClient) handleAgentMessageDelta(itemID, delta string) {
 
 	stream := c.agentMessageStream(itemID)
 	// The leading delta is the latency-critical event. Deliver it immediately;
-	// coalesce the rest so a burst of token notifications cannot fill the
-	// daemon channel before its consumer is scheduled.
+	// coalesce the rest into one chunk per flush interval so a burst of token
+	// notifications cannot fill the daemon channel before its consumer is
+	// scheduled, while a long answer still streams as it is generated.
 	if stream.delivered.Len() == 0 && stream.pending.Len() == 0 {
+		stream.lastFlush = c.clock()
 		if c.emitAgentMessageChunk(delta) {
 			stream.delivered.WriteString(delta)
 			return
@@ -3730,9 +3691,18 @@ func (c *codexClient) handleAgentMessageDelta(itemID, delta string) {
 	}
 
 	stream.pending.WriteString(delta)
-	if stream.pending.Len() >= codexAgentMessageAggregateBytes {
+	if stream.pending.Len() >= codexAgentMessageAggregateBytes ||
+		c.clock().Sub(stream.lastFlush) >= codexAgentMessageFlushInterval {
+		stream.lastFlush = c.clock()
 		c.flushAgentMessageStream(stream)
 	}
+}
+
+func (c *codexClient) clock() time.Time {
+	if c.now != nil {
+		return c.now()
+	}
+	return time.Now()
 }
 
 func (c *codexClient) flushAgentMessageStream(stream *codexAgentMessageStream) bool {

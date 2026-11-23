@@ -17,6 +17,7 @@ export interface Workspace {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  pinned_at?: string | null;
 }
 
 /**
@@ -30,6 +31,12 @@ export interface Workspace {
  * `enabled` is only present on an AGENT's assignment list, where it is the
  * per-agent toggle; the workspace library listing has no binding to report.
  */
+export interface WorkspaceMcpToolSummary {
+  name: string;
+  description?: string;
+  input_schema?: unknown;
+}
+
 export interface WorkspaceMcpServer {
   id: string;
   workspace_id: string;
@@ -41,6 +48,9 @@ export interface WorkspaceMcpServer {
    * carries it, and servers older than this field omit it.
    */
   agent_count?: number;
+  source?: "local" | "enterprise" | "plugin";
+  description?: string;
+  tools?: WorkspaceMcpToolSummary[];
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +93,13 @@ export interface User {
    * so the client must not auto-open the card (it would reappear forever).
    */
   whats_new_seen_version?: string | null;
+  /**
+   * "Star us on GitHub" prompt bookkeeping. An undefined count means the
+   * server predates it, so the client must never show the prompt.
+   */
+  star_prompt_shown_count?: number;
+  star_prompt_last_shown_at?: string | null;
+  star_prompt_starred_at?: string | null;
   created_at: string;
   updated_at: string;
 }

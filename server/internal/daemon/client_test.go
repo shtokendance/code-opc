@@ -62,11 +62,6 @@ func TestClient_IdentityHeaders_PostJSON(t *testing.T) {
 			// built-in in_progress / in_review rules to [Project workflow],
 			// rules this daemon's brief no longer states (MUL-8145).
 			protocol.DaemonCapabilityWorkflowStatusRulesV1,
-			// The enterprise claim gate (TASK-C02) refuses to dispatch
-			// enterprise tasks to a daemon that does not advertise it
-			// (enterprise_protocol_required). Dropping it silently strands
-			// every enterprise task in the queue.
-			protocol.DaemonCapabilityEnterpriseProtocolV1,
 		} {
 			if !capabilities[want] {
 				t.Errorf("X-Client-Capabilities missing %q: %v", want, capabilities)

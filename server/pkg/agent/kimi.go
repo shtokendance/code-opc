@@ -16,28 +16,6 @@ import (
 	"time"
 )
 
-// kimiCmdEnv assembles the environment for the kimi subprocess. Enterprise
-// tasks (BND-161) get KIMI_CODE_HOME pointed at an empty, task-scoped
-// directory so `kimi acp` cannot natively merge the user's
-// ~/.kimi-code/mcp.json into the managed set; failing to create that
-// directory fails the task closed instead of running unisolated. Personal
-// tasks keep cfg.Env untouched (no copy, no extra keys).
-func kimiCmdEnv(cfgEnv map[string]string, cwd string, enterprise bool) (map[string]string, error) {
-	if !enterprise {
-		return cfgEnv, nil
-	}
-	isolated := filepath.Join(cwd, ".multica-isolated-kimi-home")
-	if err := os.MkdirAll(isolated, 0o755); err != nil {
-		return nil, fmt.Errorf("kimi: isolate KIMI_CODE_HOME for enterprise task: %w", err)
-	}
-	env := make(map[string]string, len(cfgEnv)+1)
-	for k, v := range cfgEnv {
-		env[k] = v
-	}
-	env["KIMI_CODE_HOME"] = isolated
-	return env, nil
-}
-
 // kimiBlockedArgs are flags hardcoded by the daemon that must not be
 // overridden by user-configured custom_args. `acp` is the protocol
 // subcommand that drives the ACP JSON-RPC transport for Kimi Code CLI;
@@ -95,12 +73,7 @@ func (b *kimiBackend) Execute(ctx context.Context, prompt string, opts ExecOptio
 	if opts.Cwd != "" {
 		cmd.Dir = opts.Cwd
 	}
-	env, err := kimiCmdEnv(b.cfg.Env, opts.Cwd, opts.Enterprise)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	cmd.Env = buildEnv(env)
+	cmd.Env = buildEnv(b.cfg.Env)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -172,7 +145,6 @@ func (b *kimiBackend) Execute(ctx context.Context, prompt string, opts ExecOptio
 		terminalCtx:     runCtx,
 		terminalCwd:     opts.Cwd,
 		terminalEnv:     buildEnv(b.cfg.Env),
-		enterprise:      opts.Enterprise,
 		terminals:       make(map[string]*acpTerminal),
 		acceptNotification: func(string) bool {
 			return streamingCurrentTurn.Load()
@@ -649,7 +621,7 @@ const kimiUsageRecordType = "usage.record"
 // fields sum exactly to the `used` figure kimi reports over ACP (22530 and
 // 22566). So `inputOther` is uncached input only and maps straight onto
 // TokenUsage.InputTokens with no cached-prefix subtraction — unlike the ACP
-// `inputTokens` case excludeACPCachedInput exists to correct.
+// `inputTokens` case normalizeACPTokenUsage exists to correct.
 type kimiWireUsage struct {
 	Type string `json:"type"`
 	// Time is the record's epoch-millisecond write time. It is what keeps a

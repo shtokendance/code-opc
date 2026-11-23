@@ -66,7 +66,7 @@ export function ChatAddMenu({
               size="icon-sm"
               disabled={disabled}
               label={t(($) => $.input.add_tooltip)}
-              className="rounded-full text-muted-foreground"
+              className="text-muted-foreground"
             >
               <Plus />
             </IconButton>
@@ -74,7 +74,23 @@ export function ChatAddMenu({
         />
         <DropdownMenuContent align="start" side="top" sideOffset={6}>
           {onSelectFile && (
-            <DropdownMenuItem onClick={() => inputRef.current?.click()}>
+            <DropdownMenuItem
+              onClick={async () => {
+                const pickFiles = (
+                  window as unknown as {
+                    desktopAPI?: {
+                      pickFiles?: (opts?: { multiple?: boolean; accept?: string }) => Promise<File[]>;
+                    };
+                  }
+                ).desktopAPI?.pickFiles;
+                if (pickFiles) {
+                  const files = await pickFiles({ multiple: true });
+                  for (const file of files) onSelectFile(file);
+                  return;
+                }
+                inputRef.current?.click();
+              }}
+            >
               <ImageIcon />
               {t(($) => $.input.upload_file)}
             </DropdownMenuItem>
@@ -126,7 +142,9 @@ export function ChatAddMenu({
           ref={inputRef}
           type="file"
           multiple
-          className="hidden"
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={handleChange}
         />
       )}

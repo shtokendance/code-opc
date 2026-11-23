@@ -237,7 +237,9 @@ export async function uploadAndInsertFile(
     } catch {
       if (!editor.isDestroyed) removeUploadNode(editor, uploadId);
     } finally {
-      URL.revokeObjectURL(blobUrl);
+      // Defer revoking the upload preview object URL slightly so that the settled image
+      // node can transition smoothly to the server URL / authenticated blob without a broken flash.
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
     }
   } else {
     // Non-image: insert skeleton fileCard → upload → finalize with real URL
