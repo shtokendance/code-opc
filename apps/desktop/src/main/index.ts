@@ -618,7 +618,7 @@ function createIssueWindow(context: IssueWindowContext): void {
 
   const window = new BrowserWindow({
     width: 960,
-    height: 760,
+    height: 860,
     minWidth: 720,
     minHeight: 520,
     title: context.title,
