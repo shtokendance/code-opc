@@ -87,7 +87,7 @@ func main() {
 	mainWindow := app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:     "CodeOPC",
 		Width:     1280,
-		Height:    800,
+		Height:    900,
 		MinWidth:  900,
 		MinHeight: 600,
 		Mac: application.MacWindow{

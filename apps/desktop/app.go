@@ -594,7 +594,7 @@ func (s *AppService) OpenIssueWindow(req IssueWindowRequest) error {
 	win := s.app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:  winTitle,
 		Width:  1050,
-		Height: 750,
+		Height: 850,
 		URL:    req.Path,
 		Mac: application.MacWindow{
 			TitleBar:                application.MacTitleBarHiddenInset,
@@ -631,7 +631,7 @@ func (s *AppService) OpenWorkspaceWindow(slug string) error {
 	win := s.app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:  slug,
 		Width:  1280,
-		Height: 800,
+		Height: 900,
 		URL:    "/" + slug,
 		Mac: application.MacWindow{
 			TitleBar:                application.MacTitleBarHiddenInset,
