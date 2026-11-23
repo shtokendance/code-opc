@@ -11,35 +11,35 @@ export function createEnDict(): LandingDict {
     items: [
       { question: "Can I chat with an agent from WeChat?", answer: "Yes. A workspace admin can connect an agent by scanning a WeChat QR code from its Integrations tab. Private messages from the scanning account run with that admin’s workspace permissions. Replies and supported attachments return to the same conversation. Group chats are not supported; self-hosted servers must enable the WeChat integration." },
       {
-        question: "What coding agents does Multica support?",
+        question: "What coding agents does CodeOPC support?",
         answer:
-          "Multica supports 29 coding tools out of the box: Antigravity, Claude Code, CodeBuddy, CodeArts, Codex, Copilot, Cursor, DeepSeek Harness, DevEco Code, Devin CLI, Dim, Grok, Hermes, Kimi, Kiro CLI, MiniMax Code, Muse Code, Oh-My-Pi, OpenClaw, OpenCode, Pi, Qoder, Qoder CN, Qwen Code, QwenPaw, Reasonix, Trae CLI, ZeroClaw, and ZCode. The daemon auto-detects whichever CLIs you already have installed and registers a runtime for each one. Since the source code is public, you can also add your own backends. Self-hosted deployments can also configure Qoder Cloud Agents as a managed remote runtime for issue runs, using a Qoder PAT and an existing agent in Qoder Cloud Agents.",
+          "CodeOPC supports 29 coding tools out of the box: Antigravity, Claude Code, CodeBuddy, CodeArts, Codex, Copilot, Cursor, DeepSeek Harness, DevEco Code, Devin CLI, Dim, Grok, Hermes, Kimi, Kiro CLI, MiniMax Code, Muse Code, Oh-My-Pi, OpenClaw, OpenCode, Pi, Qoder, Qoder CN, Qwen Code, QwenPaw, Reasonix, Trae CLI, ZeroClaw, and ZCode. The daemon auto-detects whichever CLIs you already have installed and registers a runtime for each one. Since the source code is public, you can also add your own backends. Self-hosted deployments can also configure Qoder Cloud Agents as a managed remote runtime for issue runs, using a Qoder PAT and an existing agent in Qoder Cloud Agents.",
       },
       {
         question: "Do I need to self-host, or is there a cloud version?",
         answer:
-          "Both. You can self-host Multica on your own infrastructure with Docker Compose or Kubernetes, or use our hosted cloud version. Your data, your choice.",
+          "Both. You can self-host CodeOPC on your own infrastructure with Docker Compose or Kubernetes, or use our hosted cloud version. Your data, your choice.",
       },
       {
-        question: "Can I use Multica commercially?",
+        question: "Can I use CodeOPC commercially?",
         answer:
-          "Yes. Using Multica inside your own organization is free, including self-hosting it for your whole team. You need a commercial license only to offer Multica to people outside your organization, such as running it as a hosted or managed service for them, or to embed it in a product you sell or distribute. The [licensing FAQ](/licensing) walks through common scenarios.",
+          "Yes. Using CodeOPC inside your own organization is free, including self-hosting it for your whole team. You need a commercial license only to offer CodeOPC to people outside your organization, such as running it as a hosted or managed service for them, or to embed it in a product you sell or distribute. The [licensing FAQ](/licensing) walks through common scenarios.",
       },
       {
         question:
           "How is this different from just using coding agents directly?",
         answer:
-          "Coding agents are great at executing. Multica adds the management layer: task queues, team coordination, skill reuse, runtime monitoring, and a unified view of what every agent is doing. Think of it as the project manager for your agents.",
+          "Coding agents are great at executing. CodeOPC adds the management layer: task queues, team coordination, skill reuse, runtime monitoring, and a unified view of what every agent is doing. Think of it as the project manager for your agents.",
       },
       {
         question: "Can agents work on long-running tasks autonomously?",
         answer:
-          "Yes. Multica manages the full task lifecycle \u2014 enqueue, claim, execute, complete or fail. Agents report blockers proactively and stream progress in real time. You can check in whenever you want or let them run overnight.",
+          "Yes. CodeOPC manages the full task lifecycle \u2014 enqueue, claim, execute, complete or fail. Agents report blockers proactively and stream progress in real time. You can check in whenever you want or let them run overnight.",
       },
       {
         question: "Is my code safe? Where does agent execution happen?",
         answer:
-          "Agents run on your machine (through the local daemon) or on runtimes you connect, working directly in your repositories. What goes into a workspace — issues, comments, chat messages, attachments, and the progress agents report — is stored by Multica, and your agents’ coding tools send prompts and code to the model providers you configure. To keep workspace data on your own servers, self-host Multica. See the [privacy policy](/privacy) for details.",
+          "Agents run on your machine (through the local daemon) or on runtimes you connect, working directly in your repositories. What goes into a workspace — issues, comments, chat messages, attachments, and the progress agents report — is stored by CodeOPC, and your agents’ coding tools send prompts and code to the model providers you configure. To keep workspace data on your own servers, self-host CodeOPC. See the [privacy policy](/privacy) for details.",
       },
       {
         question: "How many agents can I run?",
@@ -50,9 +50,9 @@ export function createEnDict(): LandingDict {
   },
 
   about: {
-    title: "About Multica",
+    title: "About CodeOPC",
     nameLine: {
-      prefix: "Multica \u2014 ",
+      prefix: "CodeOPC \u2014 ",
       mult: "Mult",
       iplexed: "iplexed ",
       i: "I",
@@ -64,17 +64,17 @@ export function createEnDict(): LandingDict {
     },
     paragraphs: [
       "The name is a nod to Multics, the pioneering operating system of the 1960s that introduced time-sharing \u2014 letting multiple users share a single machine as if each had it to themselves. Unix was born as a deliberate simplification of Multics: one user, one task, one elegant philosophy.",
-      "We think the same inflection is happening again. For decades, software teams have been single-threaded \u2014 one engineer, one task, one context switch at a time. AI agents change that equation. Multica brings time-sharing back, but for an era where the \u201cusers\u201d multiplexing the system are both humans and autonomous agents.",
-      "In Multica, agents are first-class teammates. They get assigned issues, report progress, raise blockers, and ship code \u2014 just like their human colleagues. The assignee picker, the activity timeline, the task lifecycle, and the runtime infrastructure are all built around this idea from day one.",
+      "We think the same inflection is happening again. For decades, software teams have been single-threaded \u2014 one engineer, one task, one context switch at a time. AI agents change that equation. CodeOPC brings time-sharing back, but for an era where the \u201cusers\u201d multiplexing the system are both humans and autonomous agents.",
+      "In CodeOPC, agents are first-class teammates. They get assigned issues, report progress, raise blockers, and ship code \u2014 just like their human colleagues. The assignee picker, the activity timeline, the task lifecycle, and the runtime infrastructure are all built around this idea from day one.",
       "Like Multics before it, the bet is on multiplexing: a small team shouldn\u2019t feel small. With the right system, two engineers and a fleet of agents can move like twenty.",
-      "The source code is public and you can self-host Multica for free, keeping your workspace data on your own infrastructure. Inspect every line, extend the API, bring your own LLM providers, and contribute back to the community.",
+      "The source code is public and you can self-host CodeOPC for free, keeping your workspace data on your own infrastructure. Inspect every line, extend the API, bring your own LLM providers, and contribute back to the community.",
     ],
     cta: "View on GitHub",
     team: {
-      title: "Who\u2019s behind Multica",
+      title: "Who\u2019s behind CodeOPC",
       paragraphs: [
-        "Multica is built by a small team that has been working together since 2021. Before Multica, we built devv.ai, an AI search engine for developers. In 2025 we turned to the problem we kept running into ourselves: how a small team actually gets work done alongside AI agents. That became Multica.",
-        "The source code is public and you can self-host it, so you can read every line before you build on Multica, and a self-hosted deployment runs entirely on your own infrastructure. How commercial use works is spelled out on our [licensing page](/licensing).",
+        "CodeOPC is built by a small team that has been working together since 2021. Before CodeOPC, we built devv.ai, an AI search engine for developers. In 2025 we turned to the problem we kept running into ourselves: how a small team actually gets work done alongside AI agents. That became CodeOPC.",
+        "The source code is public and you can self-host it, so you can read every line before you build on CodeOPC, and a self-hosted deployment runs entirely on your own infrastructure. How commercial use works is spelled out on our [licensing page](/licensing).",
       ],
       contacts: [
         {
@@ -96,12 +96,12 @@ export function createEnDict(): LandingDict {
   licensing: {
     title: "Licensing",
     intro: [
-      "Multica is released under the [Multica License](https://github.com/multica-ai/multica/blob/main/LICENSE): the Apache License 2.0 with a few additional conditions. The source code is public, and using Multica inside your own organization is free, including self-hosting it for your whole team.",
-      "The main additional condition covers hosted use: offering Multica to people outside your organization requires a commercial license. This page shows where that line falls, using the questions we hear most often. It is a plain-language guide, not legal advice. If anything here differs from the LICENSE, the LICENSE controls.",
+      "CodeOPC is released under the [CodeOPC License](https://github.com/codeopc-ai/codeopc/blob/main/LICENSE): the Apache License 2.0 with a few additional conditions. The source code is public, and using CodeOPC inside your own organization is free, including self-hosting it for your whole team.",
+      "The main additional condition covers hosted use: offering CodeOPC to people outside your organization requires a commercial license. This page shows where that line falls, using the questions we hear most often. It is a plain-language guide, not legal advice. If anything here differs from the LICENSE, the LICENSE controls.",
     ],
     rule: {
       title: "The rule of thumb",
-      text: "Is anyone outside your organization driving the instance — creating issues, talking to agents, or triggering work? If so, through any interface (web, Slack, or API), that is a hosted service. If they only receive results your team produced with Multica, that is internal use.",
+      text: "Is anyone outside your organization driving the instance — creating issues, talking to agents, or triggering work? If so, through any interface (web, Slack, or API), that is a hosted service. If they only receive results your team produced with CodeOPC, that is internal use.",
     },
     scenarios: {
       title: "Common scenarios",
@@ -111,21 +111,21 @@ export function createEnDict(): LandingDict {
       notRequired: "Not required",
       items: [
         {
-          scenario: "Your organization uses Multica internally",
+          scenario: "Your organization uses CodeOPC internally",
           example: "Self-hosted, across any number of workspaces.",
           required: false,
         },
         {
           scenario:
-            "You deploy Multica for a client, who owns it and uses it internally",
+            "You deploy CodeOPC for a client, who owns it and uses it internally",
           example: "Implementation, training, consulting, or customization work.",
           required: false,
         },
         {
           scenario:
-            "Your team uses Multica to do work for clients, who only receive the deliverables",
+            "Your team uses CodeOPC to do work for clients, who only receive the deliverables",
           example:
-            "An agency that runs its content production in Multica and ships the finished work.",
+            "An agency that runs its content production in CodeOPC and ships the finished work.",
           required: false,
         },
         {
@@ -137,7 +137,7 @@ export function createEnDict(): LandingDict {
         },
         {
           scenario:
-            "You run and manage Multica instances for clients on your own infrastructure",
+            "You run and manage CodeOPC instances for clients on your own infrastructure",
           example: "A managed service, whether or not you charge for it.",
           required: true,
         },
@@ -150,12 +150,12 @@ export function createEnDict(): LandingDict {
           scenario:
             "People outside your organization drive your instance through another entry point",
           example:
-            "A public website backed by Multica, a Slack integration, or an API \u2014 even when it is free.",
+            "A public website backed by CodeOPC, a Slack integration, or an API \u2014 even when it is free.",
           required: true,
         },
         {
-          scenario: "You embed Multica in a product you sell or distribute",
-          example: "Multica ships as a component of another commercial offering.",
+          scenario: "You embed CodeOPC in a product you sell or distribute",
+          example: "CodeOPC ships as a component of another commercial offering.",
           required: true,
         },
       ],
@@ -164,8 +164,8 @@ export function createEnDict(): LandingDict {
       {
         heading: "Other conditions",
         bullets: [
-          "Branding: keep the Multica logo, product name, and the copyright and attribution information shown in the Multica interface, unless we have given you a written branding waiver.",
-          "Attribution: if you build on Multica\u2019s backend, daemon, or CLI without the Multica interface, keep the copyright and NOTICE information, and state in your user-facing documentation that your product is built on Multica, with a link to the [GitHub repository](https://github.com/multica-ai/multica).",
+          "Branding: keep the CodeOPC logo, product name, and the copyright and attribution information shown in the CodeOPC interface, unless we have given you a written branding waiver.",
+          "Attribution: if you build on CodeOPC\u2019s backend, daemon, or CLI without the CodeOPC interface, keep the copyright and NOTICE information, and state in your user-facing documentation that your product is built on CodeOPC, with a link to the [GitHub repository](https://github.com/codeopc-ai/codeopc).",
           "Forks: publishing the source code of a fork is not a hosted service and needs no commercial license. Anyone who operates a hosted service from that fork needs their own.",
           "A commercial license and a branding waiver are separate grants. One does not include the other.",
         ],
@@ -183,15 +183,15 @@ export function createEnDict(): LandingDict {
     title: "Privacy Policy",
     lastUpdated: "Last updated: October 22, 2026",
     intro: [
-      "This Privacy Policy explains how Index Labs (Hong Kong) Limited (“Multica”, “we”, “us”) collects, uses, and shares personal information when you visit multica.ai, contact us, or use Multica Cloud, our hosted service, including the web, desktop, and mobile apps.",
-      "It does not cover Multica deployments you host yourself. The operator of a self-hosted deployment controls its data, and any AI providers, integrations, or analytics it uses depend on how they configure it. The only thing a self-hosted server sends us is a daily usage snapshot: a random ID for the deployment, so snapshots from the same server can be linked; the server version; approximate counts of workspaces, members, agents, and connected daemons; the number of agent runs started, completed, failed, and cancelled that day; and approximate counts of members who opened the web or desktop app, and of members who personally started an agent run, over the previous 1, 7, and 28 days. It contains no names, email addresses, or content. Setting DO_NOT_TRACK=1 turns off this snapshot.",
+      "This Privacy Policy explains how Index Labs (Hong Kong) Limited (“CodeOPC”, “we”, “us”) collects, uses, and shares personal information when you visit codeopc.ai, contact us, or use CodeOPC Cloud, our hosted service, including the web, desktop, and mobile apps.",
+      "It does not cover CodeOPC deployments you host yourself. The operator of a self-hosted deployment controls its data, and any AI providers, integrations, or analytics it uses depend on how they configure it. The only thing a self-hosted server sends us is a daily usage snapshot: a random ID for the deployment, so snapshots from the same server can be linked; the server version; approximate counts of workspaces, members, agents, and connected daemons; the number of agent runs started, completed, failed, and cancelled that day; and approximate counts of members who opened the web or desktop app, and of members who personally started an agent run, over the previous 1, 7, and 28 days. It contains no names, email addresses, or content. Setting DO_NOT_TRACK=1 turns off this snapshot.",
     ],
     sections: [
       {
         heading: "Information we collect",
         bullets: [
-          "Account information: your name, email address, and profile picture. If you sign in with Google, we receive your name, email address, and profile picture from Google. You can also add profile details such as language, time zone, and a short bio, and answer onboarding questions such as your role, your use case, and how you heard about Multica.",
-          "Content you create: workspaces, issues, comments, chat messages, attachments, agent instructions, and anything else you or your agents put into Multica Cloud.",
+          "Account information: your name, email address, and profile picture. If you sign in with Google, we receive your name, email address, and profile picture from Google. You can also add profile details such as language, time zone, and a short bio, and answer onboarding questions such as your role, your use case, and how you heard about CodeOPC.",
+          "Content you create: workspaces, issues, comments, chat messages, attachments, agent instructions, and anything else you or your agents put into CodeOPC Cloud.",
           "Contact Sales inquiries: your name, business email, company name and size, country or region, use case, goals, and communication preferences. To prevent abuse, we also record the IP address and browser user agent the form was sent from.",
           "Billing information: subscription payments are handled by Stripe on pages hosted by Stripe. We never receive or store your full card details.",
           "Usage and device information: app version, operating system, client type, and a randomly generated installation ID; the name of each machine you connect as a runtime (its hostname by default); and crash and error reports. Before a report is sent, we filter recognizable email addresses and credentials out of the error message, but reports can still contain other details about what went wrong.",
@@ -201,24 +201,24 @@ export function createEnDict(): LandingDict {
       {
         heading: "How we use information",
         bullets: [
-          "To provide, operate, and secure Multica Cloud, including signing you in, syncing your workspaces, and delivering notifications and invitations.",
+          "To provide, operate, and secure CodeOPC Cloud, including signing you in, syncing your workspaces, and delivering notifications and invitations.",
           "To respond to Contact Sales inquiries and support requests.",
           "To send service messages such as sign-in codes and workspace invitations. We only send product updates or marketing if you opted in, and you can unsubscribe at any time.",
-          "To understand how Multica is used, fix bugs, and improve the product.",
+          "To understand how CodeOPC is used, fix bugs, and improve the product.",
           "To prevent abuse and meet our legal obligations.",
         ],
       },
       {
         heading: "Legal bases",
         paragraphs: [
-          "Where the law requires a legal basis for processing, we rely on performing our contract with you, to provide Multica Cloud; our legitimate interests in securing, supporting, and improving Multica and responding to inquiries; your consent, for marketing messages; and compliance with our legal obligations.",
+          "Where the law requires a legal basis for processing, we rely on performing our contract with you, to provide CodeOPC Cloud; our legitimate interests in securing, supporting, and improving CodeOPC and responding to inquiries; your consent, for marketing messages; and compliance with our legal obligations.",
         ],
       },
       {
         heading: "AI features",
         paragraphs: [
-          "Your coding agents run on your own machines or on runtimes you connect, using the coding tools and accounts you set up. An agent running on your machine does not mean the model runs there: those tools send prompts, code, files, and tool results to their model providers, under the terms of the tool and account you use. Multica coordinates their work.",
-          "Some Multica Cloud features, such as chat titles and suggested follow-ups, send your first chat message or a few recent messages to a third-party large language model provider we choose, to generate the result. Multica does not use your content to train AI models.",
+          "Your coding agents run on your own machines or on runtimes you connect, using the coding tools and accounts you set up. An agent running on your machine does not mean the model runs there: those tools send prompts, code, files, and tool results to their model providers, under the terms of the tool and account you use. CodeOPC coordinates their work.",
+          "Some CodeOPC Cloud features, such as chat titles and suggested follow-ups, send your first chat message or a few recent messages to a third-party large language model provider we choose, to generate the result. CodeOPC does not use your content to train AI models.",
         ],
       },
       {
@@ -232,8 +232,8 @@ export function createEnDict(): LandingDict {
         heading: "Who we share information with",
         paragraphs: [
           "Information you put into a workspace is visible to its other members and admins, and to the agents and integrations they authorize, according to the workspace’s permissions. If your workspace belongs to an organization, that organization manages its content and may handle requests about it.",
-          "We also disclose information when the law requires it, and to a buyer or successor if Multica is involved in a merger, acquisition, or sale of assets.",
-          "Beyond that, we share personal information only with the service providers that help us run Multica and with integrations you choose to connect:",
+          "We also disclose information when the law requires it, and to a buyer or successor if CodeOPC is involved in a merger, acquisition, or sale of assets.",
+          "Beyond that, we share personal information only with the service providers that help us run CodeOPC and with integrations you choose to connect:",
         ],
         bullets: [
           "Amazon Web Services: hosting, file storage, and content delivery",
@@ -249,19 +249,19 @@ export function createEnDict(): LandingDict {
       {
         heading: "Where information is stored",
         paragraphs: [
-          "Multica Cloud is hosted on Amazon Web Services and Vercel. We and our service providers may process your information in the United States and other countries. Wherever it is processed, we protect it as described in this policy.",
+          "CodeOPC Cloud is hosted on Amazon Web Services and Vercel. We and our service providers may process your information in the United States and other countries. Wherever it is processed, we protect it as described in this policy.",
         ],
       },
       {
         heading: "How long we keep information",
         paragraphs: [
-          "We keep account information and workspace content for as long as your account or workspace exists. When a workspace owner deletes a workspace, its issues, comments, and other content are removed from Multica Cloud, though backups we keep for recovery may still contain copies for a period afterwards. To have files uploaded to a deleted workspace erased from our file storage, email [support@multica.ai](mailto:support@multica.ai). We keep billing records for as long as accounting and tax rules require, and product analytics, crash reports, Contact Sales inquiries, and feedback for as long as they are useful for supporting you and improving Multica. We delete inquiries and feedback on request.",
+          "We keep account information and workspace content for as long as your account or workspace exists. When a workspace owner deletes a workspace, its issues, comments, and other content are removed from CodeOPC Cloud, though backups we keep for recovery may still contain copies for a period afterwards. To have files uploaded to a deleted workspace erased from our file storage, email [support@codeopc.ai](mailto:support@codeopc.ai). We keep billing records for as long as accounting and tax rules require, and product analytics, crash reports, Contact Sales inquiries, and feedback for as long as they are useful for supporting you and improving CodeOPC. We delete inquiries and feedback on request.",
         ],
       },
       {
         heading: "Your choices and rights",
         paragraphs: [
-          "Depending on where you live, you may have the right to access, correct, delete, or export your personal information; to object to or restrict certain processing; to withdraw consent you have given, such as for marketing messages; and to complain to your local data protection authority. You can update your profile in Multica at any time and delete a workspace you own from its settings. For anything else, including deleting your account, email [support@multica.ai](mailto:support@multica.ai). We will respond within 30 days.",
+          "Depending on where you live, you may have the right to access, correct, delete, or export your personal information; to object to or restrict certain processing; to withdraw consent you have given, such as for marketing messages; and to complain to your local data protection authority. You can update your profile in CodeOPC at any time and delete a workspace you own from its settings. For anything else, including deleting your account, email [support@codeopc.ai](mailto:support@codeopc.ai). We will respond within 30 days.",
         ],
       },
       {
@@ -273,7 +273,7 @@ export function createEnDict(): LandingDict {
       {
         heading: "Children",
         paragraphs: [
-          "Multica is not directed to children under 16, and we do not knowingly collect their personal information.",
+          "CodeOPC is not directed to children under 16, and we do not knowingly collect their personal information.",
         ],
       },
       {
@@ -285,7 +285,7 @@ export function createEnDict(): LandingDict {
       {
         heading: "Contact us",
         paragraphs: [
-          "Multica is operated by Index Labs (Hong Kong) Limited, which is responsible for your personal information. For privacy questions or requests, email [support@multica.ai](mailto:support@multica.ai).",
+          "CodeOPC is operated by Index Labs (Hong Kong) Limited, which is responsible for your personal information. For privacy questions or requests, email [support@codeopc.ai](mailto:support@codeopc.ai).",
         ],
       },
     ],
@@ -293,7 +293,7 @@ export function createEnDict(): LandingDict {
 
   changelog: {
     title: "Changelog",
-    subtitle: "New updates and improvements to Multica.",
+    subtitle: "New updates and improvements to CodeOPC.",
     toc: "All releases",
     categories: {
       features: "New Features",
@@ -336,7 +336,7 @@ export function createEnDict(): LandingDict {
           "Desktop stable updates arrive only once every platform's build is ready, failed updates recover, and Windows arm64 no longer downgrades.",
           "Custom runtimes stay on the machine you chose instead of being copied to everyone's machines.",
           "Tasks waiting for a local folder no longer block others, and task pickup no longer deadlocks with chat sends.",
-          "Multica's temporary run instructions in a tracked AGENTS.md or CLAUDE.md no longer end up in agent commits.",
+          "CodeOPC's temporary run instructions in a tracked AGENTS.md or CLAUDE.md no longer end up in agent commits.",
           "Skills you pick with / in chat or an Issue comment are now actually used by the agent.",
           "Settings → Code manages several GitHub connections, and pasted GitHub branch links fill in the right branch.",
           "Expired image links load again in the viewer, and anchors and links in HTML attachment previews work.",
@@ -402,7 +402,7 @@ export function createEnDict(): LandingDict {
           "Open a run to see the instructions, skills, and MCP servers it received.",
           "Run tasks on Factory Droid and Amp.",
           "The desktop app has one right-click menu everywhere, with quick actions for Issues.",
-          "Quick chat moves into a new bottom bar, and Shift+Cmd+J starts a new Ask Multica chat.",
+          "Quick chat moves into a new bottom bar, and Shift+Cmd+J starts a new Ask CodeOPC chat.",
           "Select text in an agent's chat reply to annotate it, and the note is sent with your next message.",
           "Choose whether chat replies send system notifications, and desktop background chat alerts and the Dock unread count work again.",
           "Telegram replies show what the agent is doing as it works, with more detail in private chats than in groups.",
@@ -419,7 +419,7 @@ export function createEnDict(): LandingDict {
           "Messaging channels belong to agents and connect with one click, and GitHub authorization brings you back with the repository selected.",
           "Agent filters share one meaning of \"my agents\", add Idle, and Issues show who actually requested an agent's work.",
           "Execution logs show command input line by line, and the runtime usage page keeps its time range.",
-          "Lark tasks include message, thread, and sender IDs, and Qoder sessions are marked as coming from Multica.",
+          "Lark tasks include message, thread, and sender IDs, and Qoder sessions are marked as coming from CodeOPC.",
           "The CLI links local images in a body to the attachments uploaded with it.",
           "The web app caches translations for each language, so pages load less repeated data.",
         ],
@@ -447,17 +447,17 @@ export function createEnDict(): LandingDict {
         title: "Appearance themes, private projects for everyone, and Issue environments",
         changes: [],
         features: [
-          "The Multica website is redesigned, with its own address for each language (/zh, /ja, /ko).",
+          "The CodeOPC website is redesigned, with its own address for each language (/zh, /ja, /ko).",
           "Settings → Appearance: pick one of five built-in themes and set fonts, sizes, density, and contrast.",
           "Private projects are available in every workspace. Their Issues are visible only to project members and workspace owners and admins.",
-          "An Issue's sidebar lists the services its runs started under Environments. On macOS and Linux, agents can keep a service running with multica env start.",
+          "An Issue's sidebar lists the services its runs started under Environments. On macOS and Linux, agents can keep a service running with codeopc env start.",
           "Connected Apps is rebuilt in workspaces where it's enabled: connect team or personal accounts and choose which apps each agent uses.",
           "Select text to comment on it and reply right there.",
           "Copy a link that always opens the latest version of a deliverable.",
           "Turn on Include sub-issues in the execution log to see runs and cost across all sub-Issues.",
           "Filter the Inbox the same way as Issues.",
           "Hand a workflow step to a squad.",
-          "Multica is available in Russian.",
+          "CodeOPC is available in Russian.",
           "Run a personal agent on Muse app with the new museapp backend.",
           "Qoder can use the workspace's GitHub App to access repositories.",
           "Open an Issue from the web app in the desktop app.",
@@ -483,7 +483,7 @@ export function createEnDict(): LandingDict {
           "Hermes runs inside restricted Job Objects on Windows.",
           "A failed Issue list can be retried, and Issue mentions and pending invitations refresh when you return to the window.",
           "Search boxes in filter submenus accept typing again.",
-          "multica daemon start reports success only once the daemon is healthy.",
+          "codeopc daemon start reports success only once the daemon is healthy.",
           "Channel binding pages such as Lark and Slack no longer clash with workspace URLs.",
           "Smaller fixes to the sidebar, squad pickers, autopilot run history, and the CLI.",
         ],
@@ -501,7 +501,7 @@ export function createEnDict(): LandingDict {
           "Pin workspaces to the top of the workspace switcher.",
           "When creating a sub-Issue, you can copy fields from its parent Issue.",
           "Open ? → What's new to see the highlights of each release.",
-          "Multica is available in Spanish (Spain). Switch the language in Settings or from the account menu.",
+          "CodeOPC is available in Spanish (Spain). Switch the language in Settings or from the account menu.",
           "Qoder Cloud Agents can connect IM integrations, receive chat attachments and send files back to the chat, and be picked as a squad leader in quick create.",
           "Agents can read saved views with view list and view issues, using the same filters and paging as the app.",
           "Plugins can read a task's messages with GET /v1/tasks/{task_id}/messages and fetch only new ones by seq.",
@@ -522,7 +522,7 @@ export function createEnDict(): LandingDict {
           "Long chat histories and an agent's recent work list stay fast.",
           "The Runtimes sidebar shows how many machines are online.",
           "The docs are available in Traditional Chinese, and the app links to them when you use Traditional Chinese.",
-          "Multica has a Japanese README.",
+          "CodeOPC has a Japanese README.",
           "In every workspace, owners and admins can delete any Issue, while members can delete only Issues they or their agents created, and agents only their own. This applies to single and bulk deletes.",
           "Project creators can delete their own projects. Deleting asks for confirmation and closes only after the server confirms.",
           "Filters show a loading state while their data loads and a retry if it fails, instead of an empty list.",
@@ -579,14 +579,14 @@ export function createEnDict(): LandingDict {
           "Set up a WeCom bot by scanning a QR code, and see the agent's progress while it replies.",
           "Qoder Cloud Agents supports chat, quick create, and Issue attachments, and shows Qoder credits for each run.",
           "Run tasks on ZCode.",
-          "Send extra instructions to a running Pi agent. Pi also loads the skills Multica installs.",
+          "Send extra instructions to a running Pi agent. Pi also loads the skills CodeOPC installs.",
           "Limit how many tasks a runtime runs at once.",
           "Manage workflows from the CLI.",
           "See Hermes tokens and cost while a run is in progress.",
           "Resolved threads show their conclusion, so agents skip settled discussions.",
         ],
         improvements: [
-          "Multica has a refreshed logo, icons, and colors.",
+          "CodeOPC has a refreshed logo, icons, and colors.",
           "The agent list has search again, and agent settings open from more places.",
           "Empty pages share one look and suggest a next step.",
           "Attachment previews have a pager below the file.",
@@ -632,7 +632,7 @@ export function createEnDict(): LandingDict {
           "On narrow screens, a button jumps the timeline to the latest activity. Desktop keeps the navigation rail on the right.",
         ],
         improvements: [
-          "Multica's own icons are used across the app, with consistent menu spacing and text sizes.",
+          "CodeOPC's own icons are used across the app, with consistent menu spacing and text sizes.",
           "Tooltips with the full text appear only when a label is cut off, after a short delay, so they pop up less while you move the mouse.",
           "Click a run to open its full record. The execution log folds queued runs and compacts history and costs, while active runs and stop buttons stay in view.",
           "The workflow list shows project usage on one line, with the full list a click away, and handoff steps show the handler's name.",
@@ -644,7 +644,7 @@ export function createEnDict(): LandingDict {
           "OpenCode reports long tool calls and subagents as activity, so these runs are no longer stopped as idle. OpenCode 2.x MCP servers work, and disabled ones are shown but not added to tasks.",
           "Hermes tool commands keep the task's identity, work with both new and older Hermes versions, and no longer fail on state.db ownership. Go's x/net also gets a security update.",
           "Oh-My-Pi lists and imports skills only from the selected profile.",
-          "DSH setups must load the first-party @multica-ai/dsh-runtime. Old bridge setups are rejected with migration steps instead of losing run output.",
+          "DSH setups must load the first-party @codeopc-ai/dsh-runtime. Old bridge setups are rejected with migration steps instead of losing run output.",
           "Claude Code session and weekly limits show as quota errors, and runs end promptly after an error.",
           "Kiro retries temporary network errors and continues the same session.",
           "When another OpenClaw instance holds its state folder, the error explains how to recover.",
@@ -749,7 +749,7 @@ export function createEnDict(): LandingDict {
         ],
         fixes: [
           "Task credentials can no longer reach other workspaces or be swapped for long-lived ones, and a daemon can only claim and update tasks for runtimes its owner controls.",
-          "When an agent delivers to another branch or rewrites its starting point, Multica repairs it once if your base content is safe; failures show as local folder errors, not provider outages.",
+          "When an agent delivers to another branch or rewrites its starting point, CodeOPC repairs it once if your base content is safe; failures show as local folder errors, not provider outages.",
           "Removing injected instructions keeps the file's original line endings and your own edits, with no unrelated commits.",
           "Kiro runs that panic fail quickly, and broken resumed sessions are retired instead of hanging.",
           "OpenCode checks for future timestamps before resuming a session, and bundled OpenCode 2.x runs are no longer marked failed when the final step event is missing.",
@@ -980,7 +980,7 @@ export function createEnDict(): LandingDict {
           "Add new instructions to a Grok Build task while it is still running.",
           "Browse every attachment on an Issue full-window and page through them.",
           "Read the whole documentation site in French.",
-          "Find licensing answers, the privacy policy, and the team behind Multica on the site.",
+          "Find licensing answers, the privacy policy, and the team behind CodeOPC on the site.",
           "Self-hosted admins can make automatic titles and quick actions respond faster.",
         ],
         improvements: [
@@ -1041,7 +1041,7 @@ export function createEnDict(): LandingDict {
           "Choose the branch or commit a project's repository work starts from.",
           "Copy a direct link to any comment or reply, and open it with that comment highlighted.",
           "A WeCom answer comes back inside the message you asked from.",
-          "Point a self-hosted Multica at Gitea or a compatible mirror for updates.",
+          "Point a self-hosted CodeOPC at Gitea or a compatible mirror for updates.",
         ],
         improvements: [
           "A long WeCom answer arrives in full instead of being dropped.",
@@ -1346,8 +1346,8 @@ export function createEnDict(): LandingDict {
         features: [
           "Use Huawei Cloud CodeArts as a native agent runtime.",
           "Pick its models, pick up past sessions, and bring your MCP servers and local Skills.",
-          "Install Multica natively on iPad, in any screen orientation.",
-          "WeCom bot replies still arrive when you self-host Multica across several servers.",
+          "Install CodeOPC natively on iPad, in any screen orientation.",
+          "WeCom bot replies still arrive when you self-host CodeOPC across several servers.",
           "See how many WeCom replies never made it out, and why.",
         ],
         improvements: [
@@ -1604,7 +1604,7 @@ export function createEnDict(): LandingDict {
           "You can now create a share link that lets someone join your workspace directly.",
           "The transcript now reads as steps, with a two-lane timeline and an outcome summary.",
           "Files sent in Slack now arrive in the conversation as attachments.",
-          "You can now add Multica to your phone's home screen and open it like an app.",
+          "You can now add CodeOPC to your phone's home screen and open it like an app.",
           "Browser tabs are now named after the workspace page you have open.",
           "Imported skills now show where they came from.",
           "A mention of the Issue you are reading now reads as \"This issue\".",
@@ -1651,7 +1651,7 @@ export function createEnDict(): LandingDict {
         fixes: [
           "An agent CLI that cannot run now tells you how to repair it.",
           "Someone else's private runtime can no longer be used from the API or CLI.",
-          "Leftover task files no longer break every multica command in a folder.",
+          "Leftover task files no longer break every codeopc command in a folder.",
           "Agents installed through Volta or Vite Plus are now recognised.",
           "The gap between the last reply and the composer is back.",
           "In dark mode the active tab no longer prints dark squares, and hover corners stay round.",
@@ -1674,7 +1674,7 @@ export function createEnDict(): LandingDict {
           "Self-hosted setups can now keep task temp files on a bigger disk.",
         ],
         improvements: [
-          "`multica daemon logs` now tells you where the log file is.",
+          "`codeopc daemon logs` now tells you where the log file is.",
           "A Hermes task now says which HERMES_HOME it read.",
         ],
         fixes: [
@@ -1713,7 +1713,7 @@ export function createEnDict(): LandingDict {
           "Bold text next to Chinese, Japanese and Korean punctuation renders again.",
           "On Android the keyboard stays open after you send or stop a message.",
           "Self-hosted Hermes chats no longer fail on every other message.",
-          "A leftover port setting no longer blocks `multica login`.",
+          "A leftover port setting no longer blocks `codeopc login`.",
           "Cursor tasks now reach the MCP servers you configured.",
           "Issue titles created from Slack keep their links unchanged.",
           "A PR no longer closes a same-numbered Issue in another workspace.",
@@ -1764,7 +1764,7 @@ export function createEnDict(): LandingDict {
           "Oh-My-Pi can now run your agents as well.",
           "Voice notes sent in WeCom now reach your agents as text.",
           "Kimi and Pi agents can now be set to think harder or faster.",
-          "Cmd/Ctrl+click or middle-click any link in Multica to open it in a new tab.",
+          "Cmd/Ctrl+click or middle-click any link in CodeOPC to open it in a new tab.",
           "When WeCom cannot connect, the page now says whether it was refused or simply unreachable.",
         ],
         improvements: [
@@ -1833,7 +1833,7 @@ export function createEnDict(): LandingDict {
           "The execution log shows what each run cost, and the whole Issue's total.",
           "Muting comment notifications no longer hides messages that @-mention you.",
           "Chat on a phone opens full screen and the composer rides above the keyboard.",
-          "Replacing your multica or agent CLI now takes effect on its own, no restart.",
+          "Replacing your codeopc or agent CLI now takes effect on its own, no restart.",
         ],
         improvements: [
           "Agents read shorter instructions each run, leaving more room for your work.",
@@ -1970,7 +1970,7 @@ export function createEnDict(): LandingDict {
           "Every workspace can now label agents and Skills to keep them organized.",
           "Codex on Linux now uses the tools and logins already set up on that machine.",
           "Built-in Skills have consistent names and take up far less of each agent run.",
-          "Dimmed text across Multica is now solid and readable instead of washed out.",
+          "Dimmed text across CodeOPC is now solid and readable instead of washed out.",
         ],
         fixes: [
           "Multi-line prompts sent to Copilot on Windows no longer lose their line breaks.",
@@ -1999,14 +1999,14 @@ export function createEnDict(): LandingDict {
         ],
         improvements: [
           "Issue tables stay responsive when you switch workspaces.",
-          "Multica's interface and four-language docs are more consistent and readable.",
+          "CodeOPC's interface and four-language docs are more consistent and readable.",
           "Attachment-heavy CLI and agent workflows now transfer less data.",
           "Self-hosted setup now carries your configuration into the daemon.",
         ],
         fixes: [
           "Codex file changes are now preserved in task transcripts.",
           "Hermes agents now recover from a lost resumed session.",
-          "Qoder CLI is now found when Multica starts from a desktop app.",
+          "Qoder CLI is now found when CodeOPC starts from a desktop app.",
           "Daemon updates no longer wait forever while the machine is idle.",
           "Issue activity labels no longer clip letters below the baseline.",
         ],
@@ -2057,7 +2057,7 @@ export function createEnDict(): LandingDict {
           "Long pasted text now becomes a text attachment automatically.",
           "Uploads now appear once and become draft content only after they finish.",
           "Webhook URLs now hide their secret tokens until you choose to reveal them.",
-          "Starting Multica with many workspaces now launches far fewer agent checks.",
+          "Starting CodeOPC with many workspaces now launches far fewer agent checks.",
           "Usage rankings now focus on the top agents and sort failures more clearly.",
           "Each composer now leaves the cursor where that surface expects it.",
         ],
@@ -2232,7 +2232,7 @@ export function createEnDict(): LandingDict {
           "Your settings now save reliably after you reopen the panel.",
           "Resumed Codex tasks now report their usage accurately.",
           "Comments no longer turn the wrong text into links.",
-          "Direct chat replies now stay in Multica.",
+          "Direct chat replies now stay in CodeOPC.",
           "AI-assisted creation is now always available.",
           "The Issues page no longer stutters when you first open it.",
           "Codex agents on Linux now save their Git details correctly.",
@@ -2299,7 +2299,7 @@ export function createEnDict(): LandingDict {
           "Labels you pick while creating an issue are now saved together with it, every time.",
           "Pasting formatted text into a comment no longer leaves stray ++ marks.",
           "Hover cards no longer pop up when you just move the mouse past an avatar.",
-          "The Linux desktop app now installs under the name multica-desktop.",
+          "The Linux desktop app now installs under the name codeopc-desktop.",
         ],
       },
       {
@@ -2536,7 +2536,7 @@ export function createEnDict(): LandingDict {
         changes: [],
         features: [
           "The task transcript remembers your filter and expansion choices, and restores them the next time you open the run.",
-          "Self-hosted (Helm): a new `postgres.external.enabled` toggle points Multica at an externally managed PostgreSQL (RDS, CNPG, Cloud SQL, Neon…) and skips the built-in database.",
+          "Self-hosted (Helm): a new `postgres.external.enabled` toggle points CodeOPC at an externally managed PostgreSQL (RDS, CNPG, Cloud SQL, Neon…) and skips the built-in database.",
         ],
         fixes: [
           "Ordered-list caret no longer strands on the block below when a comment draft with an empty `1. ` line reloads.",
@@ -2590,8 +2590,8 @@ export function createEnDict(): LandingDict {
         title: "Slack /issue slash command, ByteDance TRAE CLI runtime, and Claude Sonnet 5",
         changes: [],
         features: [
-          "Slack's native /issue slash command creates a Multica Issue and replies to you privately with the link.",
-          "A Slack user who already linked their account to one Multica bot no longer re-links when the same Slack workspace connects a second bot.",
+          "Slack's native /issue slash command creates a CodeOPC Issue and replies to you privately with the link.",
+          "A Slack user who already linked their account to one CodeOPC bot no longer re-links when the same Slack workspace connects a second bot.",
           "Slack channel context is now driven by two focused reads: a channel overview and a per-thread read.",
           "ByteDance TRAE CLI (traecli) joins the built-in agent runtimes over the standard ACP transport.",
           "Claude Sonnet 5 is now available in the Anthropic model catalog with introductory pricing.",
@@ -2607,7 +2607,7 @@ export function createEnDict(): LandingDict {
           "Cursor and Kiro runtime completion transcripts are recovered so the final result no longer goes missing.",
           "Self-host: MULTICA_SLACK_SECRET_KEY is now passed through to the backend container in docker-compose.selfhost.yml. (Community-reported.)",
           "The Issues board \"N working\" chip counts distinct Issues instead of distinct agents.",
-          "Anonymous self-host source-channel reports go back to the official Multica API endpoint.",
+          "Anonymous self-host source-channel reports go back to the official CodeOPC API endpoint.",
           "Comment deep-link highlights are now background-only and consistent between root comments and replies.",
         ],
       },
@@ -2618,10 +2618,10 @@ export function createEnDict(): LandingDict {
         changes: [],
         features: [
           "Autopilots now have a clear write-permission layer, plus a Manage Access dialog that lets the creator grant write access to specific workspace members.",
-          "Slack channels can backfill their conversation history into Multica, so an agent has the prior context the moment it joins.",
+          "Slack channels can backfill their conversation history into CodeOPC, so an agent has the prior context the moment it joins.",
           "Slack messages show a 👀 reaction while an agent is preparing its reply, and the reaction is always cleared on the way out.",
           "Skill bundles can be installed from a local .skill or .zip archive.",
-          "multica issue commands no longer accept short UUID prefixes — use the issue key (MUL-123) or the full UUID.",
+          "codeopc issue commands no longer accept short UUID prefixes — use the issue key (MUL-123) or the full UUID.",
           "The Agents page is now usable on mobile.",
         ],
         improvements: [
@@ -2646,7 +2646,7 @@ export function createEnDict(): LandingDict {
           "Issues now have a Remove parent action, so you can detach a sub-Issue without first having to pick a different parent.",
         ],
         improvements: [
-          "The local daemon reconnects to Multica through a more resilient WebSocket flow with bounded backoff, so brief network drops recover smoothly instead of stalling.",
+          "The local daemon reconnects to CodeOPC through a more resilient WebSocket flow with bounded backoff, so brief network drops recover smoothly instead of stalling.",
           "The daemon now bounds each runtime probe with its own timeout, so a single wedged CLI can no longer block every other runtime from coming online.",
         ],
         fixes: [
@@ -2883,7 +2883,7 @@ export function createEnDict(): LandingDict {
         title: "CodeBuddy Runtime",
         changes: [],
         features: [
-          "CodeBuddy can now run local Multica agents, with its available model and effort choices shown automatically",
+          "CodeBuddy can now run local CodeOPC agents, with its available model and effort choices shown automatically",
           "Quick-created Issues now keep uploaded files attached from the first draft through the final Issue",
         ],
         improvements: [
@@ -2925,15 +2925,15 @@ export function createEnDict(): LandingDict {
           "Comment boxes now show which agents or squads will start work before you send, with controls to avoid accidental runs",
           "Run transcripts now include timestamps, making agent progress and handoffs easier to review",
           "Autopilot detail pages now show who created each autopilot",
-          "Claude Fable 5 is now available in Multica's supported model and pricing list",
+          "Claude Fable 5 is now available in CodeOPC's supported model and pricing list",
           "Issue conversations can now resolve a specific reply, making long threads easier to close while keeping the final answer visible",
-          "Lark and Feishu conversations now show a typing reaction while Multica is preparing a reply, then clear it before the answer is sent",
+          "Lark and Feishu conversations now show a typing reaction while CodeOPC is preparing a reply, then clear it before the answer is sent",
           "Agent runs now know who started each task, making handoffs, audit trails, and privacy-aware behavior more accurate",
-          "OpenClaw users can point Multica at a custom app location and data folder from their local configuration",
+          "OpenClaw users can point CodeOPC at a custom app location and data folder from their local configuration",
         ],
         improvements: [
           "Comment trigger indicators are quieter, clearer, and less likely to crowd long agent names",
-          "Desktop now disables daemon start and stop controls when the daemon is managed outside Multica, such as in WSL2",
+          "Desktop now disables daemon start and stop controls when the daemon is managed outside CodeOPC, such as in WSL2",
           "The active agent indicator in an Issue header is easier to read, with motion only while work is running and clearer queued wording otherwise",
           "The CLI now gives clearer guidance around common errors, sign-in problems, and project setup values",
         ],
@@ -2957,7 +2957,7 @@ export function createEnDict(): LandingDict {
         title: "Web Notifications and /note Command",
         changes: [],
         features: [
-          "The web app can now show native browser notification banners, making workspace activity easier to catch while Multica is in the background",
+          "The web app can now show native browser notification banners, making workspace activity easier to catch while CodeOPC is in the background",
           "Comments that start with /note can record context without waking the assigned agent, so teams can leave coordination notes without triggering a run",
           "Antigravity is now available as a per-agent model choice for daemon-run agents",
           "The CLI now explains common request failures in plain language and points to the next action",
@@ -3015,10 +3015,10 @@ export function createEnDict(): LandingDict {
         title: "Lark Bot Integration",
         changes: [],
         features: [
-          "Multica now supports Lark as a third-party integration, so teams can scan a QR code and create a Multica agent as a Lark Bot",
+          "CodeOPC now supports Lark as a third-party integration, so teams can scan a QR code and create a CodeOPC agent as a Lark Bot",
           "Chat now has a searchable agent picker and an explicit context picker, making it easier to choose who should respond and what they should see",
           "Descriptions and comments now support checkbox task lists for lightweight planning inside an Issue",
-          "Agents now include built-in Multica skills so they can follow workspace workflows more consistently",
+          "Agents now include built-in CodeOPC skills so they can follow workspace workflows more consistently",
         ],
         improvements: [
           "Chat context is represented with clear mentions, making handoffs and later review easier to understand",
@@ -3062,7 +3062,7 @@ export function createEnDict(): LandingDict {
         title: "Japanese Support and /skill Command",
         changes: [],
         features: [
-          "Multica now supports Japanese across the app, site, and docs",
+          "CodeOPC now supports Japanese across the app, site, and docs",
           "Chat now supports a /skill command for choosing an agent Skill",
           "Workspaces can now show a custom logo",
           "Teams can add Skills to an agent without replacing existing Skills",
@@ -3118,7 +3118,7 @@ export function createEnDict(): LandingDict {
         changes: [],
         features: [
           "Agents that continue work from an Issue comment now resume the previous session instead of starting over, keeping the task context intact",
-          "Multica now supports Korean across the app, public site, and documentation, including Korean docs pages and localized date formatting",
+          "CodeOPC now supports Korean across the app, public site, and documentation, including Korean docs pages and localized date formatting",
           "Issue pages now keep active agent work visible near the title, with a cleaner view when multiple agents are working at once",
           "Agents can scan Issue discussions faster with thread previews, reply counts, and recent activity before opening the full conversation",
           "OpenClaw runtimes can use the MCP setup saved on an agent, and Claude Opus 4.8 is available in model selection and usage estimates",
@@ -3166,7 +3166,7 @@ export function createEnDict(): LandingDict {
         title: "Local Working Directories",
         changes: [],
         features: [
-          "Projects can now use a local working directory on Desktop, so tasks can run in an existing folder while Multica shows when another task is waiting for that directory",
+          "Projects can now use a local working directory on Desktop, so tasks can run in an existing folder while CodeOPC shows when another task is waiting for that directory",
           "Autopilot webhook triggers can now filter incoming events and actions before work starts, with docs linked directly from the setup flow",
           "Swimlane views can group Issues by parent Issue, project, or assignee, making large boards easier to slice by how the team plans work",
           "Comments now support selecting multiple attachments and keeping, removing, or replacing attachments while editing",
@@ -3213,11 +3213,11 @@ export function createEnDict(): LandingDict {
       {
         version: "0.3.8",
         date: "2026-05-25",
-        title: "Multica for iOS, Helm Self-Hosting & Smoother Collaboration",
+        title: "CodeOPC for iOS, Helm Self-Hosting & Smoother Collaboration",
         changes: [],
         features: [
-          "Multica for iOS is now available as our first official usable mobile client, covering login, workspaces, inbox, Issues, projects, chat, comments, reactions, presence, and live updates; it is not on the App Store yet, so users need to build and install it manually",
-          "Self-hosted teams can now deploy Multica to Kubernetes with a Helm chart, while Docker-based installs keep clearer port and URL controls",
+          "CodeOPC for iOS is now available as our first official usable mobile client, covering login, workspaces, inbox, Issues, projects, chat, comments, reactions, presence, and live updates; it is not on the App Store yet, so users need to build and install it manually",
+          "Self-hosted teams can now deploy CodeOPC to Kubernetes with a Helm chart, while Docker-based installs keep clearer port and URL controls",
           "Project resource pickers now include repository search, and workspace repository settings can store descriptions that help agents understand each codebase",
           "Runtime usage now recognizes DeepSeek, Kimi K2.6, Zhipu GLM, and long-context Claude Opus model costs more accurately",
           "The public site now supports use-case pages and a clearer path to Docs, Changelog, and getting started",
@@ -3231,7 +3231,7 @@ export function createEnDict(): LandingDict {
         ],
         fixes: [
           "Issue timelines stay in chronological order when live comments and activity arrive close together",
-          "Codex runs no longer inherit hidden host memory during Multica tasks, and Pi runs receive a cleaner end-of-input signal",
+          "Codex runs no longer inherit hidden host memory during CodeOPC tasks, and Pi runs receive a cleaner end-of-input signal",
           "Local runtime delete actions now avoid self-healing rows that would immediately reappear, and dependency updates close server security advisories",
           "Title fields now refresh safely after external updates, and markdown code no longer uses ligatures that can distort command flags",
         ],
@@ -3361,7 +3361,7 @@ export function createEnDict(): LandingDict {
         ],
         improvements: [
           "Failed issue actions now show clearer error messages so teams can understand what happened without digging through logs",
-          "GitHub-linked pull requests now surface CI and merge-conflict status inside Multica",
+          "GitHub-linked pull requests now surface CI and merge-conflict status inside CodeOPC",
           "Self-hosted deployments get safer defaults and clearer guidance for reverse proxies, auth limits, and local-only services",
           "Search results are ranked more usefully and include better snippets",
         ],
@@ -3453,7 +3453,7 @@ export function createEnDict(): LandingDict {
         title: "GitHub Integration, Chat Attachments & Safer Issue Navigation",
         changes: [],
         features: [
-          "Connect GitHub so linked pull requests appear on Multica issues, sync their status, and close the Multica issue automatically when the PR closes",
+          "Connect GitHub so linked pull requests appear on CodeOPC issues, sync their status, and close the CodeOPC issue automatically when the PR closes",
           "Chat messages can include file attachments and image previews",
           "Agents and runtimes can now be kept public or private for clearer team access",
           "Stopping a single agent task now asks for confirmation before it is terminated",
@@ -3464,7 +3464,7 @@ export function createEnDict(): LandingDict {
           "Long issue timelines scroll more smoothly",
           "The feedback dialog now points contributors toward GitHub discussions and issues",
           "Self-hosted Caddy guidance now calls out real-time connection requirements",
-          "Linux desktop packages show the Multica app icon again",
+          "Linux desktop packages show the CodeOPC app icon again",
         ],
         fixes: [
           "Downloaded attachments keep their original filenames",
@@ -3550,7 +3550,7 @@ export function createEnDict(): LandingDict {
         title: "Daemon Disk-Usage CLI, Timeline Polish & Task Usage Rollup",
         changes: [],
         features: [
-          "New `multica daemon disk-usage` CLI surfaces per-task and per-workspace disk footprint",
+          "New `codeopc daemon disk-usage` CLI surfaces per-task and per-workspace disk footprint",
           "Skill picker in agent settings has a search box for fast lookup",
           "Daemon GC extends to chat, autopilot, and quick-create tasks",
           "Issue detail breadcrumb now shows the MUL-xxxx identifier for quick reference",
@@ -3566,7 +3566,7 @@ export function createEnDict(): LandingDict {
           "Linux daemon self-restart uses `brew prefix` symlinks, so Homebrew Cellar deletion no longer orphans runtimes",
           "CLI short IDs now route correctly — copied prefixes no longer 404",
           "Windows non-ASCII comment / description input lands via new `--content-file` / `--description-file` flags",
-          "Windows / Linux desktop replaces the Electron placeholder icon with the Multica asterisk",
+          "Windows / Linux desktop replaces the Electron placeholder icon with the CodeOPC asterisk",
           "Orphaned timeline replies are now correctly surfaced",
           "Timeline comment pagination budget excludes activities, so heavy activity no longer crowds out real comments",
         ],
@@ -3634,8 +3634,8 @@ export function createEnDict(): LandingDict {
         title: "Repo Checkout `--ref`, Hermes Replay Fix & Multi-Replica Model Picker",
         changes: [],
         features: [
-          "`multica repo checkout --ref` targets a branch, tag, or specific commit when pulling a repo into the workspace",
-          "`multica agent avatar` uploads an agent avatar straight from the CLI",
+          "`codeopc repo checkout --ref` targets a branch, tag, or specific commit when pulling a repo into the workspace",
+          "`codeopc agent avatar` uploads an agent avatar straight from the CLI",
           "Inbox shows an archive button on done tasks; the redundant mark-as-done hover button is gone",
         ],
         improvements: [
@@ -3647,7 +3647,7 @@ export function createEnDict(): LandingDict {
           "Newly created agents show up everywhere immediately — the agent cache is hydrated on create",
           "Hermes no longer replays the previous answer when a new turn starts — historical chunks are gated behind a per-turn flag",
           "Codex runtime model picker exposes the GPT-5.5 family",
-          "`multica login --token <PAT>` accepts the PAT as a flag value instead of rejecting it",
+          "`codeopc login --token <PAT>` accepts the PAT as a flag value instead of rejecting it",
           "CLI update completion status is now reliable",
           "Session resume is guarded by runtime, preventing cross-runtime resume",
           "Kanban display settings survive when dragging issues across columns",
@@ -3670,7 +3670,7 @@ export function createEnDict(): LandingDict {
         ],
         improvements: [
           "Daemon `/tasks/claim` polling uses a Redis empty-claim fast-path, dropping idle DB load and reclaiming disk on long-open issues",
-          "Multica Agent commits include a `Co-authored-by` trailer for proper Git attribution",
+          "CodeOPC Agent commits include a `Co-authored-by` trailer for proper Git attribution",
           "Desktop blocks Cmd+R / Ctrl+R / F5 from reloading the app and shows the real version in dev and Updates settings",
         ],
         fixes: [
@@ -3754,9 +3754,9 @@ export function createEnDict(): LandingDict {
         title: "Custom Agent Env, Better Failure Messages & Reliability Fixes",
         changes: [],
         features: [
-          "`multica agent create/update --custom-env KEY=VALUE` injects custom environment variables into agent runs",
+          "`codeopc agent create/update --custom-env KEY=VALUE` injects custom environment variables into agent runs",
           "Agent failure messages now include a tail of the runtime CLI's stderr — much easier to debug runtime errors",
-          "CLI update download timeout is now configurable, so slow links no longer abort `multica update`",
+          "CLI update download timeout is now configurable, so slow links no longer abort `codeopc update`",
         ],
         improvements: [
           "Daemon reports cancelled tasks as `cancelled` instead of `timeout`, and reconciles agent status when an issue's tasks are cancelled",
@@ -3833,7 +3833,7 @@ export function createEnDict(): LandingDict {
         changes: [],
         features: [
           "Desktop app cross-platform packaging — macOS, Windows, and Linux artifacts from a single release pipeline",
-          "`multica update` self-update command — upgrade the CLI and local daemon without reinstalling",
+          "`codeopc update` self-update command — upgrade the CLI and local daemon without reinstalling",
           "Issue board paginates every status column, not only Done — large backlogs stay responsive",
         ],
         fixes: [
@@ -3850,7 +3850,7 @@ export function createEnDict(): LandingDict {
         title: "Per-Agent Models, Kimi Runtime & Self-Host Auth",
         changes: [],
         features: [
-          "Per-agent `model` field with a provider-aware dropdown — pick the LLM model for each agent from the UI or via `multica agent create/update --model`, with live discovery from each runtime's CLI",
+          "Per-agent `model` field with a provider-aware dropdown — pick the LLM model for each agent from the UI or via `codeopc agent create/update --model`, with live discovery from each runtime's CLI",
           "Kimi CLI as a new agent runtime (Moonshot AI's `kimi-cli` over ACP), with model selection, auto-approved tool permissions, and streaming tool-call rendering",
           "Expand toggle on inline comment and reply editors for composing long text",
         ],
@@ -3998,7 +3998,7 @@ export function createEnDict(): LandingDict {
         title: "One-Click Setup, Self-Hosting & Stability",
         changes: [],
         features: [
-          "One-click install & setup — `curl | bash` installs CLI, `--with-server` bootstraps full self-hosting, `multica setup` configures your environment",
+          "One-click install & setup — `curl | bash` installs CLI, `--with-server` bootstraps full self-hosting, `codeopc setup` configures your environment",
           "Self-hosted storage — local file fallback when S3 is unavailable, plus custom S3 endpoint support (MinIO)",
           "Inline property editing (priority, status, lead) on project list page",
         ],
@@ -4144,7 +4144,7 @@ export function createEnDict(): LandingDict {
           "Load all open issues without pagination limit; closed issues paginate on scroll",
           "JWT and CloudFront cookie expiration extended from 72 hours to 30 days",
           "Remember last selected workspace after re-login",
-          "Daemon ensures multica CLI is on PATH in agent task environment",
+          "Daemon ensures codeopc CLI is on PATH in agent task environment",
           "PR template and CLI install guide for agent-driven setup",
         ],
       },
@@ -4282,14 +4282,14 @@ export function createEnDict(): LandingDict {
     hero: {
       eyebrow: "Desktop app",
       title: {
-        mac: "Download Multica for macOS",
-        windows: "Download Multica for Windows",
-        linux: "Download Multica for Linux",
-        other: "Download Multica",
+        mac: "Download CodeOPC for macOS",
+        windows: "Download CodeOPC for Windows",
+        linux: "Download CodeOPC for Linux",
+        other: "Download CodeOPC",
       },
       lead: "The desktop app comes with the agent daemon, so Claude Code, Codex and the other coding agents on this computer connect on their own.",
       leadOther: "Desktop apps for macOS, Windows and Linux, each with the agent daemon built in.",
-      mobileNote: "Multica’s desktop app runs on macOS, Windows and Linux. Open this page on your computer to download it.",
+      mobileNote: "CodeOPC’s desktop app runs on macOS, Windows and Linux. Open this page on your computer to download it.",
       primary: {
         macArm64Dmg: "Download for Apple Silicon",
         macX64Dmg: "Download for Intel",
@@ -4335,33 +4335,33 @@ export function createEnDict(): LandingDict {
       allDownloads: "All downloads",
       install: {
         title: "Install",
-        dmg: "Open the .dmg and drag Multica into Applications.",
-        zip: "Unzip it and move Multica into Applications.",
-        exe: "Run the installer. Multica opens when it finishes.",
+        dmg: "Open the .dmg and drag CodeOPC into Applications.",
+        zip: "Unzip it and move CodeOPC into Applications.",
+        exe: "Run the installer. CodeOPC opens when it finishes.",
         appImage: "Make the AppImage executable, then run it.",
         deb: "Install the .deb with apt or your package manager.",
         rpm: "Install the .rpm with dnf or your package manager.",
       },
       signIn: {
         title: "Sign in",
-        body: "Open Multica and sign in with your account.",
+        body: "Open CodeOPC and sign in with your account.",
         installed: "Already installed?",
-        open: "Open Multica",
+        open: "Open CodeOPC",
       },
       agents: {
         title: "Bring your agents",
-        body: "Multica finds Claude Code, Codex and the other coding agents on this computer.",
+        body: "CodeOPC finds Claude Code, Codex and the other coding agents on this computer.",
       },
       community: {
         label: "While it downloads",
-        githubTitle: "Follow Multica on GitHub",
+        githubTitle: "Follow CodeOPC on GitHub",
         githubBody: "Star the repo to hear about new releases, or read the code behind the app you just downloaded.",
         star: "Star on GitHub",
         stars: "{count} stars",
         discordTitle: "Join the Discord",
         discordBody: "Ask questions, share workflows and talk to the team.",
         join: "Join",
-        xTitle: "Follow @MulticaAI",
+        xTitle: "Follow @CodeOPCAI",
         xBody: "Release notes and what’s coming next.",
         follow: "Follow",
       },
@@ -4370,7 +4370,7 @@ export function createEnDict(): LandingDict {
   contactSales: {
     pageTitle: "Contact Sales",
     pageDescription:
-      "Talk to the Multica team about rolling out human + agent workflows at your company.",
+      "Talk to the CodeOPC team about rolling out human + agent workflows at your company.",
     eyebrow: "Contact Sales",
     title: "Let’s understand your needs",
     fields: {
@@ -4382,7 +4382,7 @@ export function createEnDict(): LandingDict {
       companyName: "Company name",
       companySize: "Company size",
       countryRegion: "Country / Region",
-      useCase: "How do you plan to use or collaborate with Multica?",
+      useCase: "How do you plan to use or collaborate with CodeOPC?",
       goals: "Your goals or challenges",
       selectPlaceholder: "Please select",
       submit: "Submit",
@@ -4397,10 +4397,10 @@ export function createEnDict(): LandingDict {
       { value: "1000+", label: "1,000+ employees" },
     ],
     useCases: [
-      { value: "evaluate", label: "Evaluating Multica for my team" },
-      { value: "adopt_team", label: "Rolling out Multica to a team or company" },
+      { value: "evaluate", label: "Evaluating CodeOPC for my team" },
+      { value: "adopt_team", label: "Rolling out CodeOPC to a team or company" },
       { value: "self_host", label: "Self-hosting on our own infrastructure" },
-      { value: "integrate", label: "Integrating Multica with existing tools" },
+      { value: "integrate", label: "Integrating CodeOPC with existing tools" },
       { value: "partner", label: "Partnership or reseller inquiry" },
       { value: "other", label: "Something else" },
     ],
@@ -4448,22 +4448,22 @@ export function createEnDict(): LandingDict {
     ],
     consent: {
       intro:
-        "Multica respects your privacy. We’ll use your personal information only to manage your account and deliver the products or services you’ve requested. Occasionally, we’d love to share product updates, best practices, and insights that may be relevant to you. Please let us know below if you’d like to hear from us.",
+        "CodeOPC respects your privacy. We’ll use your personal information only to manage your account and deliver the products or services you’ve requested. Occasionally, we’d love to share product updates, best practices, and insights that may be relevant to you. Please let us know below if you’d like to hear from us.",
       outreach:
-        "I’d like to receive one-to-one communication from Multica, including service updates, support inquiries, and business-related follow-ups.",
+        "I’d like to receive one-to-one communication from CodeOPC, including service updates, support inquiries, and business-related follow-ups.",
       updates:
-        "I’d like to receive product updates, insights, and event invitations from Multica.",
+        "I’d like to receive product updates, insights, and event invitations from CodeOPC.",
       unsubscribe:
         "You can unsubscribe from our communications at any time. For more details on how we handle your data and privacy rights, please review our",
       submitConsent:
-        "By clicking “Submit,” you consent to allow Multica to store and process your information for the purpose of delivering the requested content.",
+        "By clicking “Submit,” you consent to allow CodeOPC to store and process your information for the purpose of delivering the requested content.",
       privacyLinkLabel: "Privacy Policy.",
       privacyLinkHref: "/privacy",
     },
     success: {
       title: "Thanks — we got it.",
       message:
-        "A member of the Multica team will respond within three business days. In the meantime, feel free to explore the docs or star us on GitHub.",
+        "A member of the CodeOPC team will respond within three business days. In the meantime, feel free to explore the docs or star us on GitHub.",
       cta: "Back to home",
     },
     errors: {

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gorilla/websocket"
 	"github.com/multica-ai/multica/server/pkg/embeddeddaemon"
@@ -80,7 +81,8 @@ type ProxyFetchResponse struct {
 	Status     int               `json:"status"`
 	StatusText string            `json:"statusText"`
 	Headers    map[string]string `json:"headers"`
-	Body       string            `json:"body"`
+	Body       string            `json:"body,omitempty"`
+	BodyB64    string            `json:"bodyB64,omitempty"`
 }
 
 func resolveDefaultRuntimeEndpoints() (string, string) {
@@ -509,11 +511,27 @@ func (s *AppService) ProxyFetch(req ProxyFetchRequest) (*ProxyFetchResponse, err
 		respHeaders[k] = resp.Header.Get(k)
 	}
 
+	contentType := resp.Header.Get("Content-Type")
+	isBinary := !utf8.Valid(respBody) ||
+		strings.HasPrefix(contentType, "image/") ||
+		strings.HasPrefix(contentType, "application/octet-stream") ||
+		strings.HasPrefix(contentType, "application/pdf") ||
+		strings.HasPrefix(contentType, "video/") ||
+		strings.HasPrefix(contentType, "audio/")
+
+	var bodyStr, bodyB64 string
+	if isBinary {
+		bodyB64 = base64.StdEncoding.EncodeToString(respBody)
+	} else {
+		bodyStr = string(respBody)
+	}
+
 	return &ProxyFetchResponse{
 		Status:     resp.StatusCode,
 		StatusText: resp.Status,
 		Headers:    respHeaders,
-		Body:       string(respBody),
+		Body:       bodyStr,
+		BodyB64:    bodyB64,
 	}, nil
 }
 

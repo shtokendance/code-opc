@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { landingAlternates } from "@/lib/landing-locale-path";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://www.multica.ai";
+  const baseUrl = "https://www.codeopc.ai";
 
   const pages: MetadataRoute.Sitemap = [
     {

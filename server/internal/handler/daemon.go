@@ -4248,8 +4248,8 @@ func (h *Handler) buildClaimedTaskResponse(r *http.Request, task *db.AgentTaskQu
 		if ws.Context.Valid {
 			resp.WorkspaceContext = ws.Context.String
 		}
-		if strings.HasPrefix(ws.Slug, "dept-") {
-			tenantID := ResolveTenantFromDeptCode(strings.TrimPrefix(ws.Slug, "dept-"))
+		if strings.HasPrefix(ws.Slug, "dept-") || strings.HasPrefix(ws.Slug, "ent-") || ws.Slug == "default" {
+			tenantID := ResolveWorkspaceTenant(ws.Slug)
 			client := h.getPlatformClient()
 			if client != nil {
 				services, err := client.ListServices(r.Context(), tenantID, true)

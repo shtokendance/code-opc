@@ -62,9 +62,9 @@
   },
   "star_prompt": {
     "title_other": "{{agent}} がタスクを {{count}} 件完了しました",
-    "body": "Multica がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが Multica を見つけやすくなります。",
+    "body": "CodeOPC がお役に立っていたら、GitHub でスターをお願いします。ほかのチームが CodeOPC を見つけやすくなります。",
     "star": "Star",
-    "star_label": "GitHub で Multica にスターする",
+    "star_label": "GitHub で CodeOPC にスターする",
     "later": "あとで",
     "close": "閉じる"
   },

@@ -15,12 +15,17 @@ type ToolDefinition struct {
 }
 
 type EnterpriseMcpService struct {
-	ServiceID string           `json:"service_id"`
-	Tools     []ToolDefinition `json:"tools"`
+	ServiceID   string           `json:"service_id"`
+	Name        string           `json:"name,omitempty"`
+	Description string           `json:"description,omitempty"`
+	Tools       []ToolDefinition `json:"tools"`
 }
 
 type ListServicesResponse struct {
 	Services []EnterpriseMcpService `json:"services"`
+	Data     struct {
+		Services []EnterpriseMcpService `json:"services"`
+	} `json:"data,omitempty"`
 }
 
 type TaskInvocationRequest struct {

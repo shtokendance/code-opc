@@ -36,7 +36,7 @@ func dispatchCustomProtocolURL(app *application.App, rawURL string) {
 	if err != nil {
 		return
 	}
-	if u.Scheme != "multica" {
+	if u.Scheme != "multica" && u.Scheme != "onepc" && u.Scheme != "codeopc" {
 		return
 	}
 	// multica://auth/callback?token=<jwt>

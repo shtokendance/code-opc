@@ -749,3 +749,99 @@ func TestListWorkspaceMcpServers_EnterpriseAggregation(t *testing.T) {
 		t.Fatalf("expected 200 on 502 error, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestListWorkspaceMcpServers_EnterpriseWorkspace(t *testing.T) {
+	if testHandler == nil {
+		t.Skip("database not available")
+	}
+	ctx := context.Background()
+
+	// Create an enterprise workspace with slug 'ent-296492'
+	var entWorkspaceID string
+	if err := testPool.QueryRow(ctx, `
+		INSERT INTO workspace (name, slug, description, issue_prefix)
+		VALUES ('Tech Center', 'ent-296492', '', 'TC')
+		RETURNING id
+	`).Scan(&entWorkspaceID); err != nil {
+		t.Fatalf("create ent workspace: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM workspace WHERE id = $1`, entWorkspaceID)
+	})
+
+	if _, err := testPool.Exec(ctx, `
+		INSERT INTO member (workspace_id, user_id, role)
+		VALUES ($1, $2, 'owner')
+		ON CONFLICT DO NOTHING
+	`, entWorkspaceID, testUserID); err != nil {
+		t.Fatalf("create ent member: %v", err)
+	}
+	t.Cleanup(func() {
+		testPool.Exec(context.Background(), `DELETE FROM member WHERE workspace_id = $1`, entWorkspaceID)
+	})
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tenant := r.URL.Query().Get("tenant")
+		if tenant != "296492" {
+			t.Errorf("expected tenant 296492, got %q", tenant)
+		}
+		resp := platformclient.ListServicesResponse{
+			Services: []platformclient.EnterpriseMcpService{
+				{
+					ServiceID:   "svc-laifu-base",
+					Name:        "来福基础服务",
+					Description: "基础检索服务",
+					Tools: []platformclient.ToolDefinition{
+						{
+							Name:        "user_search",
+							Description: "用户检索",
+							InputSchema: json.RawMessage(`{"type":"object"}`),
+						},
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	origClient := testHandler.PlatformClient
+	testHandler.PlatformClient = platformclient.NewClient(ts.URL, "test", time.Second)
+	t.Cleanup(func() {
+		testHandler.PlatformClient = origClient
+	})
+
+	req := newRequest(http.MethodGet, "/api/workspaces/"+entWorkspaceID+"/mcp-servers", nil)
+	req = withURLParam(req, "id", entWorkspaceID)
+	w := httptest.NewRecorder()
+	testHandler.ListWorkspaceMcpServers(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp []WorkspaceMcpServerResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	var foundEnterprise bool
+	for _, s := range resp {
+		if s.Source == "enterprise" {
+			foundEnterprise = true
+			if s.ID != "enterprise-svc-laifu-base" {
+				t.Errorf("expected ID enterprise-svc-laifu-base, got %q", s.ID)
+			}
+			if s.Name != "来福基础服务" {
+				t.Errorf("expected Name 来福基础服务, got %q", s.Name)
+			}
+			if len(s.Tools) != 1 || s.Tools[0].Name != "user_search" {
+				t.Errorf("expected 1 tool 'user_search', got %v", s.Tools)
+			}
+		}
+	}
+	if !foundEnterprise {
+		t.Fatal("enterprise mcp services not found in response for ent-* workspace")
+	}
+}

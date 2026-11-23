@@ -7,13 +7,13 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "Organization",
-      name: "Multica",
-      url: "https://www.multica.ai",
-      sameAs: ["https://github.com/multica-ai/multica"],
+      name: "CodeOPC",
+      url: "https://www.codeopc.ai",
+      sameAs: ["https://github.com/codeopc-ai/codeopc"],
     },
     {
       "@type": "SoftwareApplication",
-      name: "Multica",
+      name: "CodeOPC",
       applicationCategory: "ProjectManagement",
       operatingSystem: "Web",
       description:

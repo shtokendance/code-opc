@@ -57,6 +57,8 @@ interface LoginPageProps {
   onGoogleLogin?: () => void;
   /** WeCom enterprise login handler */
   onWeComLogin?: () => void;
+  /** Hide the email input box & verification form */
+  hideEmailInput?: boolean;
   /** Slot rendered at the bottom of the sign-in card, below the
    *  Google button. The web shell uses it for a "Prefer the desktop
    *  app?" prompt; desktop omits it (a download prompt inside the app
@@ -103,6 +105,7 @@ export function LoginPage({
   onTokenObtained,
   onGoogleLogin,
   onWeComLogin,
+  hideEmailInput,
   extra,
 }: LoginPageProps) {
   const { t } = useT("auth");
@@ -418,48 +421,59 @@ export function LoginPage({
           <CardTitle className="text-display-sm">
             {t(($) => $.signin.title)}
           </CardTitle>
-          <CardDescription>
-            {t(($) => $.signin.description)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {sessionExpired && (
-            <Alert>
-              <AlertDescription>
-                {t(($) => $.errors.session_expired)}
-              </AlertDescription>
-            </Alert>
+          {!hideEmailInput && (
+            <CardDescription>
+              {t(($) => $.signin.description)}
+            </CardDescription>
           )}
-          <form id="login-form" onSubmit={handleSendCode} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">{t(($) => $.common.email)}</Label>
-              <Input
-                id="login-email"
-                type="email"
-                placeholder={t(($) => $.common.email_placeholder)}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoFocus
-                required
-              />
-            </div>
-            {error && (
-              <p className="text-body text-destructive">{error}</p>
+        </CardHeader>
+        {(sessionExpired || error || !hideEmailInput) && (
+          <CardContent className="space-y-4">
+            {sessionExpired && (
+              <Alert>
+                <AlertDescription>
+                  {t(($) => $.errors.session_expired)}
+                </AlertDescription>
+              </Alert>
             )}
-          </form>
-        </CardContent>
+            {!hideEmailInput && (
+              <form id="login-form" onSubmit={handleSendCode} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">{t(($) => $.common.email)}</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder={t(($) => $.common.email_placeholder)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </div>
+                {error && (
+                  <p className="text-body text-destructive">{error}</p>
+                )}
+              </form>
+            )}
+            {hideEmailInput && error && (
+              <p className="text-center text-body text-destructive">{error}</p>
+            )}
+          </CardContent>
+        )}
         <CardFooter className="flex flex-col gap-3">
-          <Button
-            type="submit"
-            form="login-form"
-            className="w-full"
-            size="lg"
-            disabled={!email || loading}
-          >
-            {loading
-              ? t(($) => $.signin.sending)
-              : t(($) => $.signin.continue)}
-          </Button>
+          {!hideEmailInput && (
+            <Button
+              type="submit"
+              form="login-form"
+              className="w-full"
+              size="lg"
+              disabled={!email || loading}
+            >
+              {loading
+                ? t(($) => $.signin.sending)
+                : t(($) => $.signin.continue)}
+            </Button>
+          )}
           {(google || onGoogleLogin) && (
             <Button
               type="button"

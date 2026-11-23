@@ -56,7 +56,7 @@ const makeUser = (
 ) => ({
   id: "user-1",
   name: "Test",
-  email: "test@multica.ai",
+  email: "test@codeopc.ai",
   avatar_url: null,
   onboarded_at: null,
   onboarding_questionnaire: { source: ["search"] },
@@ -131,7 +131,7 @@ describe("CallbackPage", () => {
     // doesn't inherit a cap-reached state from a previous run).
     for (let i = window.localStorage.length - 1; i >= 0; i--) {
       const k = window.localStorage.key(i);
-      if (k && k.startsWith("multica.source_backfill.dismiss.")) {
+      if (k && k.startsWith("codeopc.source_backfill.dismiss.")) {
         window.localStorage.removeItem(k);
       }
     }
@@ -547,7 +547,7 @@ describe("CallbackPage", () => {
 
       await waitFor(() => {
         expect(window.location.href).toBe(
-          "multica://auth/callback?token=desktop-jwt-token",
+          "codeopc://auth/callback?token=desktop-jwt-token",
         );
         expect(mockLoginWithToken).not.toHaveBeenCalled();
       });

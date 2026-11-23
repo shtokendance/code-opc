@@ -1,61 +1,45 @@
 import { cn } from "../../lib/utils";
-import { WORDMARK, WORDMARK_STROKE } from "../../lib/multica-brand";
+import { ICON_SQUIRCLE } from "../../lib/codeopc-brand";
 
 interface MulticaWordmarkProps extends React.ComponentProps<"svg"> {
   /**
-   * Write the letters along their centre lines and spin the star onto the i
-   * (M1, ~2s), starting after this many ms. Omit for the static mark.
+   * Write delay in ms (preserved for compatibility).
    */
   writeDelayMs?: number;
-  /** Accessible name; the drawn letters carry no text. */
+  /** Accessible name */
   title?: string;
 }
 
-const LETTER_MS = 150;
-const STAR_AFTER_MS = 6 * LETTER_MS + 420;
-
 /**
- * The Multica wordmark (G2 with the star on the i). Drawn, not typed — never
- * substitute a font. Colour follows `currentColor`; height follows `className`
- * (1em default), measured from the top of the star to the baseline.
+ * The CodeOPC wordmark (icon badge + brand text).
+ * Colour follows `currentColor`; height follows `className`.
  */
 export function MulticaWordmark({
   writeDelayMs,
-  title = "Multica",
+  title = "CodeOPC",
   className,
   ...props
 }: MulticaWordmarkProps) {
-  const write = writeDelayMs != null;
   return (
     <svg
-      viewBox={WORDMARK.viewBox}
+      viewBox="0 0 160 36"
       role="img"
       aria-label={title}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={WORDMARK_STROKE}
       className={cn("inline-block h-[1em] w-auto shrink-0 overflow-visible", className)}
       {...props}
     >
-      {WORDMARK.letters.map((letter, i) => (
-        <g key={i}>
-          <path
-            d={letter.d}
-            pathLength={write ? 1 : undefined}
-            className={write ? "multica-write" : undefined}
-            style={write ? { animationDelay: `${writeDelayMs + i * LETTER_MS}ms` } : undefined}
-          />
-          {letter.star ? (
-            <path
-              d={letter.star}
-              fill="currentColor"
-              stroke="none"
-              className={cn("multica-star", write && "multica-star-in")}
-              style={write ? { animationDelay: `${writeDelayMs + STAR_AFTER_MS}ms` } : undefined}
-            />
-          ) : null}
-        </g>
-      ))}
+      <image href={ICON_SQUIRCLE} x="0" y="2" width="32" height="32" />
+      <text
+        x="40"
+        y="25"
+        fill="currentColor"
+        fontSize="21"
+        fontWeight="700"
+        fontFamily="inherit"
+        letterSpacing="-0.03em"
+      >
+        CodeOPC
+      </text>
     </svg>
   );
 }

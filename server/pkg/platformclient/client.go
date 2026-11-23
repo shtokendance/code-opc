@@ -79,6 +79,9 @@ func (c *Client) ListServices(ctx context.Context, tenant string, includeSchema 
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return nil, fmt.Errorf("decode list services response: %w", err)
 	}
+	if len(res.Services) == 0 && len(res.Data.Services) > 0 {
+		return res.Data.Services, nil
+	}
 	return res.Services, nil
 }
 

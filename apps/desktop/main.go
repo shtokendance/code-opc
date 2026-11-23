@@ -17,6 +17,9 @@ import (
 //go:embed all:out/renderer
 var assets embed.FS
 
+//go:embed build/icon.png
+var appIcon []byte
+
 // spaAssetHandler serves static files and /wails/runtime.js from embedded FS,
 // and falls back to index.html for client-side SPA routing (avoiding 404 on reload or deep links).
 func spaAssetHandler(assetsFS embed.FS) http.Handler {
@@ -45,8 +48,9 @@ func main() {
 	service := NewAppService()
 
 	app := application.New(application.Options{
-		Name:        "Multica",
-		Description: "Multica Desktop Native Client",
+		Name:        "CodeOPC",
+		Description: "CodeOPC Desktop Native Client",
+		Icon:        appIcon,
 		Services: []application.Service{
 			application.NewService(service),
 		},
@@ -81,7 +85,7 @@ func main() {
 
 	// Create primary workspace tab window
 	mainWindow := app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
-		Title:     "Multica",
+		Title:     "CodeOPC",
 		Width:     1280,
 		Height:    800,
 		MinWidth:  900,

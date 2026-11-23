@@ -574,18 +574,34 @@ func (h *Handler) writeAgentMcpServers(w http.ResponseWriter, r *http.Request, a
 
 // ResolveTenantFromDeptCode maps a department code to an enterprise platform tenant ID.
 func ResolveTenantFromDeptCode(deptCode string) string {
+	if deptCode == "296492" || deptCode == "10001" {
+		return deptCode
+	}
 	if n, err := strconv.ParseInt(deptCode, 10, 64); err == nil {
-		return strconv.FormatInt(20000+n, 10)
+		if n < 100000 {
+			return strconv.FormatInt(20000+n, 10)
+		}
+		return "296492"
 	}
 	return deptCode
 }
 
+// ResolveWorkspaceTenant maps workspace slug to enterprise tenant ID.
+func ResolveWorkspaceTenant(slug string) string {
+	if strings.HasPrefix(slug, "ent-") {
+		return strings.TrimPrefix(slug, "ent-")
+	}
+	if strings.HasPrefix(slug, "dept-") {
+		return ResolveTenantFromDeptCode(strings.TrimPrefix(slug, "dept-"))
+	}
+	return "296492"
+}
+
 func (h *Handler) appendEnterpriseMcpServers(ctx context.Context, workspace db.Workspace, resp []WorkspaceMcpServerResponse) []WorkspaceMcpServerResponse {
-	if !strings.HasPrefix(workspace.Slug, "dept-") {
+	if !strings.HasPrefix(workspace.Slug, "dept-") && !strings.HasPrefix(workspace.Slug, "ent-") && workspace.Slug != "default" {
 		return resp
 	}
-	deptCode := strings.TrimPrefix(workspace.Slug, "dept-")
-	tenant := ResolveTenantFromDeptCode(deptCode)
+	tenant := ResolveWorkspaceTenant(workspace.Slug)
 
 	client := h.getPlatformClient()
 	if client == nil {
@@ -612,10 +628,14 @@ func (h *Handler) appendEnterpriseMcpServers(ctx context.Context, workspace db.W
 				InputSchema: t.InputSchema,
 			}
 		}
+		name := s.Name
+		if name == "" {
+			name = s.ServiceID
+		}
 		item := WorkspaceMcpServerResponse{
 			ID:          "enterprise-" + s.ServiceID,
 			WorkspaceID: uuidToString(workspace.ID),
-			Name:        s.ServiceID,
+			Name:        name,
 			Transport:   "remote_bridge",
 			Source:      "enterprise",
 			Enabled:     &trueVal,

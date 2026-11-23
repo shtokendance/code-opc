@@ -118,7 +118,7 @@ export function useResignedInlineMedia(
     !!pickedUrl &&
     (refreshOnMount ||
       (idFromPickedUrl !== undefined &&
-        ((api.getBaseUrl?.() ?? "") !== "" || isCrossOriginWebURL)));
+        ((api.getBaseUrl?.() ?? "") !== "" || isCrossOriginWebURL || !!api.getToken?.())));
 
   const metadataQuery = useQuery({
     queryKey: metadataSource === "markdown-link"

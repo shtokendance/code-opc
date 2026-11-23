@@ -53,7 +53,6 @@ import { AppLink, useIntentNavigate, useNavigation } from "../navigation";
 import { AccountMenu } from "./account-menu";
 import { useAppShell } from "./app-shell-context";
 import { NewIssueButton, SearchButton } from "./global-actions";
-import { HelpLauncher } from "./help-launcher";
 import { isPathWithin } from "./panel-nav";
 import { useTeamAgentStatus } from "./panels/team-status";
 import { RAIL_ICON_BUTTON_CLASS } from "./rail-styles";
@@ -453,7 +452,6 @@ export function AppRail({
         </SortableContext>
       </DndContext>
       <div className="mt-auto flex flex-col items-center gap-1 pt-2">
-        <HelpLauncher />
         <TooltipHint label={t(($) => $.nav.settings)} side="right">
           <AppLink
             href={shell?.spaceHref("settings", p.settings()) ?? p.settings()}

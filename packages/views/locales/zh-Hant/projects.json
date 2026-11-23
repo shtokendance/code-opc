@@ -142,7 +142,7 @@
     "mode_worktree_title": "並行執行",
     "mode_worktree_description": "多個執行同時進行，不改動你的工作區。每次執行交回一個 agent/… 分支，由你審查後合併。",
     "mode_worktree_needs_git": "這個資料夾不是 git 倉庫，無法並行執行。",
-    "mode_worktree_needs_server_upgrade": "Multica 服務端版本過舊，並行執行會退回到直接修改這個資料夾。請先升級服務端。",
+    "mode_worktree_needs_server_upgrade": "CodeOPC 服務端版本過舊，並行執行會退回到直接修改這個資料夾。請先升級服務端。",
     "mode_cancel": "取消",
     "mode_add": "新增資料夾",
     "mode_edit_tooltip": "修改執行方式",
@@ -162,7 +162,7 @@
     "toast_ref_updated": "分支已更新",
     "toast_ref_cleared": "已恢復為預設分支",
     "toast_ref_update_failed": "分支更新失敗",
-    "ref_error_commit": "這是 commit，不是分支。需要指定某個版本時，請用 multica repo checkout --ref。",
+    "ref_error_commit": "這是 commit，不是分支。需要指定某個版本時，請用 codeopc repo checkout --ref。",
     "ref_default_label": "預設分支",
     "ref_running_note": "進行中的任務不受影響。"
   },

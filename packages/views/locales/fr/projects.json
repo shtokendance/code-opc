@@ -142,7 +142,7 @@
     "mode_worktree_title": "Exécuter en parallèle",
     "mode_worktree_description": "Les exécutions ont lieu en même temps sans toucher à votre copie de travail. Chacune restitue une branche agent/… à relire et fusionner.",
     "mode_worktree_needs_git": "Ce dossier n'est pas un dépôt git, il ne peut donc pas être exécuté en parallèle.",
-    "mode_worktree_needs_server_upgrade": "Votre serveur Multica est trop ancien pour les exécutions en parallèle et les lancerait dans ce dossier. Mettez d'abord le serveur à jour.",
+    "mode_worktree_needs_server_upgrade": "Votre serveur CodeOPC est trop ancien pour les exécutions en parallèle et les lancerait dans ce dossier. Mettez d'abord le serveur à jour.",
     "mode_cancel": "Annuler",
     "mode_add": "Ajouter le dossier",
     "mode_edit_tooltip": "Changer le mode d'exécution",
@@ -162,7 +162,7 @@
     "toast_ref_updated": "Branche mise à jour",
     "toast_ref_cleared": "Retour à la branche par défaut",
     "toast_ref_update_failed": "Impossible de mettre à jour la branche",
-    "ref_error_commit": "Ceci est un commit, pas une branche. Pour une révision précise, utilisez multica repo checkout --ref.",
+    "ref_error_commit": "Ceci est un commit, pas une branche. Pour une révision précise, utilisez codeopc repo checkout --ref.",
     "ref_default_label": "Branche par défaut",
     "ref_running_note": "Les tâches en cours ne sont pas affectées."
   },

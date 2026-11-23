@@ -3,7 +3,7 @@
     "open_in_desktop": "Open in Desktop"
   },
   "desktop": {
-    "link_other_instance": "The desktop app is connected to a different Multica instance.",
+    "link_other_instance": "The desktop app is connected to a different CodeOPC instance.",
     "link_workspace_unavailable": "This workspace is unavailable in the desktop app."
   },
   "inline_run": {
@@ -1120,7 +1120,7 @@
       "remove_item": "Remove {{value}}",
       "archived_hint": "Archived property — value is read-only",
       "unknown_value": "Unavailable",
-      "unknown_value_hint": "This value was set by a newer version of Multica and can't be edited here — update the app, or clear it"
+      "unknown_value_hint": "This value was set by a newer version of CodeOPC and can't be edited here — update the app, or clear it"
     },
     "filter_options_aria": "Filter options",
     "no_results": "No results",
@@ -1569,7 +1569,7 @@
     "link_placeholder": "Paste a pull request URL",
     "link_hint": "PRs with {{identifier}} in the title or branch name link automatically.",
     "link_submit": "Link",
-    "link_not_found": "Multica hasn’t received this PR yet. Check that its repository is connected.",
+    "link_not_found": "CodeOPC hasn’t received this PR yet. Check that its repository is connected.",
     "link_failed": "Couldn’t link the pull request.",
     "row_menu": "Pull request actions",
     "section_menu": "Pull request automation",
@@ -2043,7 +2043,7 @@
     "detected_label": "Detected service · {{name}}",
     "detected_no_logs": "This service wasn't started from the environment config, so it has no logs and can't be restarted.",
     "offline_hint": "Available once this machine is back online.",
-    "outdated_hint": "Update Multica on this machine to manage it from here.",
+    "outdated_hint": "Update CodeOPC on this machine to manage it from here.",
     "no_permission_hint": "Only members who can use this machine can stop or restart it.",
     "waiting_machine": "Waiting for the machine",
     "waiting_ready": "Waiting for it to be ready",
@@ -2070,7 +2070,7 @@
       "ask_agent_hint": "{{name}} will get this issue's code ready, then start the environment. If the project has no environment config, it works out how to start it.",
       "ask_any_agent_hint": "The agent will get this issue's code ready, then start the environment. If the project has no environment config, it works out how to start it.",
       "ask_failed": "Couldn't ask the agent",
-      "agent_instruction": "Start the environment: get this issue's code ready, then run `multica env start` for the environments the project declares; if it declares none, work out how to start it yourself. Keep it running and reply with its address."
+      "agent_instruction": "Start the environment: get this issue's code ready, then run `codeopc env start` for the environments the project declares; if it declares none, work out how to start it yourself. Keep it running and reply with its address."
     },
     "log": {
       "title": "{{name}} · Logs",
@@ -2094,11 +2094,11 @@
       "exit_divider_code": "Exited at {{time}} · exit code {{code}}",
       "stopped_divider": "Stopped at {{time}}"
     },
-    "app_desktop_hint": "A desktop app. Switch to its window from Multica Desktop on the machine running it.",
-    "app_remote_hint": "Runs on {{machine}}. Switch to its window from Multica Desktop on that machine.",
+    "app_desktop_hint": "A desktop app. Switch to its window from CodeOPC Desktop on the machine running it.",
+    "app_remote_hint": "Runs on {{machine}}. Switch to its window from CodeOPC Desktop on that machine.",
     "focus": "Switch to window",
     "focus_gone": "{{name}} is no longer running",
-    "focus_unsupported": "This machine's daemon can't switch to app windows yet. Update Multica and try again.",
+    "focus_unsupported": "This machine's daemon can't switch to app windows yet. Update CodeOPC and try again.",
     "focus_unavailable": "The local daemon isn't running",
     "focus_failed": "Couldn't switch to {{name}}",
     "retry": "Retry",

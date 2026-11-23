@@ -1,19 +1,19 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "multica",
-  "outputfilename": "multica",
+  "name": "codeopc",
+  "outputfilename": "codeopc",
   "frontend:install": "pnpm install",
   "frontend:build": "pnpm run build:wails",
   "frontend:dev:watcher": "pnpm run dev",
   "frontend:dev:serverUrl": "http://localhost:5173",
   "author": {
-    "name": "Multica",
-    "email": "support@multica.ai"
+    "name": "CodeOPC",
+    "email": "support@codeopc.ai"
   },
   "info": {
-    "companyName": "Multica",
-    "productName": "Multica",
+    "companyName": "CodeOPC",
+    "productName": "CodeOPC",
     "productVersion": "0.9.0",
-    "copyright": "Copyright Multica"
+    "copyright": "Copyright CodeOPC"
   }
 }

@@ -244,7 +244,8 @@ export async function initWailsDesktopAPI(): Promise<void> {
             status: number;
             statusText: string;
             headers: Record<string, string>;
-            body: string;
+            body?: string;
+            bodyB64?: string;
           }>("ProxyFetch", {
             method: method.toUpperCase(),
             url,
@@ -261,7 +262,21 @@ export async function initWailsDesktopAPI(): Promise<void> {
             proxyResp.status === 205 ||
             proxyResp.status === 304;
 
-          return new Response(isNullBodyStatus ? null : (proxyResp.body ?? ""), {
+          let responseBody: BodyInit | null = null;
+          if (!isNullBodyStatus) {
+            if (proxyResp.bodyB64) {
+              const bin = atob(proxyResp.bodyB64);
+              const bytes = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) {
+                bytes[i] = bin.charCodeAt(i);
+              }
+              responseBody = bytes;
+            } else {
+              responseBody = proxyResp.body ?? "";
+            }
+          }
+
+          return new Response(responseBody, {
             status: proxyResp.status,
             statusText: proxyResp.statusText,
             headers: new Headers(proxyResp.headers),

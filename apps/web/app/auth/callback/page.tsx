@@ -59,7 +59,7 @@ function CallbackContent() {
     if (token) {
       if (isDesktop) {
         setDesktopToken(token);
-        window.location.href = `multica://auth/callback?token=${encodeURIComponent(token)}`;
+        window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(token)}`;
         return;
       }
 
@@ -104,7 +104,7 @@ function CallbackContent() {
     }
 
     // CLI callback params — carried across the Google OAuth round-trip so
-    // headless/WSL2 `multica login` can receive the JWT after browser-based
+    // headless/WSL2 `codeopc login` can receive the JWT after browser-based
     // Google auth completes.
     const cliCallbackPart = stateParts.find((p) => p.startsWith("cli_callback:"));
     const cliStatePart = stateParts.find((p) => p.startsWith("cli_state:"));
@@ -146,7 +146,7 @@ function CallbackContent() {
         .googleLogin(code, redirectUri)
         .then(({ token }) => {
           setDesktopToken(token);
-          window.location.href = `multica://auth/callback?token=${encodeURIComponent(token)}`;
+          window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(token)}`;
         })
         .catch((err) => {
           authLogger.error("Desktop Google OAuth callback failed", err);
@@ -170,7 +170,7 @@ function CallbackContent() {
 
           // 2. Un-onboarded users may have pending invitations on their
           //    email even when no `next=` was carried (came from a fresh
-          //    login on multica.ai instead of clicking the email link,
+          //    login on codeopc.ai instead of clicking the email link,
           //    or `state` was lost across the round-trip). Look them up by
           //    email and route to the batch /invitations page if any.
           //    Already-onboarded users skip this lookup — their new invites
@@ -248,7 +248,7 @@ function CallbackContent() {
             <Button
               variant="outline"
               onClick={() => {
-                window.location.href = `multica://auth/callback?token=${encodeURIComponent(desktopToken)}`;
+                window.location.href = `codeopc://auth/callback?token=${encodeURIComponent(desktopToken)}`;
               }}
             >
               {t(($) => $.web.desktop_handoff.open_button)}

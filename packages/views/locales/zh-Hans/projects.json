@@ -142,7 +142,7 @@
     "mode_worktree_title": "并行运行",
     "mode_worktree_description": "多个运行同时进行，不改动你的工作区。每次运行交回一个 agent/… 分支，由你审查后合并。",
     "mode_worktree_needs_git": "这个文件夹不是 git 仓库，无法并行运行。",
-    "mode_worktree_needs_server_upgrade": "Multica 服务端版本过旧，并行运行会退回到直接修改这个文件夹。请先升级服务端。",
+    "mode_worktree_needs_server_upgrade": "CodeOPC 服务端版本过旧，并行运行会退回到直接修改这个文件夹。请先升级服务端。",
     "mode_cancel": "取消",
     "mode_add": "添加文件夹",
     "mode_edit_tooltip": "修改运行方式",
@@ -162,7 +162,7 @@
     "toast_ref_updated": "分支已更新",
     "toast_ref_cleared": "已恢复为默认分支",
     "toast_ref_update_failed": "分支更新失败",
-    "ref_error_commit": "这是 commit，不是分支。需要指定某个版本时，请用 multica repo checkout --ref。",
+    "ref_error_commit": "这是 commit，不是分支。需要指定某个版本时，请用 codeopc repo checkout --ref。",
     "ref_default_label": "默认分支",
     "ref_running_note": "进行中的任务不受影响。"
   },

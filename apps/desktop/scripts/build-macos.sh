@@ -4,8 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_DIR="${DESKTOP_DIR}/dist"
-APP_NAME="Multica"
-BUNDLE_ID="ai.multica.desktop"
+APP_NAME="CodeOPC"
+BUNDLE_ID="ai.codeopc.desktop"
 VERSION="$(node -p "require('${DESKTOP_DIR}/package.json').version")"
 ARCH="$(uname -m)"
 
@@ -59,6 +59,8 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
             <string>${APP_NAME}</string>
             <key>CFBundleURLSchemes</key>
             <array>
+                <string>codeopc</string>
+                <string>onepc</string>
                 <string>multica</string>
             </array>
         </dict>
@@ -68,7 +70,7 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 Multica. All rights reserved.</string>
+    <string>Copyright © 2026 CodeOPC. All rights reserved.</string>
 </dict>
 </plist>
 EOF

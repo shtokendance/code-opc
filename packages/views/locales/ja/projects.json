@@ -142,7 +142,7 @@
     "mode_worktree_title": "並行実行",
     "mode_worktree_description": "作業コピーに触れずに並行して実行します。それぞれが agent/… ブランチを返すので、レビューしてマージします。",
     "mode_worktree_needs_git": "このフォルダは git リポジトリではないため、並行実行できません。",
-    "mode_worktree_needs_server_upgrade": "Multica サーバーが古いため、並行実行はこのフォルダでの直接実行になってしまいます。先にサーバーを更新してください。",
+    "mode_worktree_needs_server_upgrade": "CodeOPC サーバーが古いため、並行実行はこのフォルダでの直接実行になってしまいます。先にサーバーを更新してください。",
     "mode_cancel": "キャンセル",
     "mode_add": "フォルダを追加",
     "mode_edit_tooltip": "実行モードを変更",
@@ -162,7 +162,7 @@
     "toast_ref_updated": "ブランチを更新しました",
     "toast_ref_cleared": "デフォルトブランチに戻しました",
     "toast_ref_update_failed": "ブランチを更新できませんでした",
-    "ref_error_commit": "これはコミットで、ブランチではありません。特定のリビジョンが必要なら multica repo checkout --ref を使ってください。",
+    "ref_error_commit": "これはコミットで、ブランチではありません。特定のリビジョンが必要なら codeopc repo checkout --ref を使ってください。",
     "ref_default_label": "デフォルトブランチ",
     "ref_running_note": "進行中のタスクには影響しません。"
   },

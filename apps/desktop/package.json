@@ -1,9 +1,9 @@
 {
   "name": "@multica/desktop",
-  "productName": "Multica",
+  "productName": "CodeOPC",
   "version": "0.11.0",
   "private": true,
-  "description": "Multica Desktop — native desktop client for the Multica platform.",
+  "description": "CodeOPC Desktop — native desktop client for the CodeOPC platform.",
   "homepage": "https://multica.ai",
   "repository": {
     "type": "git",

@@ -91,14 +91,6 @@ export function DesktopLoginPage() {
     };
   }, [qc]);
 
-  const handleGoogleLogin = () => {
-    // Open web login page in the default browser with platform=desktop flag.
-    // The web callback will redirect back via multica:// deep link with the token.
-    window.desktopAPI.openExternal(
-      `${webUrl}/login?platform=desktop`,
-    );
-  };
-
   const handleWeComLogin = async () => {
     let port = oauthPort;
     if (!port && window.desktopAPI?.startLoginOAuthServer) {
@@ -118,7 +110,7 @@ export function DesktopLoginPage() {
       return;
     }
 
-    // 兜底方案：通过 multica:// 唤起
+    // 兜底方案：通过 codeopc:// / multica:// 唤起
     window.desktopAPI.openExternal(
       `${platformUrl}/wecom/login?client_id=code-desktop&state=code-desktop`,
     );
@@ -133,8 +125,8 @@ export function DesktopLoginPage() {
           // Auth store update triggers AppContent re-render → shows DesktopShell.
           // Initial workspace navigation happens in routes.tsx via IndexRedirect.
         }}
-        onGoogleLogin={handleGoogleLogin}
         onWeComLogin={handleWeComLogin}
+        hideEmailInput={true}
       />
     </div>
   );

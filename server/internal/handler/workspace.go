@@ -170,6 +170,17 @@ func (h *Handler) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// CodeOPC: 仅采用用户的部门工作区（dept-*）。如果有部门工作区，则过滤掉非部门工作区。
+	var deptOnly []db.ListWorkspacesRow
+	for _, ws := range workspaces {
+		if strings.HasPrefix(ws.Slug, "dept-") {
+			deptOnly = append(deptOnly, ws)
+		}
+	}
+	if len(deptOnly) > 0 {
+		workspaces = deptOnly
+	}
+
 	resp := make([]WorkspaceResponse, len(workspaces))
 	for i, ws := range workspaces {
 		resp[i] = h.workspaceToResponse(db.Workspace{

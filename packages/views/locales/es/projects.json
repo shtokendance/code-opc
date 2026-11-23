@@ -142,7 +142,7 @@
     "mode_worktree_title": "Ejecutar en paralelo",
     "mode_worktree_description": "Las ejecuciones van a la vez sin tocar tu copia de trabajo. Cada una devuelve una rama agent/… para revisar y fusionar.",
     "mode_worktree_needs_git": "Esta carpeta no es un repositorio git, así que no puede ejecutarse en paralelo.",
-    "mode_worktree_needs_server_upgrade": "Tu servidor de Multica es demasiado antiguo para ejecuciones en paralelo y las haría en esta carpeta. Actualiza primero el servidor.",
+    "mode_worktree_needs_server_upgrade": "Tu servidor de CodeOPC es demasiado antiguo para ejecuciones en paralelo y las haría en esta carpeta. Actualiza primero el servidor.",
     "mode_cancel": "Cancelar",
     "mode_add": "Añadir carpeta",
     "mode_edit_tooltip": "Cambiar modo de ejecución",
@@ -162,7 +162,7 @@
     "toast_ref_updated": "Rama actualizada",
     "toast_ref_cleared": "De vuelta a la rama por defecto",
     "toast_ref_update_failed": "No se ha podido actualizar la rama",
-    "ref_error_commit": "Eso es un commit, no una rama. Para una revisión concreta, usa --ref con multica repo checkout.",
+    "ref_error_commit": "Eso es un commit, no una rama. Para una revisión concreta, usa --ref con codeopc repo checkout.",
     "ref_default_label": "Rama por defecto",
     "ref_running_note": "Las tareas en curso no se ven afectadas."
   },
