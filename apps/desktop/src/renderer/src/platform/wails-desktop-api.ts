@@ -98,11 +98,19 @@ if (typeof window !== "undefined") {
     },
     checkForUpdates: async () => {
       try {
-        return await callAppService("CheckForUpdates");
+        const res = await callAppService("CheckForUpdates");
+        return (
+          res ?? {
+            ok: false as const,
+            reason: "unknown" as const,
+            downloadState: { status: "idle" as const },
+          }
+        );
       } catch (err: any) {
         return {
           ok: false as const,
           reason: "network" as const,
+          downloadState: { status: "idle" as const },
           error: err?.message || String(err),
         };
       }
@@ -146,7 +154,8 @@ async function getWailsRuntime(): Promise<any> {
   if (!wailsRuntimePromise) {
     wailsRuntimePromise = (async () => {
       try {
-        const mod = await import(/* @vite-ignore */ "/wails/runtime.js");
+        const runtimePath = "/wails/runtime.js";
+        const mod = await import(/* @vite-ignore */ runtimePath);
         window.wails = window.wails || {};
         Object.assign(window.wails, mod);
         return window.wails;
@@ -544,13 +553,6 @@ export async function initWailsDesktopAPI(): Promise<void> {
         return { probeResult: "error" };
       }
     },
-    probeLocalRuntimes: async () => {
-      try {
-        return await callAppService("ProbeLocalRuntimes");
-      } catch {
-        return { probeResult: "error" };
-      }
-    },
     isCliInstalled: async () => true,
     getPrefs: async () => ({ autoStart: true, autoStop: false }),
     setPrefs: async (prefs: any) => ({ autoStart: true, autoStop: false, ...prefs }),
@@ -591,13 +593,13 @@ export async function initWailsDesktopAPI(): Promise<void> {
     windowContext: resolveWindowContext(),
 
     voice: {
-      listModels: async () => ({ models: [], activeModelId: null }),
+      listModels: async () => ({ models: [], activeModelId: null, engineAvailable: false }),
       onModelsChanged: () => () => {},
       downloadModel: async () => {},
       cancelDownload: async () => {},
       deleteModel: async () => {},
       prepare: () => {},
-      transcribe: async () => ({ text: "", duration: 0 }),
+      transcribe: async () => ({ ok: true as const, text: "", duration: 0 }),
       history: {
         list: async () => [],
         onChanged: () => () => {},
@@ -756,9 +758,9 @@ export async function initWailsDesktopAPI(): Promise<void> {
     readThemeFolder: async () => {
       try {
         const folders = await callAppService<string[]>("ReadThemeFolder");
-        return { ok: true, themes: (folders || []).map((f) => ({ folder: f, files: [] })) };
+        return { ok: true, path: "", entries: [], themes: (folders || []).map((f) => ({ folder: f, files: [] })) };
       } catch {
-        return { ok: true, themes: [] };
+        return { ok: true, path: "", entries: [], themes: [] };
       }
     },
     onThemeFolderChange: (_callback: () => void) => () => {},
@@ -787,10 +789,12 @@ export async function initWailsDesktopAPI(): Promise<void> {
 
     openIssueWindow: async (request: { path: string; title: string }) => {
       await callAppService("OpenIssueWindow", request);
+      return { ok: true as const };
     },
 
     openWorkspaceWindow: async (slug: string) => {
       await callAppService("OpenWorkspaceWindow", slug);
+      return { ok: true };
     },
 
     reportWindowWorkspace: (_workspaceSlug: string | null) => {},

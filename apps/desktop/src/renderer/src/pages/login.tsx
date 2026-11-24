@@ -7,19 +7,8 @@ import { useAuthStore } from "@multica/core/auth";
 import { api } from "@multica/core/api";
 import { workspaceKeys } from "@multica/core/workspace/queries";
 
-function requireRuntimeAppUrl(): string {
-  const runtimeConfig = window.desktopAPI.runtimeConfig;
-  if (!runtimeConfig.ok) {
-    throw new Error(
-      "Invariant violated: DesktopLoginPage rendered before App accepted runtime config",
-    );
-  }
-  return runtimeConfig.config.appUrl;
-}
-
 export function DesktopLoginPage() {
   const qc = useQueryClient();
-  const webUrl = requireRuntimeAppUrl();
   const [oauthPort, setOauthPort] = useState<number | null>(null);
 
   // 客户端加载登录的时候打开一个本地端口，等待登录信息回传

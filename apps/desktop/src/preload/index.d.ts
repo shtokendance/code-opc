@@ -64,6 +64,9 @@ interface DesktopAPI {
   reportAuthSession: (userId: string | null) => void;
   /** Listen for auth token delivered via deep link. Returns an unsubscribe function. */
   onAuthToken: (callback: (token: string) => void) => () => void;
+  startLoginOAuthServer?: () => Promise<number>;
+  stopLoginOAuthServer?: () => Promise<void>;
+  getPendingOAuthToken?: () => Promise<string>;
   /** Start a local loopback HTTP server to receive OAuth token from browser. */
   startLoginOAuthServer?: () => Promise<number>;
   /** Stop the local loopback HTTP server. */
@@ -122,6 +125,7 @@ interface DesktopAPI {
     reason?: "cancelled" | "no_window" | "error";
     error?: string;
   }>;
+  pickFiles?: (options?: { multiple?: boolean; accept?: string }) => Promise<File[]>;
   /** Validate that a path is an existing readable+writable directory.
    *  Mirrors the daemon's runtime check so the user sees errors before submit. */
   validateLocalDirectory: (

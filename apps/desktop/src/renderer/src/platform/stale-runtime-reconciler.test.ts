@@ -39,7 +39,7 @@ describe("planStaleRuntimeReconciliation", () => {
         runtime({ id: "rt-new-claude", provider: "claude", status: "online", daemon_id: "daemon-new" }),
         runtime({ id: "rt-old-claude", provider: "claude", status: "offline", daemon_id: "daemon-old" }),
         runtime({ id: "rt-other-user", provider: "claude", status: "offline", daemon_id: "daemon-other", owner_id: "user-2" }),
-        runtime({ id: "rt-other-host", provider: "claude", status: "offline", daemon_id: "daemon-pc", device_name: "OtherPC" }),
+        runtime({ id: "rt-other-host", provider: "claude", status: "offline", daemon_id: "daemon-pc", metadata: { hostname: "OtherPC" } }),
       ],
       agents: [
         agent({ id: "a-active", runtime_id: "rt-old-claude" }),

@@ -1637,7 +1637,9 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 	// Public API
 	r.Get("/api/config", h.GetConfig)
 	r.Get("/api/desktop/updates/check", h.CheckDesktopUpdate)
+	r.Head("/api/desktop/updates/check", h.CheckDesktopUpdate)
 	r.Get("/api/desktop/updates/download/{filename}", h.DownloadDesktopUpdate)
+	r.Head("/api/desktop/updates/download/{filename}", h.DownloadDesktopUpdate)
 	r.With(contactSalesRL).Post("/api/contact-sales", h.CreateContactSales)
 	// The marketing site's shared footer star. Reads and spins live on
 	// separate paths because the limiter keys on path and IP.

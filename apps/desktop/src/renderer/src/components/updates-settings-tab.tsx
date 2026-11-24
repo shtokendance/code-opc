@@ -100,12 +100,13 @@ export function UpdatesSettingsTab() {
       const result = await window.updater.checkForUpdates();
       // A download event can arrive before the metadata IPC response.
       if (revision !== downloadRevision.current) return;
-      if (!result.ok) {
-        setState({ status: "error", reason: result.reason });
+      if (!result?.ok) {
+        setState({ status: "error", reason: result?.reason || "unknown" });
         return;
       }
-      setState(result.downloadState.status === "downloaded" || (result.available && result.downloadState.status !== "idle")
-        ? downloadCheckState(result.downloadState)
+      const downloadState = result.downloadState ?? { status: "idle" as const };
+      setState(downloadState.status === "downloaded" || (result.available && downloadState.status !== "idle")
+        ? downloadCheckState(downloadState)
         : result.available
           ? { status: "available", latestVersion: result.latestVersion }
           : { status: "up-to-date" });
