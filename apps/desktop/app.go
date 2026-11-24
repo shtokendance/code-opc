@@ -200,7 +200,7 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>登录成功 - Multica</title>
+  <title>登录成功 - CodeOPC</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; }
@@ -215,7 +215,7 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
   <div class="card">
     <div class="icon">✓</div>
     <h2>登录成功</h2>
-    <p>您已成功登录 Multica，现在可以关闭此网页并返回桌面客户端。</p>
+    <p>您已成功登录 CodeOPC，现在可以关闭此网页并返回桌面客户端。</p>
   </div>
   <script>
     setTimeout(function() { try { window.close(); } catch(e) {} }, 1500);
