@@ -233,6 +233,7 @@ describe("SkillsPage header", () => {
       "Import from localPick a folder with SKILL.md, or a .skill / .zip archive.",
       "Import from URLFetch a published skill by URL.",
       "Copy from runtimePromote a skill installed on your local runtime.",
+      "Import from knowledge spaceSelect and install skills from accessible and shared knowledge spaces.",
     ]);
 
     await user.click(within(menu).getByRole("menuitem", { name: /^Import from URL/ }));

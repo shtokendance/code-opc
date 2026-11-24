@@ -51,7 +51,8 @@
     "source_runtime_unknown": "런타임에서 가져옴",
     "source_clawhub": "ClawHub에서 가져옴",
     "source_skills_sh": "Skills.sh에서 가져옴",
-    "source_github": "GitHub에서 가져옴"
+    "source_github": "GitHub에서 가져옴",
+    "source_knowledge_space": "Knowledge space"
   },
   "actions": {
     "row_menu": "작업",
@@ -105,7 +106,8 @@
       "origin_clawhub": "가져옴 · ClawHub",
       "origin_skills_sh": "가져옴 · Skills.sh",
       "origin_github": "가져옴 · GitHub",
-      "origin_workspace": "직접 생성"
+      "origin_workspace": "직접 생성",
+      "origin_knowledge_space": "Imported from knowledge space"
     },
     "conflict_banner": {
       "title": "다른 사람이 이 스킬을 업데이트했습니다",
@@ -259,6 +261,10 @@
       "runtime": {
         "title": "런타임에서 복사",
         "desc": "로컬 런타임에 설치된 스킬을 워크스페이스로 가져옵니다."
+      },
+      "knowledge": {
+        "title": "Import from knowledge space",
+        "desc": "Select and install skills from accessible and shared knowledge spaces."
       }
     },
     "manual": {
@@ -315,6 +321,23 @@
       "fallback_error": "가져오기 실패",
       "cancel": "취소",
       "toast_imported": "스킬을 가져왔습니다"
+    },
+    "knowledge": {
+      "all_spaces": "All spaces",
+      "search_placeholder": "Search skill name or space…",
+      "refresh": "Refresh",
+      "load_failed": "Failed to load knowledge space skills",
+      "retry": "Retry",
+      "empty": "No skills found in your accessible knowledge spaces.",
+      "empty_filtered": "No matching skills.",
+      "partial_warning": "Some spaces failed to load; showing skills from available spaces.",
+      "exists_badge": "Exists",
+      "not_ready": "Not ready",
+      "conflict_banner": "{{count}} skill(s) conflict with existing skills in this workspace:",
+      "conflict_overwrite": "Overwrite",
+      "conflict_rename": "Rename",
+      "conflict_skip": "Skip",
+      "apply_resolution": "Apply & continue"
     }
   },
   "runtime_import": {

@@ -1,7 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { Scan, TriangleAlert, X } from "@multica/ui/icons";
 import { IconButton } from "@multica/ui/components/common/icon-button";
 import { toast } from "sonner";
@@ -171,47 +180,64 @@ interface ChatInputProps {
   annotations?: Pick<ChatAnnotations, "draftKey" | "composer" | "editAnnotation">;
 }
 
+export interface ChatInputRef {
+  uploadFile: (file: File) => void;
+  focus: () => void;
+}
+
 const PAGE_CONTEXT_SHORTCUT = {
   key: "Tab",
   modifiers: { primary: false, control: false, meta: false, alt: false, shift: false },
 } satisfies ShortcutChord;
 
-export function ChatInput({
-  onSend,
-  restoreDraftRequest,
-  conversationStarterRequest,
-  onConversationStarterApplied,
-  onRestoreDraftApplied,
-  uploadEnabled: uploadAllowed,
-  onStop,
-  isRunning,
-  allowSubmitWhileRunning,
-  canSteerWhileRunning,
-  disabled,
-  noAgent,
-  agentArchived,
-  agentAccessRevoked,
-  agentRuntimeRequired,
-  agentName,
-  leftAdornment,
-  contextItems,
-  pageContext,
-  projects = [],
-  projectId,
-  onProjectChange,
-  isProjectUpdating,
-  projectContextUnsupported,
-  focusRequest,
-  draftKeyOverride,
-  editorKeyOverride,
-  hidden = false,
-  annotations: annotationSlot,
-}: ChatInputProps) {
+export const ChatInput = forwardRef<ChatInputRef, ChatInputProps>(function ChatInput(
+  {
+    onSend,
+    restoreDraftRequest,
+    conversationStarterRequest,
+    onConversationStarterApplied,
+    onRestoreDraftApplied,
+    uploadEnabled: uploadAllowed,
+    onStop,
+    isRunning,
+    allowSubmitWhileRunning,
+    canSteerWhileRunning,
+    disabled,
+    noAgent,
+    agentArchived,
+    agentAccessRevoked,
+    agentRuntimeRequired,
+    agentName,
+    leftAdornment,
+    contextItems,
+    pageContext,
+    projects = [],
+    projectId,
+    onProjectChange,
+    isProjectUpdating,
+    projectContextUnsupported,
+    focusRequest,
+    draftKeyOverride,
+    editorKeyOverride,
+    hidden = false,
+    annotations: annotationSlot,
+  }: ChatInputProps,
+  ref,
+) {
   const { t } = useT("chat");
   const { t: tEditor } = useT("editor");
   const { t: tIssues } = useT("issues");
   const sendShortcut = useShortcut("send");
   const editorRef = useRef<ContentEditorRef>(null);
+
+  useImperativeHandle(ref, () => ({
+    uploadFile: (file: File) => {
+      editorRef.current?.uploadFile(file);
+    },
+    focus: () => {
+      editorRef.current?.focus();
+    },
+  }));
   const editorAreaRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
@@ -974,4 +1000,4 @@ export function ChatInput({
     </div>
     </>
   );
-}
+});

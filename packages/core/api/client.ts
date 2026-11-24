@@ -78,6 +78,9 @@ import type {
   SkillVersion,
   SkillVersionSummary,
   CreateSkillRequest,
+  SkillImportResult,
+  KnowledgeSpaceSkillListResponse,
+  ImportKnowledgeSpaceSkillRequest,
   UpdateSkillRequest,
   SetAgentSkillsRequest,
   SetAgentRuntimeSkillEnabledRequest,
@@ -555,6 +558,8 @@ import {
   EMPTY_SKILL_VERSION_SUMMARY_LIST,
   SkillImportResultSchema,
   EMPTY_SKILL_IMPORT_RESULT,
+  KnowledgeSpaceSkillListResponseSchema,
+  EMPTY_KNOWLEDGE_SPACE_SKILL_LIST,
   IssueViewSchema,
   IssueViewListSchema,
   IssueViewPreferenceSchema,
@@ -3962,6 +3967,38 @@ export class ApiClient {
 
     const raw = (await res.json()) as unknown;
     return skillFromImportResult(raw, "POST /api/skills/import");
+  }
+
+  async listKnowledgeSpaceSkills(params?: {
+    tenant_id?: string;
+    q?: string;
+    offset?: number;
+    limit?: number;
+  }): Promise<KnowledgeSpaceSkillListResponse> {
+    const query = new URLSearchParams();
+    if (params?.tenant_id) query.set("tenant_id", params.tenant_id);
+    if (params?.q) query.set("q", params.q);
+    if (params?.offset != null && params.offset > 0) query.set("offset", String(params.offset));
+    if (params?.limit != null && params.limit > 0) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    const raw = await this.fetch<unknown>(`/api/skills/knowledge-space${qs ? `?${qs}` : ""}`);
+    return parseWithFallback(raw, KnowledgeSpaceSkillListResponseSchema, EMPTY_KNOWLEDGE_SPACE_SKILL_LIST, {
+      endpoint: "GET /api/skills/knowledge-space",
+    });
+  }
+
+  async importKnowledgeSpaceSkill(
+    data: ImportKnowledgeSpaceSkillRequest,
+    options?: { workspaceSlug: string },
+  ): Promise<SkillImportResult> {
+    const raw = await this.fetch<unknown>("/api/skills/import/knowledge-space", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: options ? { "X-Workspace-Slug": options.workspaceSlug } : undefined,
+    });
+    return parseWithFallback(raw, SkillImportResultSchema, EMPTY_SKILL_IMPORT_RESULT, {
+      endpoint: "POST /api/skills/import/knowledge-space",
+    });
   }
 
   // Re-downloads the skill from its stored config.origin source, replacing

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Download, HardDrive, History, Pencil } from "@multica/ui/icons";
+import { BookOpen, ChevronRight, Download, HardDrive, History, Pencil } from "@multica/ui/icons";
 import type { AgentRuntime, MemberWithUser, Skill } from "@multica/core/types";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { resourceLabelsOptions } from "@multica/core/labels";
@@ -50,6 +50,11 @@ function useOriginLabel(origin: OriginInfo, runtime: AgentRuntime | null) {
         ? t(($) => $.detail.subline.origin_runtime_provider, { provider: origin.provider })
         : t(($) => $.detail.subline.origin_runtime_unknown);
   }
+  if (origin.type === "knowledge_space") {
+    return origin.tenant_name
+      ? `${t(($) => $.detail.subline.origin_knowledge_space)} (${origin.tenant_name})`
+      : t(($) => $.detail.subline.origin_knowledge_space);
+  }
   if (origin.type === "clawhub") return t(($) => $.detail.subline.origin_clawhub);
   if (origin.type === "skills_sh") return t(($) => $.detail.subline.origin_skills_sh);
   if (origin.type === "github") return t(($) => $.detail.subline.origin_github);
@@ -70,9 +75,11 @@ function SourceValue({
   const Icon =
     origin.type === "runtime_local"
       ? HardDrive
-      : origin.type === "manual"
-        ? Pencil
-        : Download;
+      : origin.type === "knowledge_space"
+        ? BookOpen
+        : origin.type === "manual"
+          ? Pencil
+          : Download;
   return (
     <>
       <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />

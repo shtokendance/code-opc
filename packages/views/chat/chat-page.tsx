@@ -23,7 +23,8 @@ import { ListColumn } from "../layout/list-column";
 import { useNavigation } from "../navigation";
 import { useT } from "../i18n";
 import { ChatMessageList, ChatMessageSkeleton } from "./components/chat-message-list";
-import { ChatInput } from "./components/chat-input";
+import { ChatInput, type ChatInputRef } from "./components/chat-input";
+import { useFileDropZone, FileDropOverlay } from "../editor";
 import { ChatQueue } from "./components/chat-queue";
 import { ChatWakeupStrip, useChatWakeups } from "./components/chat-wakeups";
 import { ChatThreadList } from "./components/chat-thread-list";
@@ -305,8 +306,21 @@ export function ChatPage() {
   // `@container`: the conversation column's gutter (CHAT_GUTTER) widens with
   // THIS pane, which the user resizes independently of the browser window.
   const queuedTasks = c.pendingTask?.queued_tasks ?? [];
+  const chatInputRef = useRef<ChatInputRef>(null);
+  const conversationDropZone = useFileDropZone({
+    enabled: c.uploadEnabled && !c.isAgentAccessRevoked,
+    onDrop: (files) => {
+      files.forEach((file) => chatInputRef.current?.uploadFile(file));
+    },
+  });
   const conversation = (
-    <div className="flex flex-1 flex-col min-h-0 @container">
+    <div
+      className="relative flex flex-1 flex-col min-h-0 @container"
+      {...(c.uploadEnabled && !c.isAgentAccessRevoked ? conversationDropZone.dropZoneProps : {})}
+    >
+      {c.uploadEnabled && !c.isAgentAccessRevoked && conversationDropZone.isDragOver && (
+        <FileDropOverlay />
+      )}
       {c.currentSession && (
         <ChatSessionHeader
           leading={
@@ -402,6 +416,7 @@ export function ChatPage() {
       />
 
       <ChatInput
+        ref={chatInputRef}
         onSend={c.handleSend}
         restoreDraftRequest={c.restoreDraftRequest}
         conversationStarterRequest={c.conversationStarterRequest}

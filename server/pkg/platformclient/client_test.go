@@ -223,3 +223,72 @@ func TestGetInvocation_Error(t *testing.T) {
 		t.Fatal("expected error on 404, got nil")
 	}
 }
+
+func TestListResourceSkills_Success(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer user-jwt-123" {
+			t.Errorf("expected user bearer token, got %q", r.Header.Get("Authorization"))
+		}
+		if r.URL.Path != "/integration/v1/resources/skills" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"items": [
+				{
+					"resource_kind": "skill_catalog",
+					"tenant_id": "296492",
+					"tenant_name": "技术交付中心",
+					"catalog_id": "cat-1",
+					"name": "delivery-helper",
+					"description": "交付助手",
+					"version": "1.0.0",
+					"bundle_sha256": "abcd1234",
+					"availability": "available"
+				}
+			],
+			"total": 1,
+			"offset": 0,
+			"limit": 100,
+			"complete": true,
+			"failures": []
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, "service-token", 5*time.Second)
+	resp, err := client.ListResourceSkills(context.Background(), "user-jwt-123", "", "", 0, 100)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Items) != 1 || resp.Items[0].CatalogID != "cat-1" || resp.Items[0].TenantName != "技术交付中心" {
+		t.Fatalf("unexpected items: %+v", resp.Items)
+	}
+}
+
+func TestDownloadResourceSkillArchive_Success(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer user-jwt-123" {
+			t.Errorf("expected user bearer token, got %q", r.Header.Get("Authorization"))
+		}
+		if r.URL.Path != "/integration/v1/resources/skills/cat-1/archive" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("tenant_id") != "296492" || r.URL.Query().Get("expected_sha256") != "sha123" {
+			t.Errorf("unexpected query: %s", r.URL.RawQuery)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("PK\x03\x04fakezip"))
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, "service-token", 5*time.Second)
+	data, err := client.DownloadResourceSkillArchive(context.Background(), "user-jwt-123", "cat-1", "296492", "sha123", 1024)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if string(data) != "PK\x03\x04fakezip" {
+		t.Fatalf("unexpected archive bytes: %q", string(data))
+	}
+}

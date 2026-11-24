@@ -157,13 +157,13 @@ func truncateForSummary(s string, maxRunes int) string {
 
 // maxSynthesizedFallbackCommentRunes bounds the completion-fallback comment that
 // CompleteTask synthesizes from a task's final output when the agent left no
-// comment of its own during the run. A real final assistant message is at most
-// a few thousand words; anything larger is a runaway raw-stream dump — every
-// streamed text delta concatenated together plus a literal `tool call` line per
-// tool_use event — which some runtimes/providers emit as the task's Output on
-// long, tool-heavy runs. Such a dump (observed at 190–264 KB) must never be
-// posted, even partially, to the issue thread (GH #5455).
-const maxSynthesizedFallbackCommentRunes = 8000
+// comment of its own during the run. A comprehensive final assistant markdown
+// report may span tens of thousands of characters; anything larger (>100,000 runes)
+// is a runaway raw-stream dump — every streamed text delta concatenated together
+// plus a literal `tool call` line per tool_use event — which some runtimes/providers
+// emit as the task's Output on long, tool-heavy runs. Such a dump (observed at 190–264 KB+)
+// must never be posted, even partially, to the issue thread (GH #5455).
+const maxSynthesizedFallbackCommentRunes = 100000
 
 const oversizedFallbackCommentNotice = "This task completed, but its output was too large to post safely. The raw output was not posted. Review the task in this issue's Execution log."
 

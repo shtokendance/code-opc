@@ -25,7 +25,7 @@ import { buildSteps, groupSteps, isCallStep, isGroupRow, type TraceRow } from ".
 import { traceEventSummary, traceToolArgSummary } from "../../common/task-transcript/trace-event-presenter";
 import { redactSecrets } from "../../common/task-transcript/redact";
 import { runOutputFindKey } from "../utils/timeline-find-units";
-import { ReadonlyContent } from "../../editor";
+import { CollapsibleReportContent } from "./collapsible-report-content";
 import { useLocale, useT, useTimeAgo } from "../../i18n";
 import { formatDuration } from "../../agents/components/agent-activity-hover-content";
 import { failureNeedsAction, isCancelledOutcome, runOutcomeLabel } from "../../agents/components/tabs/task-failure";
@@ -234,7 +234,7 @@ export function InlineCommentRun({ run, className, viewState, showIdentity = fal
       </div>
       <div className={cn(showIdentity && "pl-8")}>
         {replyTo}
-        {output && <div className="mt-2 text-body" data-find-unit={runOutputFindKey(task.id)}><ReadonlyContent content={redactSecrets(output)} /></div>}
+        {output && <div className="mt-2 text-body" data-find-unit={runOutputFindKey(task.id)}><CollapsibleReportContent content={redactSecrets(output)} isAgentOrTask={true} title={name || undefined} /></div>}
         {needsAction && rawError && <TruncatedTooltip content={rawError} focusable>
           <p
             className="mt-1.5 line-clamp-4 whitespace-pre-wrap break-words rounded-md border bg-muted/50 px-2.5 py-1.5 font-mono text-caption text-muted-foreground">

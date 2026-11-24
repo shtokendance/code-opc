@@ -171,6 +171,9 @@ const QODER_DOT: Record<QoderStatus, string> = {
   stopped: "bg-muted-foreground/40",
 };
 
+const SHOW_CLOUD_RUNTIMES = false;
+const SHOW_MIKA_SETUP_CARD = false;
+
 export function RuntimesPage({
   localDaemonId,
   localMachineName,
@@ -462,12 +465,16 @@ export function RuntimesPage({
           count: machineList.length,
           rows: machineRows,
         },
-        {
-          key: "cloud",
-          label: t(($) => $.page.groups.cloud.title),
-          count: configuredCloudCount,
-          rows: cloudRows,
-        },
+        ...(SHOW_CLOUD_RUNTIMES
+          ? [
+              {
+                key: "cloud",
+                label: t(($) => $.page.groups.cloud.title),
+                count: configuredCloudCount,
+                rows: cloudRows,
+              },
+            ]
+          : []),
       ];
   const rowHref = (row: RuntimeRow) =>
     row.kind === "machine"
@@ -538,7 +545,8 @@ export function RuntimesPage({
             }
           />
           <div className="flex flex-col gap-6 px-6 pt-6 pb-16 empty:hidden">
-            {!agentsLoading &&
+            {SHOW_MIKA_SETUP_CARD &&
+              !agentsLoading &&
               !chatSessionsLoading &&
               memberNeedsMikaSetup(agents, chatSessions) &&
               runtimes.some((runtime) => runtime.provider !== "qoder_cloud") && (

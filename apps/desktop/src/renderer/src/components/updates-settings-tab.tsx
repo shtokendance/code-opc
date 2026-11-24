@@ -114,6 +114,14 @@ export function UpdatesSettingsTab() {
     }
   }, []);
 
+  const handleInstall = useCallback(async () => {
+    try {
+      await window.updater.installUpdate();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
+
   const failureMessage = state.status !== "error" ? ""
     : state.downloading ? t(($) => $.desktop.updates.download_failed)
       : state.reason === "network" ? t(($) => $.desktop.updates.check_network)
@@ -178,22 +186,32 @@ export function UpdatesSettingsTab() {
             </>
           }
         >
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCheck}
-            disabled={state.status === "checking" || state.status === "available"}
-            aria-busy={state.status === "checking"}
-          >
-            {state.status === "checking" ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin" />
-                {t(($) => $.desktop.updates.checking)}
-              </>
-            ) : (
-              state.status === "error" ? t(($) => $.desktop.updates.retry) : t(($) => $.desktop.updates.check_now)
-            )}
-          </Button>
+          {state.status === "downloaded" ? (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleInstall}
+            >
+              {t(($) => $.desktop.updates.install_now)}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCheck}
+              disabled={state.status === "checking" || state.status === "available"}
+              aria-busy={state.status === "checking"}
+            >
+              {state.status === "checking" ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  {t(($) => $.desktop.updates.checking)}
+                </>
+              ) : (
+                state.status === "error" ? t(($) => $.desktop.updates.retry) : t(($) => $.desktop.updates.check_now)
+              )}
+            </Button>
+          )}
         </SettingsRow>
       </SettingsCard>
     </SettingsTab>

@@ -27,12 +27,15 @@ rm -rf "${WIN_STAGING}" "${DIST_DIR}/${ZIP_NAME}"
 mkdir -p "${WIN_STAGING}"
 
 echo "==> [4/5] Cross-compiling native Windows binary (${GOARCH}, GUI subsystem)..."
-GOOS=windows GOARCH="${GOARCH}" CGO_ENABLED=0 go build -trimpath -ldflags="-H=windowsgui -s -w" -o "${WIN_STAGING}/${APP_NAME}.exe" .
+GOOS=windows GOARCH="${GOARCH}" CGO_ENABLED=0 go build -trimpath -ldflags="-H=windowsgui -s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME}" -o "${WIN_STAGING}/${APP_NAME}.exe" .
 cp "${DESKTOP_DIR}/build/icon.ico" "${WIN_STAGING}/${APP_NAME}.ico"
 
 echo "==> [5/5] Creating Windows distribution archive (${ZIP_NAME})..."
 cd "${DIST_DIR}"
 zip -r -q "${ZIP_NAME}" "${APP_NAME}-${VERSION}-win-${ARCH_LABEL}"
+
+echo "==> Generating latest.json update manifest..."
+node "${DESKTOP_DIR}/scripts/generate-manifest.mjs"
 
 echo "=========================================================="
 echo " Windows packaging completed successfully!"

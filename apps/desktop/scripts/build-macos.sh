@@ -23,7 +23,7 @@ rm -rf "${APP_BUNDLE}" "${DIST_DIR}/${APP_NAME}-${VERSION}-${ARCH}.zip" "${DIST_
 mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
 
 echo "==> [3/6] Compiling native Go binary..."
-CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o "${MACOS_DIR}/${APP_NAME}" .
+CGO_ENABLED=1 go build -trimpath -ldflags="-s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME}" -o "${MACOS_DIR}/${APP_NAME}" .
 chmod +x "${MACOS_DIR}/${APP_NAME}"
 
 echo "==> [4/6] Copying resources and generating metadata..."
@@ -102,6 +102,9 @@ ln -s /Applications "${DMG_STAGING}/Applications"
 
 hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" -ov -format UDZO "${DMG_NAME}"
 rm -rf "${DMG_STAGING}"
+
+echo "==> Generating latest.json update manifest..."
+node "${DESKTOP_DIR}/scripts/generate-manifest.mjs"
 
 echo "=========================================================="
 echo " Packaging completed successfully!"

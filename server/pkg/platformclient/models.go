@@ -64,3 +64,35 @@ type InvocationStatusResponse struct {
 		Message string `json:"message"`
 	} `json:"error,omitempty"`
 }
+
+// ResourceSkillItem mirrors platform-opc's normalized skill_catalog resource item.
+type ResourceSkillItem struct {
+	ResourceKind      string `json:"resource_kind"`
+	TenantID          string `json:"tenant_id"`
+	TenantName        string `json:"tenant_name"`
+	SourceTenantID    string `json:"source_tenant_id,omitempty"`
+	SourceTenantName  string `json:"source_tenant_name,omitempty"`
+	Permission        string `json:"permission,omitempty"`
+	CatalogID         string `json:"catalog_id"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	Version           string `json:"version,omitempty"`
+	BundleSHA256      string `json:"bundle_sha256,omitempty"`
+	Availability      string `json:"availability"`
+	UnavailableReason string `json:"unavailable_reason,omitempty"`
+	DetailURL         string `json:"detail_url,omitempty"`
+}
+
+type ResourceTenantFailure struct {
+	TenantID string `json:"tenant_id"`
+	Code     string `json:"code"`
+}
+
+type ResourceSkillListResponse struct {
+	Items    []ResourceSkillItem     `json:"items"`
+	Total    int                     `json:"total"`
+	Offset   int                     `json:"offset"`
+	Limit    int                     `json:"limit"`
+	Complete bool                    `json:"complete"`
+	Failures []ResourceTenantFailure `json:"failures"`
+}

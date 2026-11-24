@@ -51,7 +51,8 @@
     "source_runtime_unknown": "Из среды выполнения",
     "source_clawhub": "Из ClawHub",
     "source_skills_sh": "Из Skills.sh",
-    "source_github": "Из GitHub"
+    "source_github": "Из GitHub",
+    "source_knowledge_space": "Knowledge space"
   },
   "actions": {
     "row_menu": "Действия",
@@ -126,7 +127,8 @@
       "origin_clawhub": "Импортирован · ClawHub",
       "origin_skills_sh": "Импортирован · Skills.sh",
       "origin_github": "Импортирован · GitHub",
-      "origin_workspace": "Создан вручную"
+      "origin_workspace": "Создан вручную",
+      "origin_knowledge_space": "Imported from knowledge space"
     },
     "conflict_banner": {
       "title": "Кто-то другой обновил этот навык",
@@ -292,6 +294,10 @@
       "runtime": {
         "title": "Скопировать из среды выполнения",
         "desc": "Перенести навык, установленный в вашей локальной среде выполнения."
+      },
+      "knowledge": {
+        "title": "Import from knowledge space",
+        "desc": "Select and install skills from accessible and shared knowledge spaces."
       }
     },
     "manual": {
@@ -351,6 +357,23 @@
       "fallback_error": "Ошибка импорта",
       "cancel": "Отмена",
       "toast_imported": "Навык импортирован"
+    },
+    "knowledge": {
+      "all_spaces": "All spaces",
+      "search_placeholder": "Search skill name or space…",
+      "refresh": "Refresh",
+      "load_failed": "Failed to load knowledge space skills",
+      "retry": "Retry",
+      "empty": "No skills found in your accessible knowledge spaces.",
+      "empty_filtered": "No matching skills.",
+      "partial_warning": "Some spaces failed to load; showing skills from available spaces.",
+      "exists_badge": "Exists",
+      "not_ready": "Not ready",
+      "conflict_banner": "{{count}} skill(s) conflict with existing skills in this workspace:",
+      "conflict_overwrite": "Overwrite",
+      "conflict_rename": "Rename",
+      "conflict_skip": "Skip",
+      "apply_resolution": "Apply & continue"
     }
   },
   "runtime_import": {

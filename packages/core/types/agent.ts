@@ -1007,6 +1007,47 @@ export interface SkillImportResult {
   };
 }
 
+export interface KnowledgeSpaceSkillItem {
+  resource_kind: string;
+  tenant_id: string;
+  tenant_name: string;
+  source_tenant_id?: string;
+  source_tenant_name?: string;
+  permission?: string;
+  catalog_id: string;
+  name: string;
+  description: string;
+  version?: string;
+  bundle_sha256?: string;
+  availability: string;
+  unavailable_reason?: string;
+  detail_url?: string;
+}
+
+export interface KnowledgeSpaceTenantFailure {
+  tenant_id: string;
+  code: string;
+}
+
+export interface KnowledgeSpaceSkillListResponse {
+  items: KnowledgeSpaceSkillItem[];
+  total: number;
+  offset: number;
+  limit: number;
+  complete: boolean;
+  failures: KnowledgeSpaceTenantFailure[];
+}
+
+export interface ImportKnowledgeSpaceSkillRequest {
+  catalog_id: string;
+  tenant_id: string;
+  expected_sha256: string;
+  tenant_name?: string;
+  detail_url?: string;
+  name?: string;
+  on_conflict?: "fail" | "overwrite" | "rename" | "skip";
+}
+
 export interface UpdateSkillRequest {
   name?: string;
   description?: string;

@@ -27,31 +27,86 @@ declare global {
     _wails?: {
       invoke?: (message: string) => void;
     };
-    desktopAPI?: any;
-    daemonAPI?: any;
-    updater?: any;
-    electron?: any;
   }
 }
 
 // Synchronously mount window.updater immediately on script evaluation
 if (typeof window !== "undefined") {
   window.updater = window.updater || {
-    getDownloadState: async () => ({ status: "idle" as const }),
-    onDownloadState: (_callback: any) => () => {},
-    onUpdateAvailable: (_callback: (info: { version: string; releaseNotes?: string }) => void) => () => {},
-    onDownloadProgress: (_callback: (progress: { percent: number }) => void) => () => {},
-    onUpdateDownloaded: (_callback: (info: { version: string; releaseNotes?: string }) => void) => () => {},
-    downloadUpdate: async () => {},
-    installUpdate: async () => {},
-    getPreferences: async () => ({ automaticUpdates: false }),
-    setAutomaticUpdates: async (enabled: boolean) => ({ automaticUpdates: enabled }),
-    checkForUpdates: async () => ({
-      ok: true as const,
-      currentVersion: "0.11.0",
-      latestVersion: "0.11.0",
-      available: false,
-    }),
+    getDownloadState: async () => {
+      try {
+        return await callAppService("GetDownloadState");
+      } catch {
+        return { status: "idle" as const };
+      }
+    },
+    onDownloadState: (callback: any) => {
+      if (window.wails?.Events?.On) {
+        return window.wails.Events.On("updater:download-state", (evt: any) => {
+          const data = evt?.data ?? evt;
+          callback(Array.isArray(data) && data.length === 1 ? data[0] : data);
+        });
+      }
+      return () => {};
+    },
+    onUpdateAvailable: (callback: (info: { version: string; releaseNotes?: string }) => void) => {
+      if (window.wails?.Events?.On) {
+        return window.wails.Events.On("updater:update-available", (evt: any) => {
+          const data = evt?.data ?? evt;
+          callback(Array.isArray(data) && data.length === 1 ? data[0] : data);
+        });
+      }
+      return () => {};
+    },
+    onDownloadProgress: (callback: (progress: { percent: number }) => void) => {
+      if (window.wails?.Events?.On) {
+        return window.wails.Events.On("updater:download-progress", (evt: any) => {
+          const data = evt?.data ?? evt;
+          callback(Array.isArray(data) && data.length === 1 ? data[0] : data);
+        });
+      }
+      return () => {};
+    },
+    onUpdateDownloaded: (callback: (info: { version: string; releaseNotes?: string }) => void) => {
+      if (window.wails?.Events?.On) {
+        return window.wails.Events.On("updater:update-downloaded", (evt: any) => {
+          const data = evt?.data ?? evt;
+          callback(Array.isArray(data) && data.length === 1 ? data[0] : data);
+        });
+      }
+      return () => {};
+    },
+    downloadUpdate: async () => {
+      return await callAppService("DownloadUpdate");
+    },
+    installUpdate: async () => {
+      return await callAppService("InstallUpdate");
+    },
+    getPreferences: async () => {
+      try {
+        return await callAppService("GetUpdatePreferences");
+      } catch {
+        return { automaticUpdates: true };
+      }
+    },
+    setAutomaticUpdates: async (enabled: boolean) => {
+      try {
+        return await callAppService("SetUpdatePreferences", enabled);
+      } catch {
+        return { automaticUpdates: enabled };
+      }
+    },
+    checkForUpdates: async () => {
+      try {
+        return await callAppService("CheckForUpdates");
+      } catch (err: any) {
+        return {
+          ok: false as const,
+          reason: "network" as const,
+          error: err?.message || String(err),
+        };
+      }
+    },
   };
 
   window.electron = window.electron || {
@@ -368,7 +423,10 @@ export async function initWailsDesktopAPI(): Promise<void> {
     );
   }
 
-  let appInfo = { version: "0.11.0", os: "macos" as const };
+  let appInfo: { version: string; os: "macos" | "windows" | "linux" | "unknown" } = {
+    version: "0.11.3",
+    os: "macos",
+  };
   let runtimeConfig: RuntimeConfigResult = {
     ok: true,
     config: {
@@ -413,6 +471,13 @@ export async function initWailsDesktopAPI(): Promise<void> {
     }
     return () => {};
   };
+
+  if (window.updater) {
+    window.updater.onDownloadState = (callback: any) => wailsEventsOn("updater:download-state", callback);
+    window.updater.onUpdateAvailable = (callback: any) => wailsEventsOn("updater:update-available", callback);
+    window.updater.onDownloadProgress = (callback: any) => wailsEventsOn("updater:download-progress", callback);
+    window.updater.onUpdateDownloaded = (callback: any) => wailsEventsOn("updater:update-downloaded", callback);
+  }
 
   // Real daemonAPI implementation
   window.daemonAPI = {

@@ -4,7 +4,9 @@ import (
 	"context"
 	"embed"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -43,7 +45,25 @@ func spaAssetHandler(assetsFS embed.FS) http.Handler {
 	})
 }
 
+func cleanupOldExecutable() {
+	if exe, err := os.Executable(); err == nil {
+		if clean, err := filepath.EvalSymlinks(exe); err == nil {
+			_ = os.Remove(clean + ".old")
+			if runtime.GOOS == "darwin" {
+				macosDir := filepath.Dir(clean)
+				contentsDir := filepath.Dir(macosDir)
+				bundleDir := filepath.Dir(contentsDir)
+				if strings.HasSuffix(bundleDir, ".app") {
+					_ = os.RemoveAll(bundleDir + ".old")
+				}
+			}
+		}
+	}
+}
+
 func main() {
+	ensureHiddenConsole()
+	cleanupOldExecutable()
 	fixProcessPath()
 	service := NewAppService()
 

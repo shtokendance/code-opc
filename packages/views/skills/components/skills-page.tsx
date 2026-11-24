@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
+  BookOpen,
   Download,
   HardDrive,
   Lock,
@@ -184,6 +185,11 @@ function SourceCell({
             provider: origin.provider,
           })
         : t(($) => $.table.source_runtime_unknown);
+  } else if (origin.type === "knowledge_space") {
+    icon = <BookOpen className="h-3 w-3 shrink-0" />;
+    label = origin.tenant_name
+      ? `${t(($) => $.table.source_knowledge_space)} · ${origin.tenant_name}`
+      : t(($) => $.table.source_knowledge_space);
   } else if (origin.type === "clawhub") {
     icon = <Download className="h-3 w-3 shrink-0" />;
     label = t(($) => $.table.source_clawhub);

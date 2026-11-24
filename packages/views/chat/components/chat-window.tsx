@@ -49,7 +49,8 @@ import { removeChatMessageFromCaches } from "@multica/core/realtime";
 import { useChatInputFocus } from "./use-chat-input-focus";
 import { useChatOpenReveal } from "./use-chat-open-reveal";
 import { ChatWindowMessages } from "./chat-window-messages";
-import { ChatInput } from "./chat-input";
+import { ChatInput, type ChatInputRef } from "./chat-input";
+import { useFileDropZone, FileDropOverlay } from "../../editor";
 import { useChatAnnotations } from "./use-chat-annotations";
 import { ChatQueue } from "./chat-queue";
 import { ChatWakeupStrip, useChatWakeups } from "./chat-wakeups";
@@ -99,6 +100,13 @@ export function ChatWindow() {
   // a new chat — on top of the controller's new-chat nonce. Both counters only
   // grow, so their sum changes whenever either one does.
   const windowRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<ChatInputRef>(null);
+  const windowDropZone = useFileDropZone({
+    enabled: isOpen && c.uploadEnabled && !c.isAgentAccessRevoked,
+    onDrop: (files) => {
+      files.forEach((file) => chatInputRef.current?.uploadFile(file));
+    },
+  });
   const newChatRequest = useChatStore((s) => s.newChatRequest);
   const { focusRequest: openFocusRequest } = useChatInputFocus(isOpen, windowRef, newChatRequest);
   const focusRequest = c.focusInputRequest + openFocusRequest;
@@ -243,6 +251,7 @@ export function ChatWindow() {
       aria-hidden={!isOpen}
       className={containerClass}
       style={containerStyle}
+      {...(isOpen && c.uploadEnabled && !c.isAgentAccessRevoked ? windowDropZone.dropZoneProps : {})}
       initial={{ opacity: 0, ...motionSize }}
       animate={{
         opacity: isVisible ? 1 : 0,
@@ -254,6 +263,9 @@ export function ChatWindow() {
         opacity: { duration: 0.15 },
       }}
     >
+      {isOpen && c.uploadEnabled && !c.isAgentAccessRevoked && windowDropZone.isDragOver && (
+        <FileDropOverlay />
+      )}
       {!isMobile && <ChatResizeHandles onDragStart={startDrag} />}
       {/* Header — ⊕ new + session dropdown | window tools */}
       <div className="flex items-center justify-between border-b px-4 py-2.5 gap-2">
@@ -418,6 +430,7 @@ export function ChatWindow() {
        *  agent has been archived (read-only); locked out entirely when there's
        *  no agent (the EmptyState above carries the CTA). */}
       <ChatInput
+        ref={chatInputRef}
         hidden={!isOpen}
         onSend={c.handleSend}
         restoreDraftRequest={c.restoreDraftRequest}

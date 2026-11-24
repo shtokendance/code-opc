@@ -2,6 +2,7 @@
 
 import { useState, type ReactElement } from "react";
 import {
+  BookOpen,
   Download,
   FolderOpen,
   HardDrive,
@@ -54,6 +55,7 @@ export function countActiveFilterDimensions(
 const ORIGIN_TYPES: SkillOriginType[] = [
   "manual",
   "runtime_local",
+  "knowledge_space",
   "clawhub",
   "skills_sh",
   "github",
@@ -62,6 +64,7 @@ const ORIGIN_TYPES: SkillOriginType[] = [
 function originIcon(type: SkillOriginType) {
   if (type === "manual") return <Pencil className="size-3.5" />;
   if (type === "runtime_local") return <HardDrive className="size-3.5" />;
+  if (type === "knowledge_space") return <BookOpen className="size-3.5" />;
   return <Download className="size-3.5" />;
 }
 
@@ -124,6 +127,7 @@ export function SkillFilterMenu({
   const ORIGIN_LABELS: Record<SkillOriginType, string> = {
     manual: t(($) => $.table.source_manual),
     runtime_local: t(($) => $.table.source_runtime_unknown),
+    knowledge_space: t(($) => $.table.source_knowledge_space),
     clawhub: t(($) => $.table.source_clawhub),
     skills_sh: t(($) => $.table.source_skills_sh),
     github: t(($) => $.table.source_github),
@@ -311,6 +315,7 @@ export const SKILL_CREATE_METHODS: { key: CreateSkillMethod; icon: typeof Plus }
   { key: "local", icon: FolderOpen },
   { key: "url", icon: Download },
   { key: "runtime", icon: HardDrive },
+  { key: "knowledge", icon: BookOpen },
 ];
 
 /** The "+" icon (or a custom trigger), opening the ways a skill can be added. */

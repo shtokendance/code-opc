@@ -51,7 +51,8 @@
     "source_runtime_unknown": "From a runtime",
     "source_clawhub": "From ClawHub",
     "source_skills_sh": "From Skills.sh",
-    "source_github": "From GitHub"
+    "source_github": "From GitHub",
+    "source_knowledge_space": "Knowledge space"
   },
   "actions": {
     "row_menu": "Actions",
@@ -112,7 +113,8 @@
       "origin_clawhub": "Imported · ClawHub",
       "origin_skills_sh": "Imported · Skills.sh",
       "origin_github": "Imported · GitHub",
-      "origin_workspace": "Created manually"
+      "origin_workspace": "Created manually",
+      "origin_knowledge_space": "Imported from knowledge space"
     },
     "conflict_banner": {
       "title": "Someone else updated this skill",
@@ -270,6 +272,10 @@
       "runtime": {
         "title": "Copy from runtime",
         "desc": "Promote a skill installed on your local runtime."
+      },
+      "knowledge": {
+        "title": "Import from knowledge space",
+        "desc": "Select and install skills from accessible and shared knowledge spaces."
       }
     },
     "manual": {
@@ -327,6 +333,23 @@
       "fallback_error": "Import failed",
       "cancel": "Cancel",
       "toast_imported": "Skill imported"
+    },
+    "knowledge": {
+      "all_spaces": "All spaces",
+      "search_placeholder": "Search skill name or space…",
+      "refresh": "Refresh",
+      "load_failed": "Failed to load knowledge space skills",
+      "retry": "Retry",
+      "empty": "No skills found in your accessible knowledge spaces.",
+      "empty_filtered": "No matching skills.",
+      "partial_warning": "Some spaces failed to load; showing skills from available spaces.",
+      "exists_badge": "Exists",
+      "not_ready": "Not ready",
+      "conflict_banner": "{{count}} skill(s) conflict with existing skills in this workspace:",
+      "conflict_overwrite": "Overwrite",
+      "conflict_rename": "Rename",
+      "conflict_skip": "Skip",
+      "apply_resolution": "Apply & continue"
     }
   },
   "runtime_import": {

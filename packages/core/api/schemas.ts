@@ -104,6 +104,8 @@ import type {
   ShareLinkInfo,
   Skill,
   SkillImportResult,
+  KnowledgeSpaceSkillItem,
+  KnowledgeSpaceSkillListResponse,
   SkillSummary,
   SkillVersion,
   SkillVersionSummary,
@@ -4339,6 +4341,46 @@ export const SkillImportResultSchema = z.object({
 export const EMPTY_SKILL_IMPORT_RESULT: SkillImportResult = {
   status: "failed",
   reason: "",
+};
+
+export const KnowledgeSpaceSkillItemSchema: z.ZodType<KnowledgeSpaceSkillItem> = z.object({
+  resource_kind: z.string().default("skill_catalog"),
+  tenant_id: z.string(),
+  tenant_name: z.string().default(""),
+  source_tenant_id: z.string().optional(),
+  source_tenant_name: z.string().optional(),
+  permission: z.string().optional(),
+  catalog_id: z.string(),
+  name: z.string(),
+  description: z.string().default(""),
+  version: z.string().optional(),
+  bundle_sha256: z.string().optional(),
+  availability: z.string().default("available"),
+  unavailable_reason: z.string().optional(),
+  detail_url: z.string().optional(),
+}).loose();
+
+export const KnowledgeSpaceTenantFailureSchema = z.object({
+  tenant_id: z.string(),
+  code: z.string().default(""),
+}).loose();
+
+export const KnowledgeSpaceSkillListResponseSchema: z.ZodType<KnowledgeSpaceSkillListResponse> = z.object({
+  items: z.array(KnowledgeSpaceSkillItemSchema).default([]),
+  total: z.number().default(0),
+  offset: z.number().default(0),
+  limit: z.number().default(100),
+  complete: z.boolean().default(true),
+  failures: z.array(KnowledgeSpaceTenantFailureSchema).default([]),
+}).loose();
+
+export const EMPTY_KNOWLEDGE_SPACE_SKILL_LIST: KnowledgeSpaceSkillListResponse = {
+  items: [],
+  total: 0,
+  offset: 0,
+  limit: 100,
+  complete: true,
+  failures: [],
 };
 
 /**

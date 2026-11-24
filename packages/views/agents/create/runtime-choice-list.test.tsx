@@ -157,7 +157,8 @@ describe("RuntimeChoiceList", () => {
     expect(screen.getByText(/Tasks run on Bohan's machine/)).toBeInTheDocument();
   });
 
-  it("lets an admin connect Qoder in place, and tells a member to ask an admin", () => {
+  // Cloud runtimes are temporarily hidden (SHOW_CLOUD_RUNTIMES = false).
+  it.skip("lets an admin connect Qoder in place, and tells a member to ask an admin", () => {
     const props = mount();
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
     expect(props.onConnectQoder).toHaveBeenCalledTimes(1);
@@ -169,7 +170,8 @@ describe("RuntimeChoiceList", () => {
     expect(screen.getByText("Ask an admin to connect")).toBeInTheDocument();
   });
 
-  it("keeps Qoder discoverable but unselectable without server encryption setup", () => {
+  // Cloud runtimes are temporarily hidden (SHOW_CLOUD_RUNTIMES = false).
+  it.skip("keeps Qoder discoverable but unselectable without server encryption setup", () => {
     const qoder = { ...unconnectedQoder, available: false };
     const props = mount({ qoder, qoderState: qoderChoiceState(qoder, false) });
     expect(screen.getByText("Qoder Cloud Agents")).toBeInTheDocument();
@@ -178,6 +180,14 @@ describe("RuntimeChoiceList", () => {
     expect(props.onSelectQoder).not.toHaveBeenCalled();
     expect(qoderChoiceState({ ...qoder, configured: true, enabled: true, status: "online" }, true))
       .toBe("not_configured");
+  });
+
+  it("hides cloud runtimes section when SHOW_CLOUD_RUNTIMES is disabled", () => {
+    mount();
+    expect(screen.queryByText("Cloud")).toBeNull();
+    expect(screen.queryByText("Qoder Cloud Agents")).toBeNull();
+    expect(screen.queryByText("Cursor Cloud Agents")).toBeNull();
+    expect(screen.queryByText("Claude Managed Agents")).toBeNull();
   });
 
   it("says so when nothing matches the search", () => {

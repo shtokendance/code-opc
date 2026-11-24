@@ -161,6 +161,36 @@ describe("uploadAndInsertFile", () => {
     expect(reparsed.getMarkdown().trimEnd()).toBe(saved);
   });
 
+  it("allows inserting multiple images sequentially without overwriting earlier images", async () => {
+    const editor = makeEditor();
+    const upload1 = deferred<UploadResult | null>();
+    const upload2 = deferred<UploadResult | null>();
+    const handler = vi.fn((file: File) => {
+      if (file.name === "photo1.png") return upload1.promise;
+      return upload2.promise;
+    });
+    const file1 = new File(["image1"], "photo1.png", { type: "image/png" });
+    const file2 = new File(["image2"], "photo2.png", { type: "image/png" });
+
+    const task1 = uploadAndInsertFile(editor, file1, handler);
+    const task2 = uploadAndInsertFile(editor, file2, handler);
+
+    upload1.resolve(
+      makeUpload({ id: "attachment-1", link: "https://cdn.example.com/1.png", filename: "photo1.png" }),
+    );
+    upload2.resolve(
+      makeUpload({ id: "attachment-2", link: "https://cdn.example.com/2.png", filename: "photo2.png" }),
+    );
+
+    await Promise.all([task1, task2]);
+
+    const images: string[] = [];
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === "image") images.push(node.attrs.src);
+    });
+    expect(images).toEqual(["https://cdn.example.com/1.png", "https://cdn.example.com/2.png"]);
+  });
+
   it("reserves the image box by capturing intrinsic dimensions, kept through the URL swap", async () => {
     const close = vi.fn();
     const createImageBitmap = vi.fn(async () => ({

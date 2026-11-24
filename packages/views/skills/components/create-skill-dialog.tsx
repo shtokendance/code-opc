@@ -50,10 +50,11 @@ import { useScrollFade } from "@multica/ui/hooks/use-scroll-fade";
 import { cn } from "@multica/ui/lib/utils";
 import { openExternal } from "../../platform";
 import { RuntimeLocalSkillImportPanel } from "./runtime-local-skill-import-panel";
+import { KnowledgeSpaceSkillImportPanel } from "./knowledge-space-skill-import-panel";
 import { useT } from "../../i18n";
 import { isNameConflictError } from "../lib/utils";
 
-export type CreateSkillMethod = "manual" | "local" | "url" | "runtime";
+export type CreateSkillMethod = "manual" | "local" | "url" | "runtime" | "knowledge";
 
 function seedAfterCreate(
   qc: ReturnType<typeof useQueryClient>,
@@ -907,7 +908,7 @@ export function CreateSkillDialog({
     );
   };
 
-  const wide = method === "runtime";
+  const wide = method === "runtime" || method === "knowledge";
 
   return (
     <Dialog
@@ -997,6 +998,12 @@ export function CreateSkillDialog({
         )}
         {method === "runtime" && (
           <RuntimeLocalSkillImportPanel
+            onImported={handleCreated}
+            onBulkDone={onClose}
+          />
+        )}
+        {method === "knowledge" && (
+          <KnowledgeSpaceSkillImportPanel
             onImported={handleCreated}
             onBulkDone={onClose}
           />

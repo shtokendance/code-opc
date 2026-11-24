@@ -140,7 +140,8 @@ function renderPage({
 }
 
 describe("RuntimesPage", () => {
-  it("lists machines and cloud services in one table", () => {
+  // Cloud services group is temporarily hidden (SHOW_CLOUD_RUNTIMES = false).
+  it.skip("lists machines and cloud services in one table", () => {
     renderPage();
 
     expect(screen.getByText("Machines")).toBeInTheDocument();
@@ -307,7 +308,19 @@ describe("RuntimesPage", () => {
     expect(screen.getByText("build-server")).toBeInTheDocument();
   });
 
-  it("never lists the Qoder runtime as a machine", async () => {
+  it("hides cloud services group when SHOW_CLOUD_RUNTIMES is disabled", () => {
+    renderPage();
+
+    expect(screen.getByText("Machines")).toBeInTheDocument();
+    expect(screen.getByText("dev-machine.local")).toBeInTheDocument();
+    expect(screen.queryByText("Cloud services")).not.toBeInTheDocument();
+    expect(screen.queryByText("Qoder Cloud Agents")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cursor Cloud Agents")).not.toBeInTheDocument();
+    expect(screen.queryByText("Claude Managed Agents")).not.toBeInTheDocument();
+  });
+
+  // Cloud services group is temporarily hidden (SHOW_CLOUD_RUNTIMES = false).
+  it.skip("never lists the Qoder runtime as a machine", async () => {
     const user = userEvent.setup();
     const qoderRuntime = makeRuntime({
       id: "rt-qoder",

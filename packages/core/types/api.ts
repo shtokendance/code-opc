@@ -190,6 +190,7 @@ export interface ListIssuesParams {
   limit?: number;
   offset?: number;
   workspace_id?: string;
+  include_closed?: boolean;
   /** Flat-table quick search. Matches issue title words or an exact issue number. */
   q?: string;
   status?: IssueStatus;

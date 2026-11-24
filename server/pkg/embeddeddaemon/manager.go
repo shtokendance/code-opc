@@ -13,7 +13,14 @@ import (
 
 	"github.com/multica-ai/multica/server/internal/cli"
 	"github.com/multica-ai/multica/server/internal/daemon"
+	"github.com/multica-ai/multica/server/internal/util"
 )
+
+// EnsureHiddenConsole guarantees the process owns a hidden console on Windows,
+// so all child and grandchild processes inherit it without flashing CMD windows.
+func EnsureHiddenConsole() {
+	util.EnsureHiddenConsole()
+}
 
 // DefaultManager is the package-level embedded daemon manager instance.
 var DefaultManager = NewManager(slog.Default())
@@ -38,6 +45,7 @@ type Manager struct {
 
 // NewManager creates a new Manager with the provided logger.
 func NewManager(logger *slog.Logger) *Manager {
+	util.EnsureHiddenConsole()
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -74,6 +82,7 @@ func HealthPortForProfile(profile string) int {
 // ProbeLocalRuntimes performs in-process detection of installed AI agent CLIs.
 // This executes pure Go inspection without shelling out to an external multica CLI binary.
 func (m *Manager) ProbeLocalRuntimes(ctx context.Context, profile string) (*ProbeResult, error) {
+	util.EnsureHiddenConsole()
 	cfg, err := daemon.LoadConfig(daemon.Overrides{
 		Profile:       profile,
 		AllowNoAgents: true,
@@ -129,6 +138,7 @@ func (m *Manager) LoadToken(profile string) (string, error) {
 
 // Start launches the daemon in-process inside a background goroutine.
 func (m *Manager) Start(ctx context.Context, opts DaemonOptions) error {
+	util.EnsureHiddenConsole()
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

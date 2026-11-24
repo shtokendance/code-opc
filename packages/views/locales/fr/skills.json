@@ -51,7 +51,8 @@
     "source_runtime_unknown": "Depuis un runtime",
     "source_clawhub": "Depuis ClawHub",
     "source_skills_sh": "Depuis Skills.sh",
-    "source_github": "Depuis GitHub"
+    "source_github": "Depuis GitHub",
+    "source_knowledge_space": "Knowledge space"
   },
   "actions": {
     "row_menu": "Actions",
@@ -112,7 +113,8 @@
       "origin_clawhub": "Importé · ClawHub",
       "origin_skills_sh": "Importé · Skills.sh",
       "origin_github": "Importé · GitHub",
-      "origin_workspace": "Créé manuellement"
+      "origin_workspace": "Créé manuellement",
+      "origin_knowledge_space": "Imported from knowledge space"
     },
     "conflict_banner": {
       "title": "Quelqu'un d'autre a mis à jour ce skill",
@@ -270,6 +272,10 @@
       "runtime": {
         "title": "Copier depuis un runtime",
         "desc": "Partagez un skill installé sur votre runtime local."
+      },
+      "knowledge": {
+        "title": "Import from knowledge space",
+        "desc": "Select and install skills from accessible and shared knowledge spaces."
       }
     },
     "manual": {
@@ -327,6 +333,23 @@
       "fallback_error": "Échec de l'importation",
       "cancel": "Annuler",
       "toast_imported": "Skill importé"
+    },
+    "knowledge": {
+      "all_spaces": "All spaces",
+      "search_placeholder": "Search skill name or space…",
+      "refresh": "Refresh",
+      "load_failed": "Failed to load knowledge space skills",
+      "retry": "Retry",
+      "empty": "No skills found in your accessible knowledge spaces.",
+      "empty_filtered": "No matching skills.",
+      "partial_warning": "Some spaces failed to load; showing skills from available spaces.",
+      "exists_badge": "Exists",
+      "not_ready": "Not ready",
+      "conflict_banner": "{{count}} skill(s) conflict with existing skills in this workspace:",
+      "conflict_overwrite": "Overwrite",
+      "conflict_rename": "Rename",
+      "conflict_skip": "Skip",
+      "apply_resolution": "Apply & continue"
     }
   },
   "runtime_import": {

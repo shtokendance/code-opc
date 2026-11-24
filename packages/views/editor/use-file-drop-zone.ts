@@ -5,15 +5,31 @@ interface UseFileDropZoneOptions {
   enabled?: boolean;
 }
 
+function hasFiles(e: DragEvent): boolean {
+  const types = e.dataTransfer?.types;
+  if (!types) return false;
+  const list = Array.from(types);
+  return (
+    list.includes("Files") ||
+    list.includes("application/x-moz-file") ||
+    list.includes("text/uri-list") ||
+    list.some((t) => t.toLowerCase() === "files")
+  );
+}
+
 function useFileDropZone({ onDrop, enabled = true }: UseFileDropZoneOptions) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
   const onDropRef = useRef(onDrop);
   onDropRef.current = onDrop;
 
   // Clear on any document-level drop or dragend (e.g. user drops outside the zone)
   useEffect(() => {
     if (!enabled) return;
-    const clear = () => setIsDragOver(false);
+    const clear = () => {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    };
     document.addEventListener("drop", clear);
     document.addEventListener("dragend", clear);
     return () => {
@@ -25,19 +41,28 @@ function useFileDropZone({ onDrop, enabled = true }: UseFileDropZoneOptions) {
   const handleDragEnter = useCallback(
     (e: DragEvent) => {
       e.preventDefault();
-      if (enabled && e.dataTransfer.types.includes("Files")) {
-        setIsDragOver(true);
+      if (!enabled || !hasFiles(e)) return;
+      dragCounterRef.current++;
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = "copy";
       }
+      setIsDragOver(true);
     },
     [enabled],
   );
 
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "copy";
+    }
   }, []);
 
   const handleDragLeave = useCallback((e: DragEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
       setIsDragOver(false);
     }
   }, []);
@@ -46,6 +71,7 @@ function useFileDropZone({ onDrop, enabled = true }: UseFileDropZoneOptions) {
     (e: DragEvent) => {
       const alreadyHandled = e.nativeEvent.defaultPrevented;
       e.preventDefault();
+      dragCounterRef.current = 0;
       setIsDragOver(false);
       if (alreadyHandled || !enabled) return;
       const files = e.dataTransfer?.files;
@@ -67,3 +93,4 @@ function useFileDropZone({ onDrop, enabled = true }: UseFileDropZoneOptions) {
 }
 
 export { useFileDropZone };
+

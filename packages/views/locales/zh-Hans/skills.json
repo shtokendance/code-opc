@@ -51,7 +51,8 @@
     "source_runtime_unknown": "来自某个运行时",
     "source_clawhub": "来自 ClawHub",
     "source_skills_sh": "来自 Skills.sh",
-    "source_github": "来自 GitHub"
+    "source_github": "来自 GitHub",
+    "source_knowledge_space": "知识库空间"
   },
   "actions": {
     "row_menu": "操作",
@@ -105,7 +106,8 @@
       "origin_clawhub": "导入自 · ClawHub",
       "origin_skills_sh": "导入自 · Skills.sh",
       "origin_github": "导入自 · GitHub",
-      "origin_workspace": "手动创建"
+      "origin_workspace": "手动创建",
+      "origin_knowledge_space": "从知识库空间导入"
     },
     "conflict_banner": {
       "title": "其他人更新了这个 skill",
@@ -259,6 +261,10 @@
       "runtime": {
         "title": "从运行时复制",
         "desc": "把本地运行时里已装好的 skill 提升到工作区。"
+      },
+      "knowledge": {
+        "title": "从知识库空间导入",
+        "desc": "从可访问及共享的知识库空间中选择并安装 skill。"
       }
     },
     "manual": {
@@ -315,6 +321,23 @@
       "fallback_error": "导入失败",
       "cancel": "取消",
       "toast_imported": "已导入 skill"
+    },
+    "knowledge": {
+      "all_spaces": "全部空间",
+      "search_placeholder": "搜索 skill 名称或空间...",
+      "refresh": "刷新",
+      "load_failed": "加载知识库空间 skills 失败",
+      "retry": "重试",
+      "empty": "当前可访问的知识库空间下暂无可用 skill。",
+      "empty_filtered": "没有匹配的 skill。",
+      "partial_warning": "部分空间加载失败，当前仅展示已成功获取的 skill。",
+      "exists_badge": "已存在",
+      "not_ready": "暂不可用",
+      "conflict_banner": "有 {{count}} 个 skill 与工作区已有名称冲突，请选择处理方式：",
+      "conflict_overwrite": "覆盖",
+      "conflict_rename": "重命名",
+      "conflict_skip": "跳过",
+      "apply_resolution": "应用并继续"
     }
   },
   "runtime_import": {

@@ -184,13 +184,23 @@ function moveSelectionToParagraphAfterImage(editor: any, src: string) {
 
   const afterImagePos = imagePos + imageNode.nodeSize;
   const $afterImage = editor.state.doc.resolve(afterImagePos);
-  if ($afterImage.nodeAfter?.type.name !== "paragraph") return;
+  if ($afterImage.nodeAfter?.type.name === "paragraph") {
+    const paragraphStart = afterImagePos + 1;
+    const tr = editor.state.tr
+      .setSelection(TextSelection.create(editor.state.tr.doc, paragraphStart))
+      .scrollIntoView();
+    editor.view.dispatch(tr);
+    return;
+  }
 
-  const paragraphStart = afterImagePos + 1;
-  const tr = editor.state.tr
-    .setSelection(TextSelection.create(editor.state.doc, paragraphStart))
-    .scrollIntoView();
-  editor.view.dispatch(tr);
+  // If there is no trailing paragraph after the image (e.g. at the end of the document),
+  // insert an empty paragraph and move the selection inside it so subsequent typing or
+  // image pastes do not replace the image node.
+  if (editor.schema.nodes.paragraph) {
+    const tr = editor.state.tr.insert(afterImagePos, editor.schema.nodes.paragraph.create());
+    tr.setSelection(TextSelection.create(tr.doc, afterImagePos + 1)).scrollIntoView();
+    editor.view.dispatch(tr);
+  }
 }
 
 /**
@@ -215,6 +225,7 @@ export async function uploadAndInsertFile(
     const imgAttrs = { src: blobUrl, alt: file.name, uploading: true, uploadId };
     if (pos !== undefined) {
       editor.chain().focus().insertContentAt(pos, { type: "image", attrs: imgAttrs }).run();
+      moveSelectionToParagraphAfterImage(editor, blobUrl);
     } else {
       editor.chain().focus().setImage(imgAttrs).run();
       moveSelectionToParagraphAfterImage(editor, blobUrl);
@@ -322,11 +333,11 @@ export function createFileUploadExtension(
     addProseMirrorPlugins() {
       const { editor } = this;
 
-      const handleFiles = async (files: File[]) => {
+      const handleFiles = (files: File[]) => {
         const handler = onUploadFileRef.current;
         if (!handler) return false;
         for (const file of files) {
-          await uploadAndInsertFile(editor, file, handler);
+          void uploadAndInsertFile(editor, file, handler);
         }
         return true;
       };

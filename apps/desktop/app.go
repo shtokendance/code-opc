@@ -131,6 +131,11 @@ type AppService struct {
 	oauthPendingToken string
 	oauthCancel       context.CancelFunc
 	oauthMu           sync.Mutex
+
+	updaterMu     sync.RWMutex
+	downloadState UpdaterDownloadState
+	downloadPkg   *downloadedPackageInfo
+	lastCheckInfo *downloadedPackageInfo
 }
 
 func NewAppService() *AppService {
@@ -415,6 +420,11 @@ func (s *AppService) SetApp(app *application.App) {
 	}
 }
 
+var (
+	appVersion     = "0.11.3"
+	appProductName = "CodeOPC"
+)
+
 // GetAppInfo returns app version and normalized OS for the renderer.
 func (s *AppService) GetAppInfo() AppInfo {
 	osName := "unknown"
@@ -428,7 +438,7 @@ func (s *AppService) GetAppInfo() AppInfo {
 	}
 
 	return AppInfo{
-		Version: "0.11.0",
+		Version: appVersion,
 		OS:      osName,
 	}
 }

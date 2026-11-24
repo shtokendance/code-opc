@@ -1636,6 +1636,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 
 	// Public API
 	r.Get("/api/config", h.GetConfig)
+	r.Get("/api/desktop/updates/check", h.CheckDesktopUpdate)
+	r.Get("/api/desktop/updates/download/{filename}", h.DownloadDesktopUpdate)
 	r.With(contactSalesRL).Post("/api/contact-sales", h.CreateContactSales)
 	// The marketing site's shared footer star. Reads and spins live on
 	// separate paths because the limiter keys on path and IP.
@@ -2527,6 +2529,8 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 				r.Post("/", h.CreateSkill)
 				r.Get("/search", h.SearchSkills)
 				r.Post("/import", h.ImportSkill)
+				r.Get("/knowledge-space", h.ListKnowledgeSpaceSkills)
+				r.Post("/import/knowledge-space", h.ImportKnowledgeSpaceSkill)
 				r.Route("/{id}", func(r chi.Router) {
 					r.Get("/", h.GetSkill)
 					r.Put("/", h.UpdateSkill)

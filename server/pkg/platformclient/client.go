@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -185,4 +186,154 @@ func (c *Client) GetInvocation(ctx context.Context, invocationID, subject, tenan
 		return nil, fmt.Errorf("decode get invocation response: %w", err)
 	}
 	return &res, nil
+}
+
+// APIError represents an HTTP error returned by platform-opc.
+type APIError struct {
+	Status  int
+	Code    string
+	Message string
+}
+
+func (e *APIError) Error() string {
+	if e.Code != "" && e.Message != "" {
+		return fmt.Sprintf("platform api error %d [%s]: %s", e.Status, e.Code, e.Message)
+	}
+	if e.Message != "" {
+		return fmt.Sprintf("platform api error %d: %s", e.Status, e.Message)
+	}
+	return fmt.Sprintf("platform api error %d", e.Status)
+}
+
+func parseAPIError(status int, body []byte) error {
+	var envelope struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+		Error   *struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(body, &envelope) == nil {
+		if envelope.Error != nil && (envelope.Error.Code != "" || envelope.Error.Message != "") {
+			return &APIError{Status: status, Code: envelope.Error.Code, Message: envelope.Error.Message}
+		}
+		if envelope.Code != "" || envelope.Message != "" {
+			return &APIError{Status: status, Code: envelope.Code, Message: envelope.Message}
+		}
+	}
+	return &APIError{Status: status, Message: strings.TrimSpace(string(body))}
+}
+
+// ListResourceSkills queries /integration/v1/resources/skills with the user's bearer token
+// to fetch all accessible skill catalogs across entitled spaces.
+func (c *Client) ListResourceSkills(ctx context.Context, userToken, tenantID, q string, offset, limit int) (*ResourceSkillListResponse, error) {
+	if c.baseURL == "" {
+		return nil, fmt.Errorf("platform client base URL is empty")
+	}
+	userToken = strings.TrimSpace(userToken)
+	if userToken == "" {
+		return nil, fmt.Errorf("user token is required")
+	}
+
+	endpoint := fmt.Sprintf("%s/integration/v1/resources/skills", c.baseURL)
+	params := url.Values{}
+	if tenantID != "" {
+		params.Set("tenant_id", tenantID)
+	}
+	if q != "" {
+		params.Set("q", q)
+	}
+	if offset > 0 {
+		params.Set("offset", strconv.Itoa(offset))
+	}
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	} else {
+		params.Set("limit", "100")
+	}
+	fullURL := endpoint + "?" + params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create list resource skills request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+userToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("execute list resource skills: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return nil, fmt.Errorf("read list resource skills response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseAPIError(resp.StatusCode, body)
+	}
+
+	var res ResourceSkillListResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("decode list resource skills response: %w", err)
+	}
+	if res.Items == nil {
+		res.Items = []ResourceSkillItem{}
+	}
+	if res.Failures == nil {
+		res.Failures = []ResourceTenantFailure{}
+	}
+	return &res, nil
+}
+
+// DownloadResourceSkillArchive downloads a skill catalog zip archive from platform-opc
+// with the user's bearer token and SHA-256 verification.
+func (c *Client) DownloadResourceSkillArchive(ctx context.Context, userToken, catalogID, tenantID, expectedSHA256 string, maxBytes int64) ([]byte, error) {
+	if c.baseURL == "" {
+		return nil, fmt.Errorf("platform client base URL is empty")
+	}
+	userToken = strings.TrimSpace(userToken)
+	if userToken == "" {
+		return nil, fmt.Errorf("user token is required")
+	}
+	if maxBytes <= 0 {
+		maxBytes = 16 << 20
+	}
+
+	endpoint := fmt.Sprintf("%s/integration/v1/resources/skills/%s/archive", c.baseURL, url.PathEscape(catalogID))
+	params := url.Values{}
+	params.Set("tenant_id", tenantID)
+	params.Set("expected_sha256", expectedSHA256)
+	fullURL := endpoint + "?" + params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create download skill archive request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+userToken)
+
+	dlClient := &http.Client{Timeout: 120 * time.Second}
+	if c.httpClient != nil && c.httpClient.Transport != nil {
+		dlClient.Transport = c.httpClient.Transport
+	}
+	resp, err := dlClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("execute download skill archive: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		return nil, parseAPIError(resp.StatusCode, errBody)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read skill archive body: %w", err)
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("skill archive exceeds max size of %d bytes", maxBytes)
+	}
+	return data, nil
 }

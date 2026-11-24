@@ -10,7 +10,6 @@ import {
   Loader2,
   Lock,
   Monitor,
-  Plus,
   SquareTerminal,
   TriangleAlert,
 } from "@multica/ui/icons";
@@ -518,13 +517,15 @@ export interface RuntimeChoiceListProps {
   onSelectQoder: () => void;
   onConnectQoder: () => void;
   onManageQoder: () => void;
-  onAddRemote: () => void;
+  onAddRemote?: () => void;
 }
 
 /**
  * Every place an agent can run, as one list: machines (this one first, open)
  * and cloud services. A machine folds to a single row until opened.
  */
+const SHOW_CLOUD_RUNTIMES = false;
+
 export function RuntimeChoiceList({
   local,
   localAvailable,
@@ -544,7 +545,6 @@ export function RuntimeChoiceList({
   onSelectQoder,
   onConnectQoder,
   onManageQoder,
-  onAddRemote,
 }: RuntimeChoiceListProps) {
   const { t } = useT("agents");
   const [openOverrides, setOpenOverrides] = useState<ReadonlyMap<string, boolean>>(
@@ -566,8 +566,8 @@ export function RuntimeChoiceList({
   const matchedCloud = cloud.filter((option) => harnessMatches(option, "", query));
   const soon = COMING_SOON.filter((item) => !q || item.name.toLowerCase().includes(q));
 
-  const showMachines = matchedDevices.length > 0 || showWebRow || !searching;
-  const showCloud = showQoder || matchedCloud.length > 0 || soon.length > 0;
+  const showMachines = matchedDevices.length > 0 || showWebRow || (!searching && hiddenRemoteCount > 0);
+  const showCloud = SHOW_CLOUD_RUNTIMES && (showQoder || matchedCloud.length > 0 || soon.length > 0);
 
   if (!showMachines && !showCloud) {
     return (
@@ -653,26 +653,16 @@ export function RuntimeChoiceList({
               />
             );
           })}
-          {!searching ? (
+          {!searching && hiddenRemoteCount > 0 ? (
             <div className={cn(ROW, "h-10 text-caption text-muted-foreground")}>
-              {hiddenRemoteCount > 0 ? (
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <Lock aria-hidden="true" className="size-3 shrink-0" />
-                  <span className="truncate">
-                    {t(($) => $.creation_studio.runtime_step.hidden_remote, {
-                      count: hiddenRemoteCount,
-                    })}
-                  </span>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Lock aria-hidden="true" className="size-3 shrink-0" />
+                <span className="truncate">
+                  {t(($) => $.creation_studio.runtime_step.hidden_remote, {
+                    count: hiddenRemoteCount,
+                  })}
                 </span>
-              ) : null}
-              <button
-                type="button"
-                onClick={onAddRemote}
-                className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm font-medium text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <Plus aria-hidden="true" className="size-3.5" />
-                {t(($) => $.creation_studio.runtime_step.add_remote)}
-              </button>
+              </span>
             </div>
           ) : null}
         </>
