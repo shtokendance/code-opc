@@ -1478,7 +1478,14 @@
       "download_failed": "更新下载失败，可以继续使用当前版本并重试。",
       "download_ready": "v{{version}} 已可安装。",
       "install_now": "立即重启安装",
-      "retry": "重试"
+      "retry": "重试",
+      "notification_title": "新版本已就绪",
+      "notification_description": "v{{version}} 已下载完成，将在重启后生效。",
+      "notification_changelog": "查看更新日志",
+      "notification_restart": "立即重启",
+      "downloading_progress": "v{{version}} 正在下载中（{{percent}}%）...",
+      "installing_toast": "正在重启应用以安装更新...",
+      "dismiss": "关闭"
     },
     "daemon": {
       "title": "守护进程",

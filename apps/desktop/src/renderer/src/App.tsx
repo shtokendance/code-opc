@@ -523,12 +523,12 @@ export default function App() {
             windowContext.kind === "main" && (
               <DesktopDevToolbar apiUrl={runtimeConfigResult.config.apiUrl} />
             )}
+          {windowContext.kind === "main" && <UpdateNotification />}
         </CoreProvider>
       ) : (
         <BlockingRuntimeConfigError message={runtimeConfigResult.error.message} />
       )}
       <Toaster />
-      {windowContext.kind === "main" && <UpdateNotification />}
     </ThemeProvider>
   );
 }

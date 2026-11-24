@@ -30,8 +30,20 @@ export function UpdatesSettingsTab() {
   const [automaticUpdates, setAutomaticUpdates] = useState(true);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [savingPreference, setSavingPreference] = useState(false);
+  const [downloadPercent, setDownloadPercent] = useState<number | null>(null);
   const currentVersion = window.desktopAPI.appInfo.version;
   const downloadRevision = useRef(0);
+
+  useEffect(() => {
+    const unsubProgress = window.updater.onDownloadProgress?.((p: { percent: number }) => {
+      if (typeof p?.percent === "number") {
+        setDownloadPercent(p.percent);
+      }
+    });
+    return () => {
+      unsubProgress?.();
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -117,11 +129,12 @@ export function UpdatesSettingsTab() {
 
   const handleInstall = useCallback(async () => {
     try {
+      toast.info(t(($) => $.desktop.updates.installing_toast));
       await window.updater.installUpdate();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
     }
-  }, []);
+  }, [t]);
 
   const failureMessage = state.status !== "error" ? ""
     : state.downloading ? t(($) => $.desktop.updates.download_failed)
@@ -167,9 +180,14 @@ export function UpdatesSettingsTab() {
               {state.status === "available" && (
                 <p className="mt-2 inline-flex items-center gap-1.5">
                   <ArrowDownToLine className="size-3.5 text-primary" />
-                  {t(($) => $.desktop.updates.downloading, {
-                    version: state.latestVersion,
-                  })}
+                  {downloadPercent !== null
+                    ? t(($) => $.desktop.updates.downloading_progress, {
+                        version: state.latestVersion,
+                        percent: downloadPercent,
+                      })
+                    : t(($) => $.desktop.updates.downloading, {
+                        version: state.latestVersion,
+                      })}
                 </p>
               )}
               {state.status === "error" && (

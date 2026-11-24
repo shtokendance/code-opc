@@ -23,7 +23,7 @@ function getSha256(filePath) {
 const manifestPath = path.join(distDir, "latest.json");
 let manifest = {
   version,
-  release_notes: `Release v${version}`,
+  release_notes: `新版本 v${version} 已发布，包含多项性能与体验优化。`,
   pub_date: new Date().toISOString(),
   platforms: {},
 };
@@ -32,7 +32,11 @@ if (fs.existsSync(manifestPath)) {
   try {
     const existing = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     if (existing.version === version && existing.platforms) {
-      manifest = existing;
+      manifest = {
+        ...existing,
+        release_notes: `新版本 v${version} 已发布，包含多项性能与体验优化。`,
+        pub_date: new Date().toISOString(),
+      };
     }
   } catch {}
 }

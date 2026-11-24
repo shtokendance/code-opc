@@ -1489,7 +1489,14 @@
       "download_failed": "Update download failed. You can keep using the current version and retry.",
       "download_ready": "v{{version}} is ready to install.",
       "install_now": "Restart & install",
-      "retry": "Retry"
+      "retry": "Retry",
+      "notification_title": "Update ready",
+      "notification_description": "v{{version}} will be applied on next launch.",
+      "notification_changelog": "See changelog",
+      "notification_restart": "Restart now",
+      "downloading_progress": "Downloading v{{version}} ({{percent}}%)...",
+      "installing_toast": "Restarting to install update...",
+      "dismiss": "Dismiss"
     },
     "daemon": {
       "title": "Daemon",
