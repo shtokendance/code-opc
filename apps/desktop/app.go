@@ -800,7 +800,7 @@ func (s *AppService) ShowNotification(payload map[string]interface{}) error {
 	title, _ := payload["title"].(string)
 	body, _ := payload["body"].(string)
 	if title == "" {
-		title = "Multica"
+		title = "CodeOPC"
 	}
 
 	if body != "" {
