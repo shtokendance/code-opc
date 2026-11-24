@@ -608,24 +608,33 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Queries.GetUser(r.Context(), parseUUID(userID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		email := r.Header.Get("X-User-Email")
-		if email != "" {
-			name := email
+		email := strings.TrimSpace(r.Header.Get("X-User-Email"))
+		name := strings.TrimSpace(r.Header.Get("X-User-Name"))
+		if email == "" {
+			email = fmt.Sprintf("%s@wecom.local", userID[:8])
+		}
+		if name == "" {
+			name = email
 			if at := strings.Index(email, "@"); at > 0 {
 				name = email[:at]
 			}
-			created, createErr := h.Queries.CreateUserWithID(r.Context(), db.CreateUserWithIDParams{
-				ID:    parseUUID(userID),
-				Name:  name,
-				Email: email,
-			})
-			if createErr == nil {
-				user = created
-			} else if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
-				user = existing
+		}
+		created, createErr := h.Queries.CreateUserWithID(r.Context(), db.CreateUserWithIDParams{
+			ID:    parseUUID(userID),
+			Name:  name,
+			Email: email,
+		})
+		if createErr == nil {
+			user = created
+		} else if existing, emailErr := h.Queries.GetUserByEmail(r.Context(), email); emailErr == nil {
+			if _, updateErr := h.DB.Exec(r.Context(), `UPDATE "user" SET id = $1, name = COALESCE(NULLIF($2, ''), name) WHERE id = $3`, parseUUID(userID), name, existing.ID); updateErr == nil {
+				if reloaded, getErr := h.Queries.GetUser(r.Context(), parseUUID(userID)); getErr == nil {
+					user = reloaded
+				} else {
+					user = existing
+				}
 			} else {
-				writeError(w, http.StatusUnauthorized, "user not found")
-				return
+				user = existing
 			}
 		} else {
 			writeError(w, http.StatusUnauthorized, "user not found")

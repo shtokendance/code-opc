@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -308,8 +309,13 @@ func Auth(queries *db.Queries, patCache *auth.PATCache, cloudPAT *auth.CloudPATV
 			if email != "" {
 				r.Header.Set("X-User-Email", email)
 			}
+			if name, ok := claims["name"].(string); ok && name != "" {
+				r.Header.Set("X-User-Name", name)
+			}
 			if deptCode, ok := claims["dept_code"].(string); ok && deptCode != "" {
 				r.Header.Set("X-User-Dept-Code", deptCode)
+			} else if deptCodeNum, ok := claims["dept_code"].(float64); ok && deptCodeNum > 0 {
+				r.Header.Set("X-User-Dept-Code", fmt.Sprintf("%.0f", deptCodeNum))
 			}
 			if deptName, ok := claims["dept_name"].(string); ok && deptName != "" {
 				r.Header.Set("X-User-Dept-Name", deptName)
