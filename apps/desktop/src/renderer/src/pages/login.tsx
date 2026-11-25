@@ -95,7 +95,8 @@ export function DesktopLoginPage() {
     const platformUrl = "https://shtokendance.benlai.com";
     const openLoginTarget = (targetUrl: string) => {
       if (window.desktopAPI?.openLoginWindow) {
-        return window.desktopAPI.openLoginWindow(targetUrl);
+        const returnUrl = `${window.location.origin}/`;
+        return window.desktopAPI.openLoginWindow(targetUrl, returnUrl);
       }
       return window.desktopAPI.openExternal(targetUrl);
     };

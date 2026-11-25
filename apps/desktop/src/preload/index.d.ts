@@ -73,8 +73,8 @@ interface DesktopAPI {
   stopLoginOAuthServer?: () => Promise<void>;
   /** Get pending OAuth token if received. */
   getPendingOAuthToken?: () => Promise<string>;
-  /** Open the OAuth login page inside an in-app desktop window. */
-  openLoginWindow?: (url: string) => Promise<void>;
+  /** Open the OAuth login page inside the main desktop window. */
+  openLoginWindow?: (url: string, returnUrl?: string) => Promise<void>;
   /** Close the in-app OAuth login window if open. */
   closeLoginWindow?: () => Promise<void>;
   /** Listen for invitation IDs delivered via deep link. Returns an unsubscribe function. */

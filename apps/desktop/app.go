@@ -229,11 +229,8 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
   <div class="card">
     <div class="icon">✓</div>
     <h2>登录成功</h2>
-    <p>您已成功登录 CodeOPC，现在可以关闭此网页并返回桌面客户端。</p>
+    <p>正在进入 CodeOPC 主界面...</p>
   </div>
-  <script>
-    setTimeout(function() { try { window.close(); } catch(e) {} }, 1500);
-  </script>
 </body>
 </html>`))
 
@@ -257,7 +254,11 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 				s.loginOriginURL = ""
 				s.mu.Unlock()
 				if originURL == "" {
-					originURL = "/"
+					if runtime.GOOS == "windows" {
+						originURL = "http://wails.localhost/"
+					} else {
+						originURL = "wails://wails.localhost/"
+					}
 				}
 				if s.mainWindow != nil {
 					s.mainWindow.SetURL(originURL)
@@ -443,7 +444,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.16"
+	appVersion     = "0.11.17"
 	appProductName = "CodeOPC"
 )
 
@@ -609,7 +610,7 @@ func (s *AppService) OpenExternal(rawURL string) error {
 }
 
 // OpenLoginWindow navigates the main application window in-place to the OAuth login URL.
-func (s *AppService) OpenLoginWindow(rawURL string) error {
+func (s *AppService) OpenLoginWindow(rawURL string, returnURL string) error {
 	if s.app == nil || s.mainWindow == nil {
 		return fmt.Errorf("application is not initialized")
 	}
@@ -617,15 +618,21 @@ func (s *AppService) OpenLoginWindow(rawURL string) error {
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 		return fmt.Errorf("invalid login URL")
 	}
+	cleanReturn := strings.TrimSpace(returnURL)
+	if cleanReturn == "" {
+		if runtime.GOOS == "windows" {
+			cleanReturn = "http://wails.localhost/"
+		} else {
+			cleanReturn = "wails://wails.localhost/"
+		}
+	}
 
 	application.InvokeAsync(func() {
 		if s.mainWindow == nil {
 			return
 		}
 		s.mu.Lock()
-		if s.loginOriginURL == "" {
-			s.loginOriginURL = "/"
-		}
+		s.loginOriginURL = cleanReturn
 		s.mu.Unlock()
 
 		s.mainWindow.SetURL(rawURL)
