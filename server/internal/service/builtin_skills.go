@@ -29,7 +29,7 @@ const (
 // daemon runs on the user's machine and must not import this package, so the
 // two are pinned by the brief's rendered-output tests instead of a shared
 // symbol.
-const PlatformSkillName = "multica-platform"
+const PlatformSkillName = "codeopc-platform"
 
 // builtinSkillSystemKey restricts a built-in skill to one product-defined
 // agent, keyed by that agent's system key. A skill absent from this map is
@@ -41,7 +41,7 @@ const PlatformSkillName = "multica-platform"
 // agent's procedure, not a platform contract, so shipping it workspace-wide
 // spent that budget on nine agents out of ten that can never use it.
 var builtinSkillSystemKey = map[string]string{
-	"multica-onboarding": MikaSystemKey,
+	"codeopc-onboarding": MikaSystemKey,
 }
 
 // BuiltinSkills returns the platform's built-in skills for an agent with the

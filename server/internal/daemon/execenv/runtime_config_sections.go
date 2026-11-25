@@ -42,8 +42,8 @@ import (
 
 // writeHeader emits the brief's leading title and one-line elevator pitch.
 func writeHeader(b *strings.Builder) {
-	b.WriteString("# Multica Agent Runtime\n\n")
-	b.WriteString("You are a coding agent in the Multica platform. Use the `multica` CLI to interact with the platform.\n\n")
+	b.WriteString("# CodeOPC Agent Runtime\n\n")
+	b.WriteString("You are a coding agent in the CodeOPC platform.\n\n")
 }
 
 func multicaCLICommand() string {
@@ -132,7 +132,7 @@ func BuildOnBehalfOfBlock(name, email string) string {
 	} else {
 		fmt.Fprintf(&b, "You are acting on behalf of **%s**. ", safeName)
 	}
-	b.WriteString("Apply any person-specific privacy or access rules in your instructions to this person. Your Multica credentials and access remain scoped to the runtime owner; do not assume this person can access everything you can.\n\n")
+	b.WriteString("Apply any person-specific privacy or access rules in your instructions to this person. Your CodeOPC credentials and access remain scoped to the runtime owner; do not assume this person can access everything you can.\n\n")
 	return b.String()
 }
 
@@ -259,7 +259,7 @@ func sanitizeBriefCodeToken(s string) string {
 func writeAvailableCommands(b *strings.Builder, ctx TaskContextForEnv) {
 	b.WriteString("## Execution Mode (Desktop Integrated — No CLI)\n\n")
 	b.WriteString("- **Do NOT run `multica` CLI commands in the terminal** (no `multica issue get`, `multica issue comment list`, `multica issue status`, `multica issue comment add`, etc.).\n")
-	b.WriteString("- The Multica desktop client preloads issue details and discussion history directly into your prompt, automatically manages issue status transitions (`in_progress` -> `in_review`), and automatically publishes your final assistant response as a comment on the issue.\n")
+	b.WriteString("- The CodeOPC desktop client preloads issue details and discussion history directly into your prompt, automatically manages issue status transitions (`in_progress` -> `in_review`), and automatically publishes your final assistant response as a comment on the issue.\n")
 	b.WriteString("- Work directly in your current working directory and output your final result or deliverable directly in your response.\n\n")
 	b.WriteString("Commits use the user's configured Git identity; keep it unless asked. For a requested override in a managed checkout use `git config --worktree user.name` / `git config --worktree user.email` — plain or `--local` config can leak into a shared cache; never change the global identity.\n\n")
 	// refs/stash belongs to the shared repository cache, not to a worktree, so
@@ -701,7 +701,7 @@ func writeSubIssueCreation(b *strings.Builder, ctx TaskContextForEnv) {
 // platformSkillName is the built-in skill that holds Multica's platform
 // contracts. It mirrors service.PlatformSkillName, which the daemon must not
 // import; the brief's rendered-output tests pin the two together.
-const platformSkillName = "multica-platform"
+const platformSkillName = "codeopc-platform"
 
 // platformSkillDomains is the domain list from the platform skill's
 // description, repeated in the brief's recall hint for agents that never read

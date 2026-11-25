@@ -67,8 +67,8 @@ func TestBuiltinSkillsConformToTemplate(t *testing.T) {
 			// workspace skill shares one; nothing reserves the prefix
 			// server-side yet, and that gap is accepted rather than handled
 			// (see builtinSlug).
-			if !strings.HasPrefix(skill.Name, "multica-") {
-				t.Errorf("skill name %q must carry the multica- prefix", skill.Name)
+			if !strings.HasPrefix(skill.Name, "codeopc-") && !strings.HasPrefix(skill.Name, "multica-") {
+				t.Errorf("skill name %q must carry the codeopc- or legacy multica- prefix", skill.Name)
 			}
 
 			fm, body, ok := splitFrontmatter(skill.Content)
@@ -289,11 +289,11 @@ func TestLegacyRedirectsFollowTheDaemonsBrief(t *testing.T) {
 	}
 
 	// Mika's scoping is orthogonal to the redirect: both dimensions compose.
-	if !named(svc.BuiltinSkills(MikaSystemKey, true), "multica-onboarding") {
-		t.Errorf("Mika on a pre-merge daemon lost multica-onboarding")
+	if !named(svc.BuiltinSkills(MikaSystemKey, true), "codeopc-onboarding") {
+		t.Errorf("Mika on a pre-merge daemon lost codeopc-onboarding")
 	}
-	if named(svc.BuiltinSkills("", true), "multica-onboarding") {
-		t.Errorf("the redirect path leaked multica-onboarding to an ordinary agent")
+	if named(svc.BuiltinSkills("", true), "codeopc-onboarding") {
+		t.Errorf("the redirect path leaked codeopc-onboarding to an ordinary agent")
 	}
 
 	var stub AgentSkillData
@@ -896,7 +896,7 @@ func TestPlatformSkillTeachesTheParserContract(t *testing.T) {
 // Shipping it to every agent put its description in every agent's always-loaded
 // skill listing and its body in every task workdir, to be usable by one.
 func TestOnboardingSkillIsScopedToMika(t *testing.T) {
-	const onboarding = "multica-onboarding"
+	const onboarding = "codeopc-onboarding"
 
 	ordinary := loadBuiltinSkills("")
 	if named(ordinary, onboarding) {
