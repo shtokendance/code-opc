@@ -1631,6 +1631,17 @@ type ProjectFolder struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type ProjectKnowledgeBase struct {
+	ID                pgtype.UUID        `json:"id"`
+	WorkspaceID       pgtype.UUID        `json:"workspace_id"`
+	ProjectID         pgtype.UUID        `json:"project_id"`
+	TenantID          string             `json:"tenant_id"`
+	KnowledgeBaseID   string             `json:"knowledge_base_id"`
+	KnowledgeBaseName string             `json:"knowledge_base_name"`
+	CreatedBy         pgtype.UUID        `json:"created_by"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type ProjectMember struct {
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
 	ProjectID   pgtype.UUID        `json:"project_id"`

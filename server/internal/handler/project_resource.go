@@ -1033,6 +1033,27 @@ func (h *Handler) resolveClaimProjectContext(ctx context.Context, projectID, wor
 				return claimProjectContext{}, fmt.Errorf("list project resources: %w", resErr)
 			}
 			out.Resources, out.Repos = projectResourcesForClaim(rows)
+
+			kbRows, kbErr := h.Queries.ListProjectKnowledgeBases(ctx, db.ListProjectKnowledgeBasesParams{
+				ProjectID:   project.ID,
+				WorkspaceID: workspaceID,
+			})
+			if kbErr != nil {
+				return claimProjectContext{}, fmt.Errorf("list project knowledge bases: %w", kbErr)
+			}
+			for _, kb := range kbRows {
+				refBytes, _ := json.Marshal(map[string]string{
+					"tenant_id":           kb.TenantID,
+					"knowledge_base_id":   kb.KnowledgeBaseID,
+					"knowledge_base_name": kb.KnowledgeBaseName,
+				})
+				out.Resources = append(out.Resources, ProjectResourceData{
+					ID:           uuidToString(kb.ID),
+					ResourceType: "knowledge_base",
+					Label:        kb.KnowledgeBaseName,
+					ResourceRef:  refBytes,
+				})
+			}
 		case errors.Is(err, pgx.ErrNoRows):
 			// Stale/deleted/foreign reference: degrade to workspace context.
 		default:

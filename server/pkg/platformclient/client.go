@@ -337,3 +337,64 @@ func (c *Client) DownloadResourceSkillArchive(ctx context.Context, userToken, ca
 	}
 	return data, nil
 }
+
+// ListKnowledgeBases queries /integration/v1/resources/knowledge-bases with the user's bearer token.
+func (c *Client) ListKnowledgeBases(ctx context.Context, userToken, tenantID, q string, offset, limit int) (*ResourceKnowledgeBaseListResponse, error) {
+	if c.baseURL == "" {
+		return nil, fmt.Errorf("platform client base URL is empty")
+	}
+	userToken = strings.TrimSpace(userToken)
+	if userToken == "" {
+		return nil, fmt.Errorf("user token is required")
+	}
+
+	endpoint := fmt.Sprintf("%s/integration/v1/resources/knowledge-bases", c.baseURL)
+	params := url.Values{}
+	if tenantID != "" {
+		params.Set("tenant_id", tenantID)
+	}
+	if q != "" {
+		params.Set("q", q)
+	}
+	if offset > 0 {
+		params.Set("offset", strconv.Itoa(offset))
+	}
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	} else {
+		params.Set("limit", "100")
+	}
+	fullURL := endpoint + "?" + params.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fullURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create list knowledge bases request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+userToken)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("execute list knowledge bases: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return nil, fmt.Errorf("read list knowledge bases response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseAPIError(resp.StatusCode, body)
+	}
+
+	var res ResourceKnowledgeBaseListResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("decode list knowledge bases response: %w", err)
+	}
+	if res.Items == nil {
+		res.Items = []ResourceKnowledgeBaseItem{}
+	}
+	if res.Failures == nil {
+		res.Failures = []ResourceTenantFailure{}
+	}
+	return &res, nil
+}

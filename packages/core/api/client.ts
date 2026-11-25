@@ -81,6 +81,10 @@ import type {
   SkillImportResult,
   KnowledgeSpaceSkillListResponse,
   ImportKnowledgeSpaceSkillRequest,
+  AvailableKnowledgeBaseListResponse,
+  ProjectKnowledgeBase,
+  ListProjectKnowledgeBasesResponse,
+  BindProjectKnowledgeBaseRequest,
   UpdateSkillRequest,
   SetAgentSkillsRequest,
   SetAgentRuntimeSkillEnabledRequest,
@@ -560,6 +564,9 @@ import {
   EMPTY_SKILL_IMPORT_RESULT,
   KnowledgeSpaceSkillListResponseSchema,
   EMPTY_KNOWLEDGE_SPACE_SKILL_LIST,
+  AvailableKnowledgeBaseListResponseSchema,
+  ProjectKnowledgeBaseSchema,
+  ListProjectKnowledgeBasesResponseSchema,
   IssueViewSchema,
   IssueViewListSchema,
   IssueViewPreferenceSchema,
@@ -4697,6 +4704,74 @@ export class ApiClient {
     await this.fetch(`/api/projects/${projectId}/resources/${resourceId}`, {
       method: "DELETE",
     });
+  }
+
+  // Project-bound knowledge bases
+  async listProjectKnowledgeBases(
+    projectId: string,
+  ): Promise<ListProjectKnowledgeBasesResponse> {
+    const raw = await this.fetch<unknown>(`/api/projects/${projectId}/knowledge-bases`);
+    return parseWithFallback(
+      raw,
+      ListProjectKnowledgeBasesResponseSchema,
+      { knowledge_bases: [], total: 0 },
+      { endpoint: "GET /api/projects/:id/knowledge-bases" },
+    );
+  }
+
+  async bindProjectKnowledgeBase(
+    projectId: string,
+    data: BindProjectKnowledgeBaseRequest,
+  ): Promise<ProjectKnowledgeBase> {
+    const raw = await this.fetch<unknown>(`/api/projects/${projectId}/knowledge-bases`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return parseWithFallback(
+      raw,
+      ProjectKnowledgeBaseSchema,
+      {
+        id: "",
+        workspace_id: "",
+        project_id: projectId,
+        tenant_id: data.tenant_id,
+        knowledge_base_id: data.knowledge_base_id,
+        knowledge_base_name: data.knowledge_base_name,
+        created_by: "",
+        created_at: "",
+      },
+      { endpoint: "POST /api/projects/:id/knowledge-bases" },
+    );
+  }
+
+  async unbindProjectKnowledgeBase(
+    projectId: string,
+    bindingId: string,
+  ): Promise<void> {
+    await this.fetch(`/api/projects/${projectId}/knowledge-bases/${bindingId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async listAvailableKnowledgeBases(params?: {
+    tenant_id?: string;
+    q?: string;
+    offset?: number;
+    limit?: number;
+  }): Promise<AvailableKnowledgeBaseListResponse> {
+    const query = new URLSearchParams();
+    if (params?.tenant_id) query.set("tenant_id", params.tenant_id);
+    if (params?.q) query.set("q", params.q);
+    if (params?.offset != null && params.offset > 0) query.set("offset", String(params.offset));
+    if (params?.limit != null && params.limit > 0) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    const raw = await this.fetch<unknown>(`/api/knowledge/bases${qs ? `?${qs}` : ""}`);
+    return parseWithFallback(
+      raw,
+      AvailableKnowledgeBaseListResponseSchema,
+      { items: [], total: 0, offset: 0, limit: 100, complete: true },
+      { endpoint: "GET /api/knowledge/bases" },
+    );
   }
 
   // Labels

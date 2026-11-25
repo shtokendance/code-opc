@@ -38,3 +38,10 @@ export {
   useUpdateProjectResource,
   useDeleteProjectResource,
 } from "./resource-queries";
+export {
+  projectKnowledgeBaseKeys,
+  projectKnowledgeBasesOptions,
+  availableKnowledgeBasesOptions,
+  useBindProjectKnowledgeBase,
+  useUnbindProjectKnowledgeBase,
+} from "./knowledge-queries";

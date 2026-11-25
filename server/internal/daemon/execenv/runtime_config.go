@@ -145,6 +145,21 @@ func formatProjectResource(r ProjectResourceForEnv) string {
 			out += " — " + label
 		}
 		return out
+	case "knowledge_base":
+		var payload struct {
+			TenantID          string `json:"tenant_id"`
+			KnowledgeBaseID   string `json:"knowledge_base_id"`
+			KnowledgeBaseName string `json:"knowledge_base_name,omitempty"`
+		}
+		_ = json.Unmarshal(r.ResourceRef, &payload)
+		name := label
+		if name == "" {
+			name = payload.KnowledgeBaseName
+		}
+		if name == "" {
+			name = payload.KnowledgeBaseID
+		}
+		return fmt.Sprintf("**Knowledge Base**: %s (`tenant_id`: `%s`, `knowledge_base_id`: `%s`)", name, payload.TenantID, payload.KnowledgeBaseID)
 	default:
 		ref := string(r.ResourceRef)
 		if ref == "" {

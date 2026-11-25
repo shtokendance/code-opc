@@ -4841,3 +4841,42 @@ export const WorkspaceListItemSchema = z.object({
 export const WorkspacePinnedSchema = z.object({
   pinned_at: z.iso.datetime({ offset: true }).nullable().catch(null),
 });
+
+export const AvailableKnowledgeBaseItemSchema = z.object({
+  resource_kind: z.string().default("knowledge_base"),
+  tenant_id: z.string(),
+  tenant_name: z.string().default(""),
+  source_tenant_id: z.string().optional(),
+  source_tenant_name: z.string().optional(),
+  permission: z.string().optional(),
+  knowledge_base_id: z.string(),
+  name: z.string().default(""),
+  description: z.string().default(""),
+  availability: z.string().default("available"),
+  unavailable_reason: z.string().optional(),
+  detail_url: z.string().optional(),
+}).loose();
+
+export const AvailableKnowledgeBaseListResponseSchema = z.object({
+  items: z.array(AvailableKnowledgeBaseItemSchema).default([]),
+  total: z.number().default(0),
+  offset: z.number().default(0),
+  limit: z.number().default(100),
+  complete: z.boolean().default(true),
+}).loose();
+
+export const ProjectKnowledgeBaseSchema = z.object({
+  id: z.string(),
+  workspace_id: z.string(),
+  project_id: z.string(),
+  tenant_id: z.string(),
+  knowledge_base_id: z.string(),
+  knowledge_base_name: z.string().default(""),
+  created_by: z.string().default(""),
+  created_at: z.string().default(""),
+}).loose();
+
+export const ListProjectKnowledgeBasesResponseSchema = z.object({
+  knowledge_bases: z.array(ProjectKnowledgeBaseSchema).default([]),
+  total: z.number().default(0),
+}).loose();

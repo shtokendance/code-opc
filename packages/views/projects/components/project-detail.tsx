@@ -31,6 +31,7 @@ import { AppLink, currentPath, useNavigation } from "../../navigation";
 import { TitleEditor, ContentEditor, type ContentEditorRef } from "../../editor";
 import { PriorityIcon } from "../../issues/components/priority-icon";
 import { ProjectResourcesSection } from "./project-resources-section";
+import { ProjectKnowledgeSection } from "./project-knowledge-section";
 import { ProjectStartDatePicker } from "./project-start-date-picker";
 import { ProjectDueDatePicker } from "./project-due-date-picker";
 import { usePaidFeatureErrorMessage } from "../../billing";
@@ -522,6 +523,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
 
       {/* Resources */}
       <ProjectResourcesSection projectId={projectId} />
+
+      {/* Knowledge Base */}
+      <ProjectKnowledgeSection projectId={projectId} />
     </div>
   );
 

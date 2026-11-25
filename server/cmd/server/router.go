@@ -2364,7 +2364,15 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 					r.Post("/resources", h.CreateProjectResource)
 					r.Put("/resources/{resourceId}", h.UpdateProjectResource)
 					r.Delete("/resources/{resourceId}", h.DeleteProjectResource)
+					r.Get("/knowledge-bases", h.ListProjectKnowledgeBases)
+					r.Post("/knowledge-bases", h.BindProjectKnowledgeBase)
+					r.Delete("/knowledge-bases/{bindingId}", h.UnbindProjectKnowledgeBase)
 				})
+			})
+
+			// Knowledge base listing (proxied to platform-opc)
+			r.Route("/api/knowledge", func(r chi.Router) {
+				r.Get("/bases", h.ListAvailableKnowledgeBases)
 			})
 
 			// Squads

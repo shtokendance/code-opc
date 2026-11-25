@@ -96,3 +96,28 @@ type ResourceSkillListResponse struct {
 	Complete bool                    `json:"complete"`
 	Failures []ResourceTenantFailure `json:"failures"`
 }
+
+// ResourceKnowledgeBaseItem mirrors platform-opc's normalized knowledge_base resource item.
+type ResourceKnowledgeBaseItem struct {
+	ResourceKind      string `json:"resource_kind"`
+	TenantID          string `json:"tenant_id"`
+	TenantName        string `json:"tenant_name"`
+	SourceTenantID    string `json:"source_tenant_id,omitempty"`
+	SourceTenantName  string `json:"source_tenant_name,omitempty"`
+	Permission        string `json:"permission,omitempty"`
+	KnowledgeBaseID   string `json:"knowledge_base_id"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	Availability      string `json:"availability"`
+	UnavailableReason string `json:"unavailable_reason,omitempty"`
+	DetailURL         string `json:"detail_url,omitempty"`
+}
+
+type ResourceKnowledgeBaseListResponse struct {
+	Items    []ResourceKnowledgeBaseItem `json:"items"`
+	Total    int                         `json:"total"`
+	Offset   int                         `json:"offset"`
+	Limit    int                         `json:"limit"`
+	Complete bool                        `json:"complete"`
+	Failures []ResourceTenantFailure     `json:"failures"`
+}
