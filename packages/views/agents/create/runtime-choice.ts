@@ -84,12 +84,14 @@ export function buildRuntimeChoiceGroups(
       isRuntimeUsableForUser(runtime, currentUserId),
     );
     if (machine.section === "local") {
-      local = {
-        machine,
-        harnesses: usable
-          .map((runtime) => harnessOption(runtime, machine.title))
-          .sort(byLabel),
-      };
+      if (!local || (local.machine.health !== "online" && machine.health === "online")) {
+        local = {
+          machine,
+          harnesses: usable
+            .map((runtime) => harnessOption(runtime, machine.title))
+            .sort(byLabel),
+        };
+      }
       continue;
     }
     if (machine.section === "cloud") {

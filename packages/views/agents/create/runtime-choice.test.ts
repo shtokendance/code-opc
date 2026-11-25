@@ -104,6 +104,30 @@ describe("buildRuntimeChoiceGroups", () => {
     ]);
     expect(result.qoderRuntime?.id).toBe("qoder-new");
   });
+
+  it("keeps the online local machine when an offline duplicate local machine is also present", () => {
+    const machines = buildRuntimeMachines(
+      [
+        makeRuntime({ id: "rt-online", daemon_id: "daemon-local", status: "online" }),
+        makeRuntime({
+          id: "rt-offline",
+          daemon_id: "daemon-old",
+          name: "Claude (my-mac)",
+          status: "offline",
+          last_seen_at: new Date(NOW - 3 * 60 * 60_000).toISOString(),
+        }),
+      ],
+      {
+        now: NOW,
+        localDaemonId: "daemon-local",
+        localMachineName: "my-mac",
+        currentUserId: "me",
+      },
+    );
+    const result = buildRuntimeChoiceGroups(machines, "me");
+    expect(result.local?.machine.health).toBe("online");
+    expect(result.local?.machine.daemonId).toBe("daemon-local");
+  });
 });
 
 describe("harness helpers", () => {
