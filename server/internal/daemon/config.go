@@ -767,9 +767,9 @@ func ResolveWorkspacesRoot(profile, override string) (string, error) {
 			return "", fmt.Errorf("resolve home directory: %w (set MULTICA_WORKSPACES_ROOT to override)", err)
 		}
 		if profile != "" {
-			root = filepath.Join(home, "multica_workspaces_"+profile)
+			root = filepath.Join(home, "codeopc_workspaces_"+profile)
 		} else {
-			root = filepath.Join(home, "multica_workspaces")
+			root = filepath.Join(home, "codeopc_workspaces")
 		}
 	}
 	abs, err := filepath.Abs(root)

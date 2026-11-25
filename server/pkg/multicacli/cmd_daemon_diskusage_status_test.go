@@ -122,7 +122,7 @@ func writeDiskUsageIssueTask(t *testing.T, root, wsID, taskShort, issueID string
 // issue-kind task dir under that profile's workspaces root.
 func setupDiskUsageProfile(t *testing.T, home, profile, token, serverURL, wsID, taskShort, issueID string) {
 	t.Helper()
-	root := filepath.Join(home, "multica_workspaces")
+	root := filepath.Join(home, "codeopc_workspaces")
 	if profile != "" {
 		root += "_" + profile
 		mkdirProfile(t, home, profile)
@@ -490,7 +490,7 @@ func TestResolveDiskUsageRootTaskContext(t *testing.T) {
 		if err != nil {
 			t.Fatalf("resolveDiskUsageRoot: %v", err)
 		}
-		if want := filepath.Join(home, "multica_workspaces_staging"); got != want {
+		if want := filepath.Join(home, "codeopc_workspaces_staging"); got != want {
 			t.Fatalf("root = %q, want %q", got, want)
 		}
 	})

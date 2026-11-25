@@ -15,7 +15,7 @@ import (
 // state. The file lives in envRoot (daemon scratch), never in WorkDir,
 // so a local_directory run does not litter the user's repo with the
 // bookkeeping file used to undo the litter.
-const sidecarManifestFile = ".multica_sidecar_manifest.json"
+const sidecarManifestFile = ".codeopc_sidecar_manifest.json"
 
 // errPathPreExists is the sentinel recordWriteFile returns when the
 // target path already exists. The manifest contract is that we never

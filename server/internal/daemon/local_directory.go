@@ -426,7 +426,7 @@ func checkDirReadWrite(dir string) error {
 	if _, err := os.ReadDir(dir); err != nil {
 		return fmt.Errorf("read %q: %w", dir, err)
 	}
-	probe, err := os.CreateTemp(dir, ".multica-rwcheck-*")
+	probe, err := os.CreateTemp(dir, ".codeopc-rwcheck-*")
 	if err != nil {
 		return fmt.Errorf("write %q: %w", dir, err)
 	}

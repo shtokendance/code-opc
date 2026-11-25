@@ -62,9 +62,9 @@ func ProfileDir(profile string) (string, error) {
 		return "", fmt.Errorf("resolve user home directory: %w", err)
 	}
 	if profile == "" {
-		return filepath.Join(home, ".multica"), nil
+		return filepath.Join(home, ".codeopc"), nil
 	}
-	return filepath.Join(home, ".multica", "profiles", profile), nil
+	return filepath.Join(home, ".codeopc", "profiles", profile), nil
 }
 
 // HealthPortForProfile calculates a deterministic fallback health port from the profile name.

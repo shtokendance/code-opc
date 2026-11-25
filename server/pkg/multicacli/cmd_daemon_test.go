@@ -674,7 +674,7 @@ func TestPrintDiskUsageOtherRootsHintSuggestsProfilesWithTasks(t *testing.T) {
 
 	var out bytes.Buffer
 	printDiskUsageOtherRootsHint(&out, daemon.DiskUsageReport{
-		WorkspacesRoot: filepath.Join(home, "multica_workspaces"),
+		WorkspacesRoot: filepath.Join(home, "codeopc_workspaces"),
 	}, "", "", false)
 
 	got := out.String()
@@ -715,7 +715,7 @@ func TestPrintDiskUsageOtherRootsHintFiresWhenCurrentRootNonEmpty(t *testing.T) 
 
 	var out bytes.Buffer
 	printDiskUsageOtherRootsHint(&out, daemon.DiskUsageReport{
-		WorkspacesRoot: filepath.Join(home, "multica_workspaces"),
+		WorkspacesRoot: filepath.Join(home, "codeopc_workspaces"),
 		TotalTaskCount: 7, // current root is NOT empty
 	}, "", "", false)
 
@@ -734,7 +734,7 @@ func TestPrintDiskUsageOtherRootsHintSuggestsDefaultFromNamedProfile(t *testing.
 
 	var out bytes.Buffer
 	printDiskUsageOtherRootsHint(&out, daemon.DiskUsageReport{
-		WorkspacesRoot: filepath.Join(home, "multica_workspaces_named"),
+		WorkspacesRoot: filepath.Join(home, "codeopc_workspaces_named"),
 	}, "named", "", false)
 
 	got := out.String()
@@ -755,14 +755,14 @@ func TestPrintDiskUsageOtherRootsHintUsesProfileConfig(t *testing.T) {
 
 	var out bytes.Buffer
 	printDiskUsageOtherRootsHint(&out, daemon.DiskUsageReport{
-		WorkspacesRoot: filepath.Join(home, "multica_workspaces"),
+		WorkspacesRoot: filepath.Join(home, "codeopc_workspaces"),
 	}, "", "", false)
 
 	got := out.String()
 	if !strings.Contains(got, customRoot) {
 		t.Fatalf("hint output = %q, want configured root %q", got, customRoot)
 	}
-	if strings.Contains(got, filepath.Join(home, "multica_workspaces_custom")) {
+	if strings.Contains(got, filepath.Join(home, "codeopc_workspaces_custom")) {
 		t.Fatalf("hint output = %q, must not suggest the profile's old default root", got)
 	}
 }
@@ -805,10 +805,10 @@ func TestEnumerateDiskUsageRoots(t *testing.T) {
 	if len(roots) != 2 {
 		t.Fatalf("roots = %+v, want default + desktop-host only", roots)
 	}
-	if roots[0].Profile != "" || roots[0].Root != filepath.Join(home, "multica_workspaces") {
+	if roots[0].Profile != "" || roots[0].Root != filepath.Join(home, "codeopc_workspaces") {
 		t.Fatalf("roots[0] = %+v, want default root first", roots[0])
 	}
-	if roots[1].Profile != "desktop-host" || roots[1].Root != filepath.Join(home, "multica_workspaces_desktop-host") {
+	if roots[1].Profile != "desktop-host" || roots[1].Root != filepath.Join(home, "codeopc_workspaces_desktop-host") {
 		t.Fatalf("roots[1] = %+v, want desktop-host root", roots[1])
 	}
 }
@@ -875,13 +875,13 @@ func mkdirProfile(t *testing.T, home, profile string) {
 
 func writeDiskUsageTaskFile(t *testing.T, home, profile, workspaceID, taskID, rel string) {
 	t.Helper()
-	path := filepath.Join(home, "multica_workspaces_"+profile, workspaceID, taskID, rel)
+	path := filepath.Join(home, "codeopc_workspaces_"+profile, workspaceID, taskID, rel)
 	writeDiskUsageFile(t, path)
 }
 
 func writeDefaultDiskUsageTaskFile(t *testing.T, home, workspaceID, taskID, rel string) {
 	t.Helper()
-	path := filepath.Join(home, "multica_workspaces", workspaceID, taskID, rel)
+	path := filepath.Join(home, "codeopc_workspaces", workspaceID, taskID, rel)
 	writeDiskUsageFile(t, path)
 }
 

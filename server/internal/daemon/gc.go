@@ -1313,7 +1313,7 @@ func dirSizeContext(ctx context.Context, root string) (int64, error) {
 const (
 	gitCmdTimeout         = 30 * time.Second
 	gitMaintenanceTimeout = 10 * time.Minute
-	repoMaintenanceMarker = ".multica-maintenance-pending"
+	repoMaintenanceMarker = ".codeopc-maintenance-pending"
 )
 
 // pruneRepoWorktrees runs `git worktree prune` on all bare repos in the cache,

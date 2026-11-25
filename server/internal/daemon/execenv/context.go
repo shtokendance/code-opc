@@ -17,7 +17,7 @@ import (
 // TaskContextMarkerRelPath is a non-secret marker the daemon writes under the
 // task workdir. The CLI uses it as a fallback daemon-task signal when a child
 // sandbox strips all MULTICA_* env vars before invoking `multica`.
-const TaskContextMarkerRelPath = ".multica/daemon_task_context.json"
+const TaskContextMarkerRelPath = ".codeopc/daemon_task_context.json"
 
 // TaskContextMarkerManagedBy is the marker discriminator the CLI checks before
 // treating TaskContextMarkerRelPath as daemon-owned.
@@ -205,7 +205,7 @@ func writeContextFilesTracked(workDir, provider string, ctx TaskContextForEnv, m
 func writeTaskContextMarker(workDir string, ctx TaskContextForEnv, manifest *sidecarManifest) error {
 	dir := filepath.Dir(filepath.Join(workDir, TaskContextMarkerRelPath))
 	if err := recordMkdirAll(dir, 0o755, manifest); err != nil {
-		return fmt.Errorf("create .multica dir: %w", err)
+		return fmt.Errorf("create .codeopc dir: %w", err)
 	}
 	// The sidecar manifest removes this marker on normal local_directory
 	// cleanup. If a crash leaves it behind, the CLI intentionally treats it

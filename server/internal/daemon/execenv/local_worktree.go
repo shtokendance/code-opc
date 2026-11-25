@@ -66,7 +66,7 @@ const (
 	// repository: pointing GIT_INDEX_FILE at our own file is what keeps the
 	// capture off the user's index entirely — no writes to it, and no wait on
 	// .git/index.lock, which used to be able to end the task (#7434).
-	snapshotIndexFileName = ".multica-snapshot-index"
+	snapshotIndexFileName = ".codeopc-snapshot-index"
 
 	// localStateRefPrefix namespaces the per-branch record of the user's
 	// directory. Outside refs/heads so it never appears in the user's
