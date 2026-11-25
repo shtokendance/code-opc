@@ -766,7 +766,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
     onThemeFolderChange: (_callback: () => void) => () => {},
     openThemeFolder: async (name?: string) => {
       try {
-        await callAppService("OpenExternal", `file://~/.multica/themes/${name ?? ""}`);
+        await callAppService("OpenExternal", `file://~/.codeopc/themes/${name ?? ""}`);
       } catch {
         // ignore
       }

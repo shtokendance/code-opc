@@ -919,7 +919,7 @@ func isMulticaHooksDir(dir string) bool {
 	if err != nil || home == "" {
 		return false
 	}
-	return samePathDir(dir, filepath.Join(home, ".multica", "hooks"))
+	return samePathDir(dir, filepath.Join(home, ".codeopc", "hooks")) || samePathDir(dir, filepath.Join(home, ".multica", "hooks"))
 }
 
 func samePathDir(a, b string) bool {

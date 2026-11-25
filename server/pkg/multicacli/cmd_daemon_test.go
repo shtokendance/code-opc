@@ -868,7 +868,7 @@ func valueColumn(t *testing.T, line string) int {
 
 func mkdirProfile(t *testing.T, home, profile string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Join(home, ".multica", "profiles", profile), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(home, ".codeopc", "profiles", profile), 0o755); err != nil {
 		t.Fatal(err)
 	}
 }

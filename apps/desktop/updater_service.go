@@ -45,11 +45,10 @@ type downloadedPackageInfo struct {
 }
 
 func getUpdaterPreferencesPath() string {
-	home, _ := os.UserHomeDir()
-	if home == "" {
+	dir := getAppConfigDir()
+	if dir == "" {
 		return ""
 	}
-	dir := filepath.Join(home, ".multica")
 	_ = os.MkdirAll(dir, 0755)
 	return filepath.Join(dir, "updater-preferences.json")
 }

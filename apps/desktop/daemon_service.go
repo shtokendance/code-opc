@@ -23,8 +23,7 @@ type DaemonService struct {
 
 func NewDaemonService() *DaemonService {
 	var writer io.Writer = os.Stderr
-	if home, err := os.UserHomeDir(); err == nil && home != "" {
-		logDir := filepath.Join(home, ".multica")
+	if logDir := getAppConfigDir(); logDir != "" {
 		if os.MkdirAll(logDir, 0o755) == nil {
 			logPath := filepath.Join(logDir, "daemon.log")
 			if f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); err == nil {
@@ -189,13 +188,13 @@ func (d *DaemonService) SyncToken(targetURL string, token string, userId string)
 	return d.manager.SyncToken(profile, token, targetURL)
 }
 
-// ReadThemeFiles reads real custom theme directories from ~/.multica/themes.
+// ReadThemeFiles reads real custom theme directories from ~/.codeopc/themes.
 func (d *DaemonService) ReadThemeFiles() ([]string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
+	cfgDir := getAppConfigDir()
+	if cfgDir == "" {
+		return []string{}, nil
 	}
-	themeDir := filepath.Join(home, ".multica", "themes")
+	themeDir := filepath.Join(cfgDir, "themes")
 	entries, err := os.ReadDir(themeDir)
 	if err != nil {
 		if os.IsNotExist(err) {

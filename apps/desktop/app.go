@@ -93,11 +93,24 @@ func resolveDefaultRuntimeEndpoints() (string, string) {
 		return apiURL, appURL
 	}
 
-	// 2. ~/.multica/desktop.json (explicit desktop configuration)
+	// 2. ~/.codeopc/desktop.json (auto-migrated from ~/.multica if needed)
+	if cfgDir := getAppConfigDir(); cfgDir != "" {
+		desktopPath := filepath.Join(cfgDir, "desktop.json")
+		if data, err := os.ReadFile(desktopPath); err == nil {
+			var rec struct {
+				ApiURL string `json:"apiUrl"`
+				AppURL string `json:"appUrl"`
+			}
+			if json.Unmarshal(data, &rec) == nil && rec.ApiURL != "" {
+				return rec.ApiURL, rec.AppURL
+			}
+		}
+	}
+	// Fallback: check legacy ~/.multica/desktop.json if ~/.codeopc/desktop.json wasn't present
 	home, _ := os.UserHomeDir()
 	if home != "" {
-		desktopPath := filepath.Join(home, ".multica", "desktop.json")
-		if data, err := os.ReadFile(desktopPath); err == nil {
+		legacyPath := filepath.Join(home, legacyAppConfigDirName, "desktop.json")
+		if data, err := os.ReadFile(legacyPath); err == nil {
 			var rec struct {
 				ApiURL string `json:"apiUrl"`
 				AppURL string `json:"appUrl"`

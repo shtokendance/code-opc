@@ -49,7 +49,7 @@ export function healthPortForProfile(profile: string): number {
 
 export function profileDir(profile: string): string {
   assertResolvedProfile(profile);
-  return join(homedir(), ".multica", "profiles", profile);
+  return join(homedir(), ".codeopc", "profiles", profile);
 }
 
 export function profileConfigPath(profile: string): string {

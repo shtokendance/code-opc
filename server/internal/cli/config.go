@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultCLIConfigPath = ".multica/config.json"
+	defaultCLIConfigPath = ".codeopc/config.json"
 
 	// TaskConfigRootEnv points daemon-managed CLI invocations at a private,
 	// per-task Multica config directory. It is deliberately Multica-specific:
@@ -256,11 +256,11 @@ func CLIConfigPathForProfile(profile string) (string, error) {
 	if taskLocal {
 		return filepath.Join(root, "profiles", profile, "config.json"), nil
 	}
-	return filepath.Join(root, ".multica", "profiles", profile, "config.json"), nil
+	return filepath.Join(root, ".codeopc", "profiles", profile, "config.json"), nil
 }
 
 // ProfileDir returns the base directory for a profile's state files (pid, log).
-// An empty profile returns ~/.multica/. A named profile returns ~/.multica/profiles/<name>/.
+// An empty profile returns ~/.codeopc/. A named profile returns ~/.codeopc/profiles/<name>/.
 // Task invocations resolve the equivalent paths below TaskConfigRootEnv.
 func ProfileDir(profile string) (string, error) {
 	root, taskLocal, err := multicaConfigRoot()
@@ -276,12 +276,12 @@ func ProfileDir(profile string) (string, error) {
 		if taskLocal {
 			return root, nil
 		}
-		return filepath.Join(root, ".multica"), nil
+		return filepath.Join(root, ".codeopc"), nil
 	}
 	if taskLocal {
 		return filepath.Join(root, "profiles", profile), nil
 	}
-	return filepath.Join(root, ".multica", "profiles", profile), nil
+	return filepath.Join(root, ".codeopc", "profiles", profile), nil
 }
 
 func multicaConfigRoot() (root string, taskLocal bool, err error) {
@@ -295,6 +295,13 @@ func multicaConfigRoot() (root string, taskLocal bool, err error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", false, err
+	}
+	targetDir := filepath.Join(home, ".codeopc")
+	if _, statErr := os.Stat(targetDir); os.IsNotExist(statErr) {
+		legacyDir := filepath.Join(home, ".multica")
+		if info, legacyErr := os.Stat(legacyDir); legacyErr == nil && info.IsDir() {
+			_ = os.Rename(legacyDir, targetDir)
+		}
 	}
 	return home, false, nil
 }

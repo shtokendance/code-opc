@@ -2451,7 +2451,7 @@ func profilesRootDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".multica", "profiles"), nil
+	return filepath.Join(home, ".codeopc", "profiles"), nil
 }
 
 func samePath(a, b string) bool {

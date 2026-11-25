@@ -494,7 +494,7 @@ func TestLoadConfig_SkipsMulticaHooksShadowingAgentBinaries(t *testing.T) {
 
 	home := t.TempDir()
 	redirectTestHome(t, home)
-	hooksDir := filepath.Join(home, ".multica", "hooks")
+	hooksDir := filepath.Join(home, ".codeopc", "hooks")
 	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		t.Fatalf("create hooks dir: %v", err)
 	}
@@ -554,7 +554,7 @@ func TestLoadConfig_SkipsMulticaHooksFromLoginShellFallback(t *testing.T) {
 
 	home := t.TempDir()
 	redirectTestHome(t, home)
-	hooksDir := filepath.Join(home, ".multica", "hooks")
+	hooksDir := filepath.Join(home, ".codeopc", "hooks")
 	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		t.Fatalf("create hooks dir: %v", err)
 	}
@@ -1819,7 +1819,7 @@ func TestLoadConfig_BackendOverrides_MalformedConfigFileNonFatal(t *testing.T) {
 	redirectTestHome(t, homeDir)
 
 	// Write malformed JSON.
-	cfgDir := filepath.Join(homeDir, ".multica")
+	cfgDir := filepath.Join(homeDir, ".codeopc")
 	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

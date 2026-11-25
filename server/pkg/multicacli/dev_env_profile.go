@@ -128,7 +128,7 @@ func devEnvHome() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".multica", "dev")
+	return filepath.Join(home, ".codeopc", "dev")
 }
 
 func readDevEnvManifest(path string) map[string]string {

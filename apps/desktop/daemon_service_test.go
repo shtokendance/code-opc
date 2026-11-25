@@ -57,7 +57,7 @@ func TestSyncTokenReal(t *testing.T) {
 
 	defer func() {
 		if home, err := os.UserHomeDir(); err == nil {
-			_ = os.RemoveAll(home + "/.multica/profiles/" + profile)
+			_ = os.RemoveAll(home + "/.codeopc/profiles/" + profile)
 		}
 	}()
 
@@ -124,7 +124,7 @@ func TestServerClientInDesktop(t *testing.T) {
 	profile := service.DeriveProfileName(srv.URL)
 	defer func() {
 		if home, err := os.UserHomeDir(); err == nil {
-			_ = os.RemoveAll(home + "/.multica/profiles/" + profile)
+			_ = os.RemoveAll(home + "/.codeopc/profiles/" + profile)
 		}
 	}()
 
