@@ -433,7 +433,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
   }
 
   let appInfo: { version: string; os: "macos" | "windows" | "linux" | "unknown" } = {
-    version: "0.11.13",
+    version: "0.11.14",
     os: "macos",
   };
   let runtimeConfig: RuntimeConfigResult = {
@@ -648,6 +648,14 @@ export async function initWailsDesktopAPI(): Promise<void> {
 
     getPendingOAuthToken: async (): Promise<string> => {
       return await callAppService<string>("GetPendingOAuthToken");
+    },
+
+    openLoginWindow: async (url: string): Promise<void> => {
+      return await callAppService<void>("OpenLoginWindow", url);
+    },
+
+    closeLoginWindow: async (): Promise<void> => {
+      return await callAppService<void>("CloseLoginWindow");
     },
 
     onInviteOpen: (callback: (invitationId: string) => void) =>

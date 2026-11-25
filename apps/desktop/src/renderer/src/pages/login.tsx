@@ -33,6 +33,7 @@ export function DesktopLoginPage() {
       console.log("[DesktopLoginPage] Processing received OAuth token");
       try {
         await useAuthStore.getState().loginWithToken(cleanToken);
+        window.desktopAPI?.closeLoginWindow?.().catch(() => {});
         try {
           const wsList = await api.listWorkspaces();
           qc.setQueryData(workspaceKeys.list(), wsList);
@@ -92,15 +93,22 @@ export function DesktopLoginPage() {
     }
 
     const platformUrl = "https://shtokendance.benlai.com";
+    const openLoginTarget = (targetUrl: string) => {
+      if (window.desktopAPI?.openLoginWindow) {
+        return window.desktopAPI.openLoginWindow(targetUrl);
+      }
+      return window.desktopAPI.openExternal(targetUrl);
+    };
+
     if (port && port > 0) {
       const redirectUri = `http://127.0.0.1:${port}/callback`;
       const loginUrl = `${platformUrl}/wecom/login?client_id=code-desktop&redirect_uri=${encodeURIComponent(redirectUri)}`;
-      window.desktopAPI.openExternal(loginUrl);
+      await openLoginTarget(loginUrl);
       return;
     }
 
     // 兜底方案：通过 codeopc:// / multica:// 唤起
-    window.desktopAPI.openExternal(
+    await openLoginTarget(
       `${platformUrl}/wecom/login?client_id=code-desktop&state=code-desktop`,
     );
   };

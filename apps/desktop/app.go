@@ -139,6 +139,7 @@ type AppService struct {
 	wsProxyPort       int
 	wsProxyTarget     string
 	mainWindow        *application.WebviewWindow
+	loginWindow       *application.WebviewWindow
 	oauthServer       *http.Server
 	oauthPort         int
 	oauthPendingToken string
@@ -249,8 +250,15 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 				s.mainWindow.EmitEvent("auth:token", token)
 			}
 
-			// Focus the client window safely on the UI main thread
+			// Close the in-app login window (if open) and focus the main window safely on the UI main thread
 			application.InvokeAsync(func() {
+				s.mu.Lock()
+				loginWin := s.loginWindow
+				s.loginWindow = nil
+				s.mu.Unlock()
+				if loginWin != nil {
+					loginWin.Close()
+				}
 				if s.mainWindow != nil {
 					s.mainWindow.Focus()
 				}
@@ -434,7 +442,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.13"
+	appVersion     = "0.11.14"
 	appProductName = "CodeOPC"
 )
 
@@ -596,6 +604,68 @@ func (s *AppService) OpenExternal(rawURL string) error {
 	if s.app != nil {
 		return s.app.BrowserOpenURL(rawURL)
 	}
+	return nil
+}
+
+// OpenLoginWindow opens or focuses an in-app Wails Webview window for OAuth login.
+func (s *AppService) OpenLoginWindow(rawURL string) error {
+	if s.app == nil {
+		return fmt.Errorf("application is not initialized")
+	}
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return fmt.Errorf("invalid login URL")
+	}
+
+	application.InvokeAsync(func() {
+		s.mu.Lock()
+		existing := s.loginWindow
+		s.mu.Unlock()
+
+		if existing != nil {
+			existing.SetURL(rawURL)
+			existing.Show()
+			existing.Focus()
+			return
+		}
+
+		win := s.app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+			Title:     "登录 CodeOPC",
+			Width:     500,
+			Height:    680,
+			MinWidth:  420,
+			MinHeight: 560,
+			URL:       rawURL,
+		})
+		win.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
+			s.mu.Lock()
+			if s.loginWindow == win {
+				s.loginWindow = nil
+			}
+			s.mu.Unlock()
+		})
+
+		s.mu.Lock()
+		s.loginWindow = win
+		s.mu.Unlock()
+
+		win.Show()
+		win.Focus()
+	})
+	return nil
+}
+
+// CloseLoginWindow closes the in-app OAuth login window if it is open.
+func (s *AppService) CloseLoginWindow() error {
+	application.InvokeAsync(func() {
+		s.mu.Lock()
+		win := s.loginWindow
+		s.loginWindow = nil
+		s.mu.Unlock()
+		if win != nil {
+			win.Close()
+		}
+	})
 	return nil
 }
 
