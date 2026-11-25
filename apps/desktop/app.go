@@ -624,12 +624,7 @@ func (s *AppService) OpenLoginWindow(rawURL string) error {
 		}
 		s.mu.Lock()
 		if s.loginOriginURL == "" {
-			cur := s.mainWindow.URL()
-			if cur != "" && !strings.HasPrefix(cur, "http://127.0.0.1:") {
-				s.loginOriginURL = cur
-			} else {
-				s.loginOriginURL = "/"
-			}
+			s.loginOriginURL = "/"
 		}
 		s.mu.Unlock()
 
