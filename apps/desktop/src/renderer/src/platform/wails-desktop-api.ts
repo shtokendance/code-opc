@@ -433,7 +433,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
   }
 
   let appInfo: { version: string; os: "macos" | "windows" | "linux" | "unknown" } = {
-    version: "0.11.12",
+    version: "0.11.13",
     os: "macos",
   };
   let runtimeConfig: RuntimeConfigResult = {

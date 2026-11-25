@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -11,181 +12,70 @@ import (
 	"github.com/multica-ai/multica/server/internal/cli"
 )
 
-func TestIsInternalMikaTask(t *testing.T) {
-	d := &Daemon{}
+func TestHandleMikaQuickCreateSetsAssigneeAndOrigin(t *testing.T) {
+	t.Parallel()
 
-	tests := []struct {
-		name string
-		task Task
-		want bool
-	}{
-		{
-			name: "Mika agent task",
-			task: Task{
-				Agent: &AgentData{Name: "Mika"},
-			},
-			want: true,
-		},
-		{
-			name: "Mika agent lowercase",
-			task: Task{
-				Agent: &AgentData{Name: "mika"},
-			},
-			want: true,
-		},
-		{
-			name: "Chat session task targeting default",
-			task: Task{
-				ChatSessionID: "session-123",
-			},
-			want: true,
-		},
-		{
-			name: "Quick create task",
-			task: Task{
-				QuickCreatePrompt: "Create a new homepage issue",
-			},
-			want: true,
-		},
-		{
-			name: "Regular coding agent issue task",
-			task: Task{
-				IssueID: "issue-123",
-				Agent:   &AgentData{Name: "developer"},
-			},
-			want: false,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := d.isInternalMikaTask(tc.task)
-			if got != tc.want {
-				t.Errorf("isInternalMikaTask(%s) = %v, want %v", tc.name, got, tc.want)
+	var captured cli.CreateIssueRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/issues" {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Fatalf("read body: %v", err)
 			}
-		})
-	}
-}
-
-func TestMikaThreadQuickCreateExecution(t *testing.T) {
-	createdIssue := cli.Issue{
-		ID:         "issue-abc",
-		Identifier: "THEB-99",
-		Title:      "优化工作区首页加载速度",
-	}
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/daemon/tasks/task-1/start":
+			if err := json.Unmarshal(body, &captured); err != nil {
+				t.Fatalf("unmarshal CreateIssueRequest: %v", err)
+			}
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"status": "running"})
-		case "/api/daemon/tasks/task-1/progress":
-			w.WriteHeader(http.StatusOK)
-		case "/api/projects":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode([]cli.Project{
-				{ID: "proj-1", Title: "前端优化"},
-			})
-		case "/api/issues":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(createdIssue)
-		default:
-			http.NotFound(w, r)
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"issue-1","identifier":"DP-39","title":"Fix bug"}`))
+			return
 		}
+		w.WriteHeader(http.StatusNotFound)
 	}))
-	defer server.Close()
+	defer srv.Close()
 
-	d := &Daemon{
-		cfg: Config{
-			ServerBaseURL: server.URL,
-		},
-		client: NewClient(server.URL),
-	}
-
+	d := &Daemon{}
+	sdkClient := cli.NewAPIClient(srv.URL, "ws-1", "tok-1")
 	task := Task{
-		ID:                "task-1",
-		WorkspaceID:       "ws-1",
-		QuickCreatePrompt: "创建任务: 优化工作区首页加载速度",
+		ID:                       "qc-task-1",
+		AgentID:                  "agent-1",
+		ProjectID:                "proj-1",
+		ParentIssueID:            "parent-1",
+		QuickCreatePrompt:        "Fix bug\nDetails here",
+		QuickCreatePriority:      "high",
+		QuickCreateDueDate:       "2026-12-01",
+		QuickCreateAttachmentIDs: []string{"att-1"},
 	}
 
-	res, err := d.runMikaInternalThread(context.Background(), task, slog.Default())
+	res, err := d.handleMikaQuickCreate(context.Background(), task, sdkClient, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
-		t.Fatalf("runMikaInternalThread failed: %v", err)
+		t.Fatalf("handleMikaQuickCreate: %v", err)
 	}
-
 	if res.Status != "completed" {
-		t.Errorf("expected status 'completed', got %q", res.Status)
+		t.Fatalf("status = %q, want completed", res.Status)
 	}
-
-	if !containsString(res.Comment, "THEB-99") {
-		t.Errorf("expected comment to mention THEB-99, got %q", res.Comment)
+	if captured.AssigneeType == nil || *captured.AssigneeType != "agent" {
+		t.Fatalf("assignee_type = %v, want agent", captured.AssigneeType)
 	}
-}
-
-func TestMikaThreadChatMessageExecution(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/daemon/tasks/task-2/start":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"status": "running"})
-		case "/api/daemon/tasks/task-2/progress":
-			w.WriteHeader(http.StatusOK)
-		case "/api/projects":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode([]cli.Project{
-				{ID: "proj-1", Title: "Web前端工程", IssueCount: 5, DoneCount: 2},
-			})
-		case "/api/issues":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"issues": []cli.Issue{
-					{ID: "iss-1", Identifier: "THEB-1", Title: "集成测试", Status: "in_progress"},
-				},
-			})
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	d := &Daemon{
-		cfg: Config{
-			ServerBaseURL: server.URL,
-		},
-		client: NewClient(server.URL),
+	if captured.AssigneeID == nil || *captured.AssigneeID != "agent-1" {
+		t.Fatalf("assignee_id = %v, want agent-1", captured.AssigneeID)
 	}
-
-	task := Task{
-		ID:            "task-2",
-		WorkspaceID:   "ws-1",
-		ChatSessionID: "session-abc",
-		ChatMessage:   "有哪些项目？",
-		Agent:         &AgentData{Name: "Mika"},
+	if captured.OriginType == nil || *captured.OriginType != "quick_create" {
+		t.Fatalf("origin_type = %v, want quick_create", captured.OriginType)
 	}
-
-	res, err := d.runMikaInternalThread(context.Background(), task, slog.Default())
-	if err != nil {
-		t.Fatalf("runMikaInternalThread failed: %v", err)
+	if captured.OriginID == nil || *captured.OriginID != "qc-task-1" {
+		t.Fatalf("origin_id = %v, want qc-task-1", captured.OriginID)
 	}
-
-	if res.Status != "completed" {
-		t.Errorf("expected status 'completed', got %q", res.Status)
+	if captured.ProjectID == nil || *captured.ProjectID != "proj-1" {
+		t.Fatalf("project_id = %v, want proj-1", captured.ProjectID)
 	}
-
-	if !containsString(res.Comment, "Web前端工程") {
-		t.Errorf("expected response to contain project name 'Web前端工程', got %q", res.Comment)
+	if captured.ParentIssueID == nil || *captured.ParentIssueID != "parent-1" {
+		t.Fatalf("parent_issue_id = %v, want parent-1", captured.ParentIssueID)
 	}
-}
-
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || (len(s) > 0 && len(substr) > 0 && stringContains(s, substr)))
-}
-
-func stringContains(s, substr string) bool {
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
+	if captured.DueDate == nil || *captured.DueDate != "2026-12-01" {
+		t.Fatalf("due_date = %v, want 2026-12-01", captured.DueDate)
 	}
-	return false
+	if len(captured.AttachmentIDs) != 1 || captured.AttachmentIDs[0] != "att-1" {
+		t.Fatalf("attachment_ids = %v, want [att-1]", captured.AttachmentIDs)
+	}
 }

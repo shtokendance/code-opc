@@ -883,15 +883,19 @@ type IssueComment struct {
 
 // CreateIssueRequest defines the payload for creating a new issue.
 type CreateIssueRequest struct {
-	Title        string   `json:"title"`
-	Description  *string  `json:"description,omitempty"`
-	Status       string   `json:"status,omitempty"`
-	Priority     string   `json:"priority,omitempty"`
-	AssigneeType *string  `json:"assignee_type,omitempty"`
-	AssigneeID   *string  `json:"assignee_id,omitempty"`
-	ProjectID    *string  `json:"project_id,omitempty"`
-	DueDate      *string  `json:"due_date,omitempty"`
-	LabelIDs     []string `json:"label_ids,omitempty"`
+	Title         string   `json:"title"`
+	Description   *string  `json:"description,omitempty"`
+	Status        string   `json:"status,omitempty"`
+	Priority      string   `json:"priority,omitempty"`
+	AssigneeType  *string  `json:"assignee_type,omitempty"`
+	AssigneeID    *string  `json:"assignee_id,omitempty"`
+	ParentIssueID *string  `json:"parent_issue_id,omitempty"`
+	ProjectID     *string  `json:"project_id,omitempty"`
+	DueDate       *string  `json:"due_date,omitempty"`
+	AttachmentIDs []string `json:"attachment_ids,omitempty"`
+	LabelIDs      []string `json:"label_ids,omitempty"`
+	OriginType    *string  `json:"origin_type,omitempty"`
+	OriginID      *string  `json:"origin_id,omitempty"`
 }
 
 // UpdateIssueRequest defines the payload for updating an existing issue.

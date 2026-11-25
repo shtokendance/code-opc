@@ -97,11 +97,44 @@ func (d *Daemon) handleMikaQuickCreate(ctx context.Context, task Task, sdkClient
 		}
 	}
 
+	originType := "quick_create"
+	originID := task.ID
+
+	var assigneeType, assigneeID *string
+	if task.SquadID != "" {
+		t := "squad"
+		id := task.SquadID
+		assigneeType, assigneeID = &t, &id
+	} else if task.AgentID != "" {
+		t := "agent"
+		id := task.AgentID
+		assigneeType, assigneeID = &t, &id
+	}
+
+	var parentIssueID *string
+	if task.ParentIssueID != "" {
+		pid := task.ParentIssueID
+		parentIssueID = &pid
+	}
+
+	var dueDate *string
+	if task.QuickCreateDueDate != "" {
+		dd := task.QuickCreateDueDate
+		dueDate = &dd
+	}
+
 	req := cli.CreateIssueRequest{
-		Title:       title,
-		Description: &desc,
-		ProjectID:   projID,
-		Priority:    task.QuickCreatePriority,
+		Title:         title,
+		Description:   &desc,
+		Priority:      task.QuickCreatePriority,
+		AssigneeType:  assigneeType,
+		AssigneeID:    assigneeID,
+		ParentIssueID: parentIssueID,
+		ProjectID:     projID,
+		DueDate:       dueDate,
+		AttachmentIDs: task.QuickCreateAttachmentIDs,
+		OriginType:    &originType,
+		OriginID:      &originID,
 	}
 
 	issue, err := sdkClient.CreateIssue(ctx, req)
