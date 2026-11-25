@@ -30,7 +30,7 @@ const sidecarManifestFile = ".multica_sidecar_manifest.json"
 //     alternative slug (see allocateCollisionFreeSkillDir) and retries
 //     so the agent still discovers the Multica skill, just under a
 //     different directory name.
-//   - For the Multica-only namespace (.multica/project/resources.json)
+//   - For the CodeOPC-only namespace (.codeopc/project/resources.json)
 //     the caller swallows the error and proceeds — the agent's runtime
 //     brief already carries every fact that would have appeared in that
 //     file, so missing-from-disk is degraded behavior, not failure.

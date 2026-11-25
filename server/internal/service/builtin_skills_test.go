@@ -706,7 +706,7 @@ func TestPlatformSkillCoversPlatformContracts(t *testing.T) {
 			file: "references/projects.md",
 			want: []string{
 				"Projects are durable context containers",
-				".multica/project/resources.json",
+				".codeopc/project/resources.json",
 				"multica project resource list <project-id> --output json",
 				"multica project resource add <project-id> --type github_repo --url <github-url> --output json",
 				"multica project resource add <project-id> --type github_repo --url <github-url> --ref <branch-or-sha> --output json",

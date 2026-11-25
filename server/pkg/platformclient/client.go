@@ -398,3 +398,48 @@ func (c *Client) ListKnowledgeBases(ctx context.Context, userToken, tenantID, q 
 	}
 	return &res, nil
 }
+
+// SearchTaskKnowledge queries /integration/v1/knowledge/search-task using the
+// service token and the task's user subject.
+func (c *Client) SearchTaskKnowledge(ctx context.Context, req TaskKnowledgeSearchRequest) (*TaskKnowledgeSearchResponse, error) {
+	if c.baseURL == "" {
+		return nil, fmt.Errorf("platform client base URL is empty")
+	}
+	endpoint := fmt.Sprintf("%s/integration/v1/knowledge/search-task", c.baseURL)
+	bodyBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal task knowledge search request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("create task knowledge search request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	if c.serviceToken != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.serviceToken)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("execute task knowledge search: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return nil, fmt.Errorf("read task knowledge search response: %w", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, parseAPIError(resp.StatusCode, body)
+	}
+
+	var res TaskKnowledgeSearchResponse
+	if err := json.Unmarshal(body, &res); err != nil {
+		return nil, fmt.Errorf("decode task knowledge search response: %w", err)
+	}
+	if res.Results == nil {
+		res.Results = []KnowledgeSearchHit{}
+	}
+	return &res, nil
+}

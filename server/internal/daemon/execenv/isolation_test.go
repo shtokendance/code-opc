@@ -149,7 +149,7 @@ func TestPreparationHelperRoundTripsProjectResources(t *testing.T) {
 	}
 	defer env.Cleanup(true)
 
-	data, err := os.ReadFile(filepath.Join(env.WorkDir, ".multica", "project", "resources.json"))
+	data, err := os.ReadFile(filepath.Join(env.WorkDir, ".codeopc", "project", "resources.json"))
 	if err != nil {
 		t.Fatalf("read project resources: %v", err)
 	}

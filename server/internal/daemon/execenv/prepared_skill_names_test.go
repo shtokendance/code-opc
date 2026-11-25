@@ -477,7 +477,7 @@ func TestReuseKeepsProjectResourceWriteFailureBestEffort(t *testing.T) {
 			if reused == nil || !reflect.DeepEqual(reused.PreparedSkillNames, []string{"review"}) {
 				t.Fatalf("best-effort project resource failure prevented reuse: %#v", reused)
 			}
-			if _, err := os.Stat(filepath.Join(env.WorkDir, ".multica", "project", "resources.json")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(env.WorkDir, ".codeopc", "project", "resources.json")); !os.IsNotExist(err) {
 				t.Fatalf("invalid project resource unexpectedly produced a sidecar: %v", err)
 			}
 			if provider == "pi" {

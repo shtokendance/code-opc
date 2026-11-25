@@ -513,13 +513,21 @@ func writeProjectContext(b *strings.Builder, ctx TaskContextForEnv) {
 		b.WriteString("\n\n")
 	}
 	if len(ctx.ProjectResources) > 0 {
-		b.WriteString("Project resources (also written to `.multica/project/resources.json`):\n\n")
+		b.WriteString("Project resources (also written to `.codeopc/project/resources.json`):\n\n")
+		hasKB := false
 		for _, r := range ctx.ProjectResources {
 			fmt.Fprintf(b, "- %s\n", formatProjectResource(r))
+			if r.ResourceType == "knowledge_base" {
+				hasKB = true
+			}
 		}
 		b.WriteString("\nResources are pointers — open them only when relevant to the task. ")
 		b.WriteString("For `github_repo` resources, use `multica repo checkout <url>` to fetch the code. ")
-		b.WriteString("A resource listing a starting point is checked out there automatically — pass `--ref <branch-or-sha>` only to override it, when a task or handoff names a different revision.\n\n")
+		b.WriteString("A resource listing a starting point is checked out there automatically — pass `--ref <branch-or-sha>` only to override it, when a task or handoff names a different revision.")
+		if hasKB {
+			b.WriteString(" For `knowledge_base` resources, use the `codeopc-knowledge` MCP tool `search_knowledge_base` to search and retrieve relevant content from the bound knowledge bases.")
+		}
+		b.WriteString("\n\n")
 	} else {
 		b.WriteString("This project has no resources attached yet.\n\n")
 	}

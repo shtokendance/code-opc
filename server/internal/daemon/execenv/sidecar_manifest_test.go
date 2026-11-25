@@ -439,10 +439,10 @@ func TestCleanupSidecarsLeavesUserContentInTrackedDirIntact(t *testing.T) {
 	workDir := t.TempDir()
 	envRoot := t.TempDir()
 
-	// Imagine Prepare wrote .multica/sidecar.txt and created
-	// .multica/ + .multica/project/, then exited. Between Prepare
-	// and Cleanup the user dropped their own file under .multica/.
-	managedDir := filepath.Join(workDir, ".multica")
+	// Imagine Prepare wrote .codeopc/sidecar.txt and created
+	// .codeopc/ + .codeopc/project/, then exited. Between Prepare
+	// and Cleanup the user dropped their own file under .codeopc/.
+	managedDir := filepath.Join(workDir, ".codeopc")
 	managedProject := filepath.Join(managedDir, "project")
 	managedFile := filepath.Join(managedProject, "resources.json")
 	if err := os.MkdirAll(managedProject, 0o755); err != nil {
@@ -778,8 +778,8 @@ func TestPrepareThenCleanupSidecarsIssueContextCollisionPerProvider(t *testing.T
 }
 
 // TestPrepareThenCleanupSidecarsProjectResourcesCollisionPerProvider
-// is the matching byte-exact matrix for `.multica/project/
-// resources.json` — the other Multica-only namespace file. Same
+// is the matching byte-exact matrix for `.codeopc/project/
+// resources.json` — the other CodeOPC-only namespace file. Same
 // invariant: pre-existing user content survives the round-trip
 // untouched even when the task ships project resources of its own.
 func TestPrepareThenCleanupSidecarsProjectResourcesCollisionPerProvider(t *testing.T) {
@@ -791,11 +791,11 @@ func TestPrepareThenCleanupSidecarsProjectResourcesCollisionPerProvider(t *testi
 			workDir := t.TempDir()
 			envRoot := t.TempDir()
 
-			if err := os.MkdirAll(filepath.Join(workDir, ".multica", "project"), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Join(workDir, ".codeopc", "project"), 0o755); err != nil {
 				t.Fatalf("seed dir: %v", err)
 			}
 			userBody := `{"user":"owns this file"}`
-			userPath := filepath.Join(workDir, ".multica", "project", "resources.json")
+			userPath := filepath.Join(workDir, ".codeopc", "project", "resources.json")
 			if err := os.WriteFile(userPath, []byte(userBody), 0o644); err != nil {
 				t.Fatalf("seed user file: %v", err)
 			}

@@ -121,3 +121,30 @@ type ResourceKnowledgeBaseListResponse struct {
 	Complete bool                        `json:"complete"`
 	Failures []ResourceTenantFailure     `json:"failures"`
 }
+
+// TaskKnowledgeSearchRequest is sent by code-opc to platform-opc's service-token
+// task knowledge search endpoint on behalf of a running daemon task.
+type TaskKnowledgeSearchRequest struct {
+	Subject         string `json:"subject"`
+	TenantID        string `json:"tenant_id"`
+	KnowledgeBaseID string `json:"knowledge_base_id"`
+	Query           string `json:"query"`
+	MatchCount      int    `json:"match_count,omitempty"`
+}
+
+type KnowledgeSearchHit struct {
+	KnowledgeID       string  `json:"knowledge_id"`
+	ChunkID           string  `json:"chunk_id"`
+	Title             string  `json:"title"`
+	SourceTenant      string  `json:"source_tenant,omitempty"`
+	KnowledgeBaseID   string  `json:"knowledge_base_id,omitempty"`
+	KnowledgeBaseName string  `json:"knowledge_base_name,omitempty"`
+	Content           string  `json:"content"`
+	Score             float64 `json:"score"`
+}
+
+type TaskKnowledgeSearchResponse struct {
+	Results         []KnowledgeSearchHit `json:"results"`
+	SourceTenant    string               `json:"source_tenant,omitempty"`
+	KnowledgeBaseID string               `json:"knowledge_base_id,omitempty"`
+}

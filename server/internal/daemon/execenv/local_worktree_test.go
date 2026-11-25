@@ -578,7 +578,7 @@ func TestPrepareLocalWorktreeSkipsMulticaSidecars(t *testing.T) {
 	t.Parallel()
 	repo := newTestRepo(t)
 	writeFile(t, filepath.Join(repo, ".agent_context", "issue_context.md"), "OTHER issue's brief\n")
-	writeFile(t, filepath.Join(repo, ".multica", "project", "resources.json"), "{}\n")
+	writeFile(t, filepath.Join(repo, ".codeopc", "project", "resources.json"), "{}\n")
 	// An in_place resource may point at a SUBDIRECTORY of this repo, in which
 	// case its sidecars sit below that subdirectory, not at the repo root.
 	writeFile(t, filepath.Join(repo, "services", "api", ".agent_context", "issue_context.md"), "yet another issue's brief\n")

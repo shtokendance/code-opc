@@ -2,7 +2,7 @@
 
 A project groups work and carries durable resources. A resource is not just
 display metadata; it is context later injected into task briefs and
-`.multica/project/resources.json`.
+`.codeopc/project/resources.json`.
 
 - [Core model](#core-model)
 - [CLI](#cli)
@@ -32,7 +32,7 @@ comments do not create durable project resources.
 A project's `description` is also durable context: when an issue (or a
 quick-create task) is bound to a project, the project description is injected
 into the agent's brief under `## Project Context` and written to
-`.multica/project/resources.json` as `project_description`. Use it for
+`.codeopc/project/resources.json` as `project_description`. Use it for
 project-wide rules/context that should apply to every task in the project.
 
 Common resource types:

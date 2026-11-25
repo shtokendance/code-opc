@@ -2468,6 +2468,7 @@ func checkUntrackedReplayable(gitRoot string, logger *slog.Logger) error {
 var multicaSidecarDirNames = []string{
 	".agent_context",
 	".multica",
+	".codeopc",
 }
 
 // isMulticaSidecarPath reports whether a repo-relative path is one of the

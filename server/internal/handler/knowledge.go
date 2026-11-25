@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
+	"github.com/multica-ai/multica/server/pkg/platformclient"
 )
 
 type ProjectKnowledgeBaseResponse struct {
@@ -151,4 +154,131 @@ func (h *Handler) UnbindProjectKnowledgeBase(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type taskKnowledgeSearchRequest struct {
+	TenantID        string `json:"tenant_id"`
+	KnowledgeBaseID string `json:"knowledge_base_id"`
+	Query           string `json:"query"`
+	MatchCount      int    `json:"match_count,omitempty"`
+}
+
+func (h *Handler) resolveTaskProjectID(ctx context.Context, task db.AgentTaskQueue) pgtype.UUID {
+	if task.IssueID.Valid {
+		if issue, err := h.Queries.GetIssue(ctx, task.IssueID); err == nil {
+			return issue.ProjectID
+		}
+	}
+	if task.ChatSessionID.Valid {
+		if cs, err := h.Queries.GetChatSession(ctx, task.ChatSessionID); err == nil {
+			return cs.ProjectID
+		}
+	}
+	if task.AutopilotRunID.Valid {
+		if run, err := h.Queries.GetAutopilotRun(ctx, task.AutopilotRunID); err == nil {
+			if ap, err := h.Queries.GetAutopilot(ctx, run.AutopilotID); err == nil {
+				return ap.ProjectID
+			}
+		}
+	}
+	return pgtype.UUID{}
+}
+
+func (h *Handler) resolveTaskSubject(ctx context.Context, task db.AgentTaskQueue) string {
+	if task.InitiatorUserID.Valid {
+		return uuidToString(task.InitiatorUserID)
+	}
+	if task.OriginatorUserID.Valid {
+		return uuidToString(task.OriginatorUserID)
+	}
+	if task.RuntimeID.Valid {
+		if rt, err := h.Queries.GetAgentRuntime(ctx, task.RuntimeID); err == nil && rt.OwnerID.Valid {
+			return uuidToString(rt.OwnerID)
+		}
+	}
+	return ""
+}
+
+// SearchTaskKnowledge — POST /api/daemon/tasks/{id}/knowledge/search
+// Proxies a daemon task's knowledge-base search to platform-opc, scoped strictly
+// to the knowledge bases bound to the task's project.
+func (h *Handler) SearchTaskKnowledge(w http.ResponseWriter, r *http.Request) {
+	task, workspaceID, ok := h.requireDaemonTaskAccessWithWorkspace(w, r, chi.URLParam(r, "id"))
+	if !ok {
+		return
+	}
+
+	var req taskKnowledgeSearchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	req.TenantID = strings.TrimSpace(req.TenantID)
+	req.KnowledgeBaseID = strings.TrimSpace(req.KnowledgeBaseID)
+	req.Query = strings.TrimSpace(req.Query)
+	if req.Query == "" {
+		writeError(w, http.StatusBadRequest, "query is required")
+		return
+	}
+
+	projectID := h.resolveTaskProjectID(r.Context(), task)
+	if !projectID.Valid {
+		writeError(w, http.StatusForbidden, "task has no project knowledge bases")
+		return
+	}
+	boundKBs, err := h.Queries.ListProjectKnowledgeBases(r.Context(), db.ListProjectKnowledgeBasesParams{
+		ProjectID:   projectID,
+		WorkspaceID: parseUUID(workspaceID),
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load project knowledge bases")
+		return
+	}
+	if len(boundKBs) == 0 {
+		writeError(w, http.StatusForbidden, "project has no bound knowledge bases")
+		return
+	}
+
+	var matched *db.ProjectKnowledgeBase
+	for i := range boundKBs {
+		kb := &boundKBs[i]
+		if req.KnowledgeBaseID == "" && len(boundKBs) == 1 {
+			matched = kb
+			break
+		}
+		if req.KnowledgeBaseID != "" && kb.KnowledgeBaseID == req.KnowledgeBaseID {
+			if req.TenantID == "" || kb.TenantID == req.TenantID {
+				matched = kb
+				break
+			}
+		}
+	}
+	if matched == nil {
+		writeError(w, http.StatusForbidden, "knowledge base is not bound to this project")
+		return
+	}
+
+	client := h.getPlatformClient()
+	if client == nil {
+		writeError(w, http.StatusServiceUnavailable, "platform gateway is not configured")
+		return
+	}
+	subject := h.resolveTaskSubject(r.Context(), task)
+	if subject == "" {
+		writeError(w, http.StatusForbidden, "task has no user subject for knowledge search")
+		return
+	}
+
+	res, err := client.SearchTaskKnowledge(r.Context(), platformclient.TaskKnowledgeSearchRequest{
+		Subject:         subject,
+		TenantID:        matched.TenantID,
+		KnowledgeBaseID: matched.KnowledgeBaseID,
+		Query:           req.Query,
+		MatchCount:      req.MatchCount,
+	})
+	if err != nil {
+		writePlatformAPIError(w, err, "failed to search knowledge base")
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
 }

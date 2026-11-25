@@ -1579,3 +1579,22 @@ func (c *Client) InvokeAgentPluginHook(ctx context.Context, daemonToken, taskID,
 	}
 	return response.Output, nil
 }
+
+// SearchTaskKnowledge asks the code-opc server to search one project-bound
+// knowledge base on behalf of the running daemon task.
+func (c *Client) SearchTaskKnowledge(ctx context.Context, daemonToken, taskID, tenantID, knowledgeBaseID, query string, matchCount int) (json.RawMessage, error) {
+	path := fmt.Sprintf("/api/daemon/tasks/%s/knowledge/search", url.PathEscape(taskID))
+	body := map[string]any{
+		"tenant_id":         tenantID,
+		"knowledge_base_id": knowledgeBaseID,
+		"query":             query,
+	}
+	if matchCount > 0 {
+		body["match_count"] = matchCount
+	}
+	var out json.RawMessage
+	if err := c.postJSONWithToken(ctx, path, daemonToken, body, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

@@ -8528,6 +8528,29 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 			remoteMCPConfig = merged
 		}
 	}
+	if projectKBs := extractProjectKnowledgeBases(task.ProjectResources); len(projectKBs) > 0 {
+		knowledgeMCPConfig, knowledgeMCPServer, knowledgeMCPErr := startTaskKnowledgeMCP(
+			ctx, task.ID, projectKBs,
+			func(callCtx context.Context, taskID, tenantID, knowledgeBaseID, query string, matchCount int) (json.RawMessage, error) {
+				return d.client.SearchTaskKnowledge(callCtx, task.RemoteMCPDaemonToken, taskID, tenantID, knowledgeBaseID, query, matchCount)
+			},
+			taskLog,
+		)
+		if knowledgeMCPErr != nil {
+			taskLog.Warn("knowledge MCP tools unavailable", "error", knowledgeMCPErr)
+		}
+		if knowledgeMCPServer != nil {
+			defer knowledgeMCPServer.Close()
+		}
+		if len(knowledgeMCPConfig) > 0 {
+			merged, mergeErr := mergeTaskRemoteMCPConfig(remoteMCPConfig, knowledgeMCPConfig)
+			if mergeErr != nil {
+				taskLog.Warn("could not merge knowledge MCP config", "error", mergeErr)
+			} else {
+				remoteMCPConfig = merged
+			}
+		}
+	}
 	if task.Agent != nil {
 		agentMcpConfig = task.Agent.McpConfig
 		effectiveMcpConfig = agentMcpConfig

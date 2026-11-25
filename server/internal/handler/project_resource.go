@@ -962,7 +962,7 @@ func parseUUIDLoose(s string) (pgtype.UUID, error) {
 
 // claimProjectContext is the project-scoped context a daemon claim exposes to
 // the agent: the project identity the prompt names, the resource manifest
-// execenv materializes into .multica/project/resources.json, and the repo list
+// execenv materializes into .codeopc/project/resources.json, and the repo list
 // `multica repo checkout` reads.
 type claimProjectContext struct {
 	ProjectID   string

@@ -42,7 +42,6 @@ export function ProjectKnowledgeSection({ projectId }: { projectId: string }) {
         knowledge_base_id: kb.knowledge_base_id,
         knowledge_base_name: kb.name,
       });
-      toast.success(`已关联知识库「${kb.name}」`);
       setPickerOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "关联知识库失败");
