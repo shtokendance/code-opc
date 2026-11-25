@@ -440,9 +440,9 @@ export async function initWailsDesktopAPI(): Promise<void> {
     ok: true,
     config: {
       schemaVersion: 1,
-      apiUrl: "https://api.multica.ai",
-      wsUrl: "wss://api.multica.ai/ws",
-      appUrl: "https://multica.ai",
+      apiUrl: "https://code-opc.benlai.com",
+      wsUrl: "wss://code-opc.benlai.com/ws",
+      appUrl: "https://code-opc.benlai.com",
     },
   };
   let systemLocale = "en";
