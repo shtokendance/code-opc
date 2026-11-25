@@ -78,11 +78,21 @@ EOF
 echo -n "APPL????" > "${CONTENTS_DIR}/PkgInfo"
 
 if command -v codesign &>/dev/null; then
-    echo "==> [5/6] Ad-hoc code signing the .app bundle..."
+    SIGN_IDENTITY="${APPLE_SIGNING_IDENTITY:-}"
+    if [ -z "${SIGN_IDENTITY}" ]; then
+        SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -n 1 || true)"
+    fi
+    ENTITLEMENTS_ARGS=()
     if [ -f "${DESKTOP_DIR}/build/entitlements.mac.plist" ]; then
-        codesign --force --deep --sign - --entitlements "${DESKTOP_DIR}/build/entitlements.mac.plist" "${APP_BUNDLE}"
+        ENTITLEMENTS_ARGS=(--entitlements "${DESKTOP_DIR}/build/entitlements.mac.plist")
+    fi
+    if [ -n "${SIGN_IDENTITY}" ]; then
+        echo "==> [5/6] Signing .app bundle with '${SIGN_IDENTITY}'..."
+        codesign --force --deep --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${ENTITLEMENTS_ARGS[@]}" "${APP_BUNDLE}"
+        codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
     else
-        codesign --force --deep --sign - "${APP_BUNDLE}"
+        echo "==> [5/6] Ad-hoc code signing the .app bundle..."
+        codesign --force --deep --sign - "${ENTITLEMENTS_ARGS[@]}" "${APP_BUNDLE}"
     fi
 fi
 

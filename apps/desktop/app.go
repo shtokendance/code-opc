@@ -122,7 +122,7 @@ func resolveDefaultRuntimeEndpoints() (string, string) {
 	}
 
 	// 3. Default to enterprise endpoints
-	return "http://10.101.102.116:3088", "http://10.101.102.116:3080"
+	return "https://code-opc.benlai.com", "https://code-opc.benlai.com"
 }
 
 type AppService struct {
