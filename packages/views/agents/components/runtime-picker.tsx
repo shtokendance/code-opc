@@ -30,6 +30,14 @@ export type RuntimeFilter = "mine" | "all";
 // machine is present.
 const SEARCH_THRESHOLD = 6;
 
+function pickPreferredUsableRuntime(
+  list: RuntimeDevice[],
+  currentUserId: string | null,
+): RuntimeDevice | undefined {
+  const usable = list.filter((r) => isRuntimeUsableForUser(r, currentUserId));
+  return usable.find((r) => r.status === "online") ?? usable[0];
+}
+
 export function RuntimePicker({
   runtimes,
   runtimesLoading,
@@ -94,9 +102,7 @@ export function RuntimePicker({
   // runtime) is never silently overwritten.
   useEffect(() => {
     if (!autoSelect || selectedRuntimeId !== "") return;
-    const firstUsable = filteredRuntimes.find((r) =>
-      isRuntimeUsableForUser(r, currentUserId),
-    );
+    const firstUsable = pickPreferredUsableRuntime(filteredRuntimes, currentUserId);
     if (firstUsable) onSelect(firstUsable.id);
   }, [autoSelect, filteredRuntimes, selectedRuntimeId, currentUserId, onSelect]);
 
@@ -108,9 +114,7 @@ export function RuntimePicker({
     setFilter(next);
     if (!autoSelect) return;
     const nextList = computeFilteredRuntimes(runtimes, next, currentUserId);
-    const firstUsable = nextList.find((r) =>
-      isRuntimeUsableForUser(r, currentUserId),
-    );
+    const firstUsable = pickPreferredUsableRuntime(nextList, currentUserId);
     onSelect(firstUsable?.id ?? "");
   };
 

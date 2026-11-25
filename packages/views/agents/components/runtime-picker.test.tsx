@@ -131,4 +131,16 @@ describe("RuntimePicker (creation studio)", () => {
     }
     expect(onSelect).not.toHaveBeenCalled();
   });
+
+  it("prefers an online runtime over earlier offline runtimes when auto-selecting", () => {
+    const { onSelect } = renderPicker({
+      selectedRuntimeId: "",
+      runtimes: [
+        makeRuntime({ id: "rt-offline-1", name: "Offline A", status: "offline" }),
+        makeRuntime({ id: "rt-offline-2", name: "Offline B", status: "offline" }),
+        makeRuntime({ id: "rt-online", name: "Online C", status: "online" }),
+      ],
+    });
+    expect(onSelect).toHaveBeenCalledWith("rt-online");
+  });
 });
