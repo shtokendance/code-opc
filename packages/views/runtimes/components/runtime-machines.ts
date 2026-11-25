@@ -152,6 +152,25 @@ function placeholderLocalMachine(
   };
 }
 
+export function deduplicateOfflineLocalMachines(
+  machines: RuntimeMachine[],
+): RuntimeMachine[] {
+  const onlineLocalTitles = new Set(
+    machines
+      .filter((m) => m.mode === "local" && m.health === "online")
+      .map((m) => m.title.trim().toLowerCase()),
+  );
+  if (onlineLocalTitles.size === 0) return machines;
+  return machines.filter(
+    (m) =>
+      !(
+        m.mode === "local" &&
+        m.health !== "online" &&
+        onlineLocalTitles.has(m.title.trim().toLowerCase())
+      ),
+  );
+}
+
 export function filterRuntimeMachines(
   machines: RuntimeMachine[],
   query: string,

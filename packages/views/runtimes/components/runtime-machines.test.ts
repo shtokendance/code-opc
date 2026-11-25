@@ -5,6 +5,7 @@ import type { AgentRuntime } from "@multica/core/types";
 import {
   buildRuntimeMachines,
   countRuntimeMachines,
+  deduplicateOfflineLocalMachines,
   filterRuntimeMachines,
   runtimeMachineCounts,
   runtimeRowLabel,
@@ -485,5 +486,57 @@ describe("runtimeRowLabel", () => {
         "Dev Box",
       ),
     ).toBe("just this one");
+  });
+});
+
+describe("deduplicateOfflineLocalMachines", () => {
+  it("hides offline duplicate local machines when an online local machine shares the title", () => {
+    const machines = buildRuntimeMachines(
+      [
+        makeRuntime({
+          id: "rt-old",
+          daemon_id: "daemon-old",
+          name: "Claude (MacBook.local)",
+          status: "offline",
+          last_seen_at: new Date(NOW - 3 * 60 * 60_000).toISOString(),
+        }),
+        makeRuntime({
+          id: "rt-new",
+          daemon_id: "daemon-new",
+          name: "Claude (MacBook.local)",
+          status: "online",
+          last_seen_at: new Date(NOW - 10_000).toISOString(),
+        }),
+        makeRuntime({
+          id: "rt-other",
+          daemon_id: "daemon-other",
+          name: "Codex (build-server)",
+          status: "offline",
+          last_seen_at: new Date(NOW - 3 * 60 * 60_000).toISOString(),
+        }),
+      ],
+      { now: NOW },
+    );
+
+    const visible = deduplicateOfflineLocalMachines(machines);
+    expect(visible.map((m) => m.daemonId)).toEqual(["daemon-new", "daemon-other"]);
+  });
+
+  it("keeps offline local machines when none with that title are online", () => {
+    const machines = buildRuntimeMachines(
+      [
+        makeRuntime({
+          id: "rt-old",
+          daemon_id: "daemon-old",
+          name: "Claude (MacBook.local)",
+          status: "offline",
+          last_seen_at: new Date(NOW - 3 * 60 * 60_000).toISOString(),
+        }),
+      ],
+      { now: NOW },
+    );
+
+    const visible = deduplicateOfflineLocalMachines(machines);
+    expect(visible.map((m) => m.daemonId)).toEqual(["daemon-old"]);
   });
 });

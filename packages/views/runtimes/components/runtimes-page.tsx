@@ -93,7 +93,11 @@ import { ProviderLogo } from "./provider-logo";
 import { RuntimeList, buildWorkloadIndex } from "./runtime-list";
 import { RuntimesIntro } from "./runtimes-intro";
 import { pendingRuntimeFromProfile } from "./pending-runtime";
-import { buildRuntimeMachines, type RuntimeMachine } from "./runtime-machines";
+import {
+  buildRuntimeMachines,
+  deduplicateOfflineLocalMachines,
+  type RuntimeMachine,
+} from "./runtime-machines";
 import {
   HealthIcon,
   ProviderIconStack,
@@ -291,9 +295,13 @@ export function RuntimesPage({
   const matchesStatus = (online: boolean) =>
     statusFilter === "all" || (statusFilter === "online") === online;
 
-  const visibleMachines = machineList.filter((machine) =>
+  const rawVisibleMachines = machineList.filter((machine) =>
     matchesStatus(machine.health === "online"),
   );
+  const visibleMachines =
+    statusFilter === "all"
+      ? deduplicateOfflineLocalMachines(rawVisibleMachines)
+      : rawVisibleMachines;
   const qoderConfigured = qoder?.configured === true;
   const showQoderRow =
     qoder !== null &&
