@@ -129,7 +129,9 @@ function AppContent() {
   // This local flag keeps the loading screen up until the whole chain
   // finishes, so IndexRedirect gets a definitive workspace state on
   // first render.
-  const [bootstrapping, setBootstrapping] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState(
+    () => typeof window.desktopAPI?.getPendingOAuthToken === "function",
+  );
 
   const runtimeConfig = window.desktopAPI.runtimeConfig.ok
     ? window.desktopAPI.runtimeConfig.config
@@ -152,6 +154,35 @@ function AppContent() {
       useWindowOverlayStore.getState().open({ type: "invitations", invitationId });
     });
   }, []);
+
+  // Consume any pending OAuth token on mount (e.g. after in-window OAuth callback
+  // redirects back to `/`) before DesktopLoginPage ever renders, so there is no
+  // flash of the login screen before entering the workspace.
+  useEffect(() => {
+    let active = true;
+    const consumePendingToken = async () => {
+      try {
+        const tok = await window.desktopAPI?.getPendingOAuthToken?.();
+        const cleanToken = typeof tok === "string" ? tok.trim() : "";
+        if (!cleanToken || !active) return;
+        await useAuthStore.getState().loginWithToken(cleanToken);
+        const wsList = await api.listWorkspaces();
+        if (active) {
+          qc.setQueryData(workspaceKeys.list(), wsList);
+        }
+      } catch (err) {
+        console.error("Pending OAuth login failed:", err);
+      } finally {
+        if (active) {
+          setBootstrapping(false);
+        }
+      }
+    };
+    void consumePendingToken();
+    return () => {
+      active = false;
+    };
+  }, [qc]);
 
   // Listen for auth token delivered via deep link (multica://auth/callback?token=...).
   // daemonAPI.syncToken is handled separately by the [user] effect below, which

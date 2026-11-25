@@ -443,7 +443,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.15"
+	appVersion     = "0.11.16"
 	appProductName = "CodeOPC"
 )
 
