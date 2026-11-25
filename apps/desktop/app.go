@@ -247,24 +247,21 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 				s.mainWindow.EmitEvent("auth:token", token)
 			}
 
-			// Restore the main window back to the app in-place and focus it
-			application.InvokeAsync(func() {
+			// Navigate the main window back to the Wails app root after the HTTP
+			// response commits in the WebView. SetURL("") resolves the exact
+			// assetserver start URL and dispatches via InvokeSync internally,
+			// so calling it from a goroutine avoids nested InvokeAsync->InvokeSync
+			// and avoids WKWebView cancelling an in-flight navigation.
+			go func() {
+				time.Sleep(150 * time.Millisecond)
 				s.mu.Lock()
-				originURL := s.loginOriginURL
 				s.loginOriginURL = ""
 				s.mu.Unlock()
-				if originURL == "" {
-					if runtime.GOOS == "windows" {
-						originURL = "http://wails.localhost/"
-					} else {
-						originURL = "wails://wails.localhost/"
-					}
-				}
 				if s.mainWindow != nil {
-					s.mainWindow.SetURL(originURL)
+					s.mainWindow.SetURL("")
 					s.mainWindow.Focus()
 				}
-			})
+			}()
 
 			// Close the port once verification passes!
 			go func() {
@@ -444,7 +441,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.17"
+	appVersion     = "0.11.18"
 	appProductName = "CodeOPC"
 )
 
@@ -627,7 +624,7 @@ func (s *AppService) OpenLoginWindow(rawURL string, returnURL string) error {
 		}
 	}
 
-	application.InvokeAsync(func() {
+	go func() {
 		if s.mainWindow == nil {
 			return
 		}
@@ -637,22 +634,22 @@ func (s *AppService) OpenLoginWindow(rawURL string, returnURL string) error {
 
 		s.mainWindow.SetURL(rawURL)
 		s.mainWindow.Focus()
-	})
+	}()
 	return nil
 }
 
 // CloseLoginWindow restores the main window back to the app root if it was navigated to OAuth login.
 func (s *AppService) CloseLoginWindow() error {
-	application.InvokeAsync(func() {
+	go func() {
 		s.mu.Lock()
 		originURL := s.loginOriginURL
 		s.loginOriginURL = ""
 		s.mu.Unlock()
 		if originURL != "" && s.mainWindow != nil {
-			s.mainWindow.SetURL(originURL)
+			s.mainWindow.SetURL("")
 			s.mainWindow.Focus()
 		}
-	})
+	}()
 	return nil
 }
 
