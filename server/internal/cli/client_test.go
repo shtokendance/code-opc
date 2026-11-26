@@ -670,3 +670,39 @@ func TestHTTPErrorKeepsLargeStructuredBody(t *testing.T) {
 		t.Fatalf("code = %q, required = %d; want the full plan", got.Code, len(got.Plan.Required))
 	}
 }
+
+func TestDownloadFile_AuthHeaders(t *testing.T) {
+	var seenAuth []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenAuth = append(seenAuth, r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer srv.Close()
+
+	thirdParty := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seenAuth = append(seenAuth, r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer thirdParty.Close()
+
+	client := NewAPIClient(srv.URL, "ws-1", "secret-token")
+
+	if _, err := client.DownloadFile(context.Background(), "/api/attachments/a1/download"); err != nil {
+		t.Fatalf("relative download failed: %v", err)
+	}
+	if _, err := client.DownloadFile(context.Background(), thirdParty.URL+"/signed-blob"); err != nil {
+		t.Fatalf("third-party URL download failed: %v", err)
+	}
+
+	want := []string{"Bearer secret-token", ""}
+	if len(seenAuth) != len(want) {
+		t.Fatalf("seenAuth len = %d, want %d", len(seenAuth), len(want))
+	}
+	for i := range want {
+		if seenAuth[i] != want[i] {
+			t.Fatalf("seenAuth[%d] = %q, want %q", i, seenAuth[i], want[i])
+		}
+	}
+}

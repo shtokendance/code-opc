@@ -9170,9 +9170,7 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 					seenAtt[att.ID] = true
 					dlURL := att.DownloadURL
 					if dlURL == "" {
-						dlURL = fmt.Sprintf("%s/api/attachments/%s/download", strings.TrimRight(d.cfg.ServerBaseURL, "/"), att.ID)
-					} else if strings.HasPrefix(dlURL, "/") {
-						dlURL = strings.TrimRight(d.cfg.ServerBaseURL, "/") + dlURL
+						dlURL = fmt.Sprintf("/api/attachments/%s/download", att.ID)
 					}
 					data, dlErr := taskClient.DownloadFile(preloadCtx, dlURL)
 					if dlErr != nil || len(data) == 0 {
