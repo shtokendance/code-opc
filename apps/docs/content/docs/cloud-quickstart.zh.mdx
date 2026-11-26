@@ -5,7 +5,6 @@ description: 连接一台电脑，创建你的第一个智能体，并让它完�
 
 import { Callout } from "fumadocs-ui/components/callout";
 import { Step, Steps } from "fumadocs-ui/components/steps";
-import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 <Callout type="info">
 智能体执行前，运行它的电脑上需要有至少一款已安装并登录的[支持的 AI 编程工具](/providers)，例如 Claude Code、Codex 或 Cursor。CodeOPC 不自带这些工具。
@@ -16,46 +15,19 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 ## 登录，进入工作区 [#1-登录进入工作区]
 
-用 Web（[code-opc.benlai.com](https://code-opc.benlai.com)）或 [CodeOPC Desktop](https://code-opc.benlai.com/download) 登录，支持邮箱验证码和 Google。用 Desktop 登录的话，下一步可以自动连接这台电脑；用 Web 则要在下一步通过命令行连接。
+用 Web（[code-opc.benlai.com](https://code-opc.benlai.com)）或 [CodeOPC Desktop](https://code-opc.benlai.com/download) 登录，支持企业微信登录。使用 Desktop 登录会自动连接当前电脑作为运行时。
 
 </Step>
 <Step>
 
 ## 连接一台电脑 [#2-连接一台电脑]
 
-智能体在你连接的电脑上执行工作。打开侧边栏 **AI 团队** 下的 **运行时**：
+智能体在你连接的电脑上执行工作。下载并登录 [CodeOPC Desktop](https://code-opc.benlai.com/download) 后，打开侧边栏 **AI 团队** 下的 **运行时**：
 
-- **用 Desktop**：Desktop 会自动把这台电脑注册为运行时，并检测已安装的 AI 编程工具。刚安装的工具，点"刷新"重新检测。
-- **用 Web，或需要添加另一台电脑**：点右上角的 **添加**，选择 **其他机器或服务器**，在目标电脑的终端里运行弹窗给出的两条命令：
-
-<Tabs groupId="os" persist items={["macOS / Linux", "Windows"]}>
-<Tab value="macOS / Linux">
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/multica-ai/multica/main/scripts/install.sh | bash
-multica setup
-```
-
-</Tab>
-<Tab value="Windows">
-
-```powershell
-irm https://raw.githubusercontent.com/multica-ai/multica/main/scripts/install.ps1 | iex
-multica setup
-```
-
-</Tab>
-</Tabs>
-
-`multica setup` 会打开浏览器完成登录，然后让守护进程在后台运行。守护进程上线后，弹窗通常在一分钟内检测到这台电脑。
+- Desktop 会自动把当前电脑注册为运行时，并检测本机已安装的 AI 编程工具。
+- 如果刚刚新安装了 AI 编程工具，点「刷新」重新检测即可。
 
 **成功标志**：运行时列表里出现一台在线的电脑。
-
-![Add a computer 弹窗：两条命令与等待检测提示](/images/docs/quickstart-add-computer.webp)
-
-<Callout type="info">
-自托管实例的连接命令略有不同，见[自托管快速上手](/self-host-quickstart)。
-</Callout>
 
 </Step>
 <Step>
@@ -99,11 +71,9 @@ multica setup
 
 | 现象 | 先检查什么 |
 |---|---|
-| 没有找到运行时 | 确认 AI 编程工具已经安装并能在终端中运行。Desktop 点"刷新"；CLI 方式重新运行 `multica setup`。 |
-| 运行时显示离线 | Desktop 保持打开；CLI 方式运行 `multica daemon status`，未启动时运行 `multica daemon start`。 |
+| 没有找到运行时 | 确认 AI 编程工具已经安装并能在终端中运行，然后在 Desktop 中点「刷新」。 |
+| 运行时显示离线 | 确认 CodeOPC Desktop 保持打开且处于登录状态。 |
 | 任务一直排队 | 确认智能体使用的运行时在线。运行时达到并发上限时，新运行会继续排队。 |
-
-更多情况。
 
 ## 接下来
 

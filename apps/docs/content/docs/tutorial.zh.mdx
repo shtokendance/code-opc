@@ -86,54 +86,8 @@ in the workspace.
 Keep replies short. After finishing something, reply with a one-line
 summary of what you did. Do not touch code or repositories. If a
 request is ambiguous, ask before acting.
-```
 
-![创建智能体页面](/images/docs/tutorial-create-agent-form.webp)
-
-其余字段保持默认，点创建。回到**智能体**页面，CodeOPC helper 已经在线，可以接受工作了：
-
-![智能体详情，CodeOPC helper 在线](/images/docs/tutorial-agent-detail.webp)
-
-## 第二个智能体：用对话创建
-
-建网站需要一名能写代码的工程师。这次不填表单：工作区里已经有一个智能体，创建的事可以直接交给它。
-
-打开侧边栏的**聊天**，选择 CodeOPC helper，告诉它：在同一个运行时上创建一名叫 Engineer 的智能体，模型用 Opus，负责建设和维护个人网站。CodeOPC helper 会在这台电脑上执行创建，并回复新智能体的名称和模型。新智能体默认只有创建者可以运行，教程里保持默认即可。
-
-![聊天中让 helper 创建 Engineer](/images/docs/tutorial-chat-create-engineer.webp)
-
-打开**智能体 → Engineer** 确认结果：模型是 Opus，指令由 CodeOPC helper 生成——职责范围、取用仓库代码的方式、提交改动的要求，之后随时可以修改。
-
-![Engineer 的指令](/images/docs/tutorial-engineer-instructions.webp)
-
-## 准备网站仓库
-
-网站的代码放在 GitHub 仓库里。仓库的创建和绑定同样交给智能体，前提是这台电脑安装并登录了 [GitHub CLI](https://cli.github.com)。
-
-在**聊天**中选择 Engineer，告诉它：在我的 GitHub 账号下创建一个名为 `personal-website` 的空仓库（这台电脑上有 GitHub CLI），然后用 `multica repo add` 注册进这个工作区。Engineer 会在本地创建仓库、把它注册进工作区，并回复仓库地址。消息里没有指定可见性，它会按默认创建并在回复里说明；公开或私有都不影响后续步骤。
-
-![聊天，Engineer 回复仓库已创建并注册](/images/docs/tutorial-chat-create-repo.webp)
-
-打开**设置 → 代码** 确认：`personal-website` 已经在列表中。之后智能体运行时，从这里选择仓库。
-
-![设置中的代码仓库列表](/images/docs/tutorial-repo-settings.webp)
-
-不用 GitHub CLI 的话，也可以自己在 GitHub 创建仓库，在同一页面手动添加，效果相同。
-
-最后在同一页面点**连接 GitHub**，按提示授权这个仓库。连接后，引用了任务编号的 pull request 会自动关联到对应任务，PR 状态和 CI 结果直接显示在任务里。
-
-## 第一条任务：建站
-
-配置到此全部完成。从这里开始是 CodeOPC 的日常工作方式：需求写成任务，交给智能体执行。
-
-网站从 shadcn 的官方模板起步：模板已经带好技术栈和基础配置，Engineer 在它之上做内容和设计。
-
-<Steps>
-<Step>
-
-点侧边栏顶部的**新建任务**（快捷键 `C`）。默认的智能体模式下不用填标题：在**创建者**中选择 Engineer，把需求直接写进描述，标题在创建时自动生成；也可以切换到手动模式，自行填写标题和内容。描述：
-
-```text
+text
 Work in the personal-website repository registered in this workspace.
 
 Start from a template instead of scaffolding from scratch:
@@ -237,7 +191,7 @@ Engineer 的回复分两部分：本地服务已经启动，给出访问地址�
 
 这轮验收暴露了 Engineer 的两个工作习惯：完成后靠反复截图自查，占掉不少执行时间；提交 PR 时不带任务编号，关联不上。这两个都是它每次都会重复的做法，所以要改的是它的指令，这条任务本身不用动。
 
-指令不用你自己动手改，智能体可以用 multica CLI 更新自己的配置。继续在刚才的对话里告诉 Engineer 两条规则：完成后不用截图自查，验收在浏览器里进行；PR 的分支名或标题里必须带任务编号。再让它把规则写进自己的指令：
+指令不用你自己动手改，智能体可以用 CodeOPC 内置工具 更新自己的配置。继续在刚才的对话里告诉 Engineer 两条规则：完成后不用截图自查，验收在浏览器里进行；PR 的分支名或标题里必须带任务编号。再让它把规则写进自己的指令：
 
 ![让 Engineer 把规则写进自己的指令](/images/docs/tutorial-chat-update-instructions.webp)
 

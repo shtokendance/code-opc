@@ -51,7 +51,7 @@ GitHub 集成只读取安装时授权的仓库，不会提交代码、评论或 
 | 设置 | 作用 |
 |---|---|
 | PR 侧栏 | 在任务详情中显示关联的 pull request。 |
-| Co-authored-by | 在智能体创建的 commit 中加入 `Co-authored-by: multica-agent <github@code-opc.benlai.com>`。 |
+| Co-authored-by | 在智能体创建的 commit 中加入 `Co-authored-by: codeopc-agent <github@code-opc.benlai.com>`。 |
 | 自动关联 PR | 分支名或标题含任务编号、或正文中关闭语句后写了任务编号的 PR，会关联到对应任务。 |
 | PR 合并后，任务状态改为 | 任务关联的 PR 全部合并后，把任务改成某个状态（默认 `Done`），或者不改。见[PR 合并后怎样改状态](#pr-合并后怎样改状态)。 |
 | PR 卡片 → CI 与可合并性 | 对每个关联的 PR，CodeOPC 以 App 身份从 GitHub API 拉取快照，把 CI 状态和可合并性显示在卡片上，见[在任务中查看 PR](#在任务中查看-pr)。 |
@@ -144,7 +144,7 @@ CodeOPC Cloud 无需执行本节。自托管需要先创建自己的 GitHub App�
 
 | 字段 | 值 |
 |---|---|
-| Homepage URL | CodeOPC 前端地址，例如 `https://multica.example.com` |
+| Homepage URL | CodeOPC 前端地址，例如 `https://code-opc.benlai.com` |
 | Callback URL | `https://<api-host>/api/github/setup` |
 | Request user authorization (OAuth) during installation | 启用 |
 | Webhook URL | `https://<api-host>/api/webhooks/github` |
@@ -176,14 +176,14 @@ PR 快照通过 Pull requests、Checks 和 Commit statuses 的 REST API 获取�
 
 ### 配置环境变量 [#2-配置环境变量]
 
-从 App 的公开地址取得 slug。例如 `https://github.com/apps/multica-acme` 的 slug 是 `multica-acme`。
+从 App 的公开地址取得 slug。例如 `https://github.com/apps/code-opc-acme` 的 slug 是 `code-opc-acme`。
 
 ```dotenv
-GITHUB_APP_SLUG=multica-acme
+GITHUB_APP_SLUG=code-opc-acme
 GITHUB_WEBHOOK_SECRET=<创建 App 时填写的 webhook secret>
 GITHUB_APP_CLIENT_ID=<Client ID>
 GITHUB_APP_CLIENT_SECRET=<Client secret>
-FRONTEND_ORIGIN=https://multica.example.com
+FRONTEND_ORIGIN=https://code-opc.benlai.com
 ```
 
 新连接需要本节的全部六个 GitHub 变量，包括 `GITHUB_APP_ID` 和 `GITHUB_APP_PRIVATE_KEY`。缺少任意一个都会禁用连接按钮；webhook 接入只要求 `GITHUB_WEBHOOK_SECRET`。已有绑定继续工作。部署前，将第一个 Callback URL 设为此端点，并启用安装时 OAuth 授权。启用此选项后，GitHub 不再使用单独的 Setup URL。

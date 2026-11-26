@@ -38,13 +38,8 @@ import { Callout } from "fumadocs-ui/components/callout";
 ```text
 ~/.multica/config.json
 ~/.multica/profiles/<name>/config.json
-```
 
-守护进程使用同一个 PAT 连接 Multica。带过期时间的 `mul_` PAT 在剩余有效期不足 7 天时自动续期，延长到当时起 90 天后。续期失败不会改变令牌本身；令牌已经过期或被吊销时，需要重新运行 `multica login`。
-
-无浏览器环境可以先在 Web 中创建 PAT，再让 CLI 安全地提示输入：
-
-```bash
+bash
 multica login --token
 ```
 

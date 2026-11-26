@@ -17,7 +17,7 @@ import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 
 它们可以是同一台机器，也可以分开。自托管替换的只是 Multica Cloud 部分。
 
-这篇文档使用 Docker Compose。Kubernetes 部署见仓库中的 [Self-hosting guide](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md#kubernetes-deployment-alternative)。
+这篇文档使用 Docker Compose。Kubernetes 部署见仓库中的 [Self-hosting guide](https://code-opc.benlai.com/blob/main/SELF_HOSTING.md#kubernetes-deployment-alternative)。
 
 ## 开始前
 
@@ -46,7 +46,7 @@ Multica 使用 Compose v2，也就是 `docker compose`。旧版的 `docker-compo
 在准备运行服务的机器上执行：
 
 ```bash
-git clone --depth 1 https://github.com/multica-ai/multica.git
+git clone --depth 1 https://code-opc.benlai.com.git
 cd multica
 make selfhost
 ```
@@ -97,33 +97,8 @@ curl -fsS http://localhost:8080/readyz
 
 ```json
 {"status":"ok","checks":{"db":"ok","migrations":"ok"}}
-```
 
-Backend 容器每次启动时都会先运行数据库 migration，再启动服务，不需要手动执行 migration 命令。
-
-</Step>
-<Step>
-
-## 选择访问方式 [#3-选择访问方式]
-
-<Tabs items={["本机访问", "远程访问"]}>
-<Tab value="本机访问">
-
-直接打开 [http://localhost:3000](http://localhost:3000)。后面运行 `multica setup self-host` 时也不需要传 URL。
-
-</Tab>
-<Tab value="远程访问" id="remote-access">
-
-Docker Compose 默认只把 `3000` 和 `8080` 绑定到 `127.0.0.1`。不要直接改成 `0.0.0.0` 暴露到公网，请使用带 HTTPS 的反向代理。
-
-下面以两个域名为例：
-
-- `app.example.com`：Multica Web
-- `api.example.com`：API、健康检查和守护进程连接
-
-先在 `.env` 中设置公开地址：
-
-```bash
+bash
 FRONTEND_ORIGIN=https://app.example.com
 MULTICA_APP_URL=https://app.example.com
 MULTICA_PUBLIC_URL=https://api.example.com
@@ -163,7 +138,7 @@ api.example.com {
 <Tab value="单一 origin">
 
 ```text
-multica.example.com {
+code-opc.benlai.com {
     # CLI 可达性探测：`multica setup` 会 GET <server-url>/health 并要求 200，
     # 旧版 frontend 不转发这个路径，直接路由到 backend
     handle /health {
@@ -190,16 +165,8 @@ multica.example.com {
         reverse_proxy 127.0.0.1:3000
     }
 }
-```
 
-</Tab>
-</Tabs>
-
-**单一 origin**（一个域名，或一台主机一个端口，小服务器上常见）把守护进程依赖的路径显式转给 backend，其余交给 frontend。这种模式下两个 URL 都指向它：`.env` 里的 `FRONTEND_ORIGIN` 和 `MULTICA_APP_URL`，以及 `multica setup self-host` 的 `--server-url` 和 `--app-url`。
-
-修改 `.env` 后，用 `up -d` 重新创建容器，让新配置生效：
-
-```bash
+bash
 docker compose -f docker-compose.selfhost.yml up -d
 curl -fsS https://api.example.com/readyz
 curl -fsS https://app.example.com/api/config | grep -o '"daemon_server_url":"[^"]*"'
@@ -283,18 +250,8 @@ irm https://raw.githubusercontent.com/multica-ai/multica/main/scripts/install.ps
 <Tabs items={["服务在这台电脑上", "服务在另一台机器上"]}>
 <Tab value="服务在这台电脑上">
 
-```bash
-multica setup self-host
-```
-
 </Tab>
 <Tab value="服务在另一台机器上">
-
-```bash
-multica setup self-host \
-  --server-url https://api.example.com \
-  --app-url https://app.example.com
-```
 
 </Tab>
 </Tabs>
@@ -302,10 +259,6 @@ multica setup self-host \
 服务在另一台机器上时，传入的是刚才配置的两个地址。这条命令会先检查 `<server-url>/health`，再打开浏览器完成登录。登录完成后，它会保存本机凭据并启动守护进程。这一步报 `Server not reachable`，说明 `/health` 没有通过探测拿到 200，可能的原因有三种：代理把所有流量转给了不转发该路径的旧版 frontend；代理根本没把 `/health` 路由到 backend；更底层的问题（DNS、TLS、防火墙、超时、backend 返回 5xx）。见[故障排查](/troubleshooting#multica-setup-reports-the-server-is-not-reachable)。
 
 确认连接状态：
-
-```bash
-multica daemon status
-```
 
 正常情况下，输出中会显示：
 
@@ -454,7 +407,7 @@ curl -s localhost:8080/readyz
 
 Helm 有自己的升级路径：在 values 文件里把 `images.backend.tag` / `images.frontend.tag` 设成你要的版本，然后 `helm upgrade`。改 tag 就改了 pod spec，Kubernetes 会拉新镜像并滚动更新，这是可靠的做法。
 
-`kubectl -n multica rollout restart` 本身**不是**升级。chart 默认 `pullPolicy: IfNotPresent`（`deploy/helm/multica/values.yaml`），节点上已经缓存过这个 tag 的话，restart 只会用回旧镜像，什么都没变，和钉死 `MULTICA_IMAGE_TAG` 是同一类坑。真要靠浮动 tag 走这条路，得先把 `images.backend.pullPolicy` / `images.frontend.pullPolicy` 设成 `Always`。详见仓库的 [Self-hosting guide](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md#kubernetes-deployment-alternative)。
+`kubectl -n multica rollout restart` 本身**不是**升级。chart 默认 `pullPolicy: IfNotPresent`（`deploy/helm/multica/values.yaml`），节点上已经缓存过这个 tag 的话，restart 只会用回旧镜像，什么都没变，和钉死 `MULTICA_IMAGE_TAG` 是同一类坑。真要靠浮动 tag 走这条路，得先把 `images.backend.pullPolicy` / `images.frontend.pullPolicy` 设成 `Always`。详见仓库的 [Self-hosting guide](https://code-opc.benlai.com/blob/main/SELF_HOSTING.md#kubernetes-deployment-alternative)。
 
 </Accordion>
 </Accordions>
@@ -475,5 +428,5 @@ Helm 有自己的升级路径：在 values 文件里把 `images.backend.tag` / `
 
 - [登录与注册配置](/auth-setup) — 配置邮件、Google 登录和注册范围。
 - [环境变量](/environment-variables) — 查看完整的服务端配置。
-- [Self-hosting guide](https://github.com/multica-ai/multica/blob/main/SELF_HOSTING.md) — Kubernetes、升级和手动部署。
+- [Self-hosting guide](https://code-opc.benlai.com/blob/main/SELF_HOSTING.md) — Kubernetes、升级和手动部署。
 - [桌面应用](/desktop-app) — 让 Desktop 连接自托管服务。

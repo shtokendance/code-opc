@@ -28,7 +28,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 以下不会被列进来：
 
-- AI 编程工具本身，以及 `multica` CLI；
+- AI 编程工具本身，以及 CodeOPC 内置工具；
 - 从项目自己的[本地目录](/project-resources)运行的服务，那是你自己启动的，不属于某次运行；
 - 已经属于某个声明式环境的服务，它们只在那个环境下面列一次；
 - 不在任务上的运行（例如聊天会话）启动的服务。
@@ -49,10 +49,6 @@ ttl = "24h"
 ```
 
 智能体在自己检出的代码目录里启动它：
-
-```bash
-multica env start web
-```
 
 命令会等环境能响应后打印它的 URL。环境出现在侧栏里，运行结束后继续运行，TTL 到期时自动停止。
 
