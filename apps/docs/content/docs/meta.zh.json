@@ -1,5 +1,5 @@
 {
-  "title": "Multica 文档",
+  "title": "CodeOPC 文档",
   "pages": [
     "---开始使用---",
     "index",
@@ -7,7 +7,6 @@
     "concepts",
     "how-multica-works",
     "tutorial",
-    "self-host-quickstart",
     "---工作区---",
     "workspaces",
     "members-roles",
@@ -44,26 +43,11 @@
     "---集成---",
     "channels",
     "lark-bot-integration",
-    "slack-bot-integration",
     "dingtalk-bot-integration",
-    "telegram-bot-integration",
     "weixin-bot-integration",
     "github-integration",
     "vcs-integration",
     "---客户端---",
-    "desktop-app",
-    "mobile-app",
-    "---自托管---",
-    "security-model",
-    "environment-variables",
-    "auth-setup",
-    "troubleshooting",
-    "---参考---",
-    "cli",
-    "auth-tokens",
-    "---社区---",
-    "community-maintained",
-    "---参与开发---",
-    "developers"
+    "desktop-app"
   ]
 }

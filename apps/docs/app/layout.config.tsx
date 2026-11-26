@@ -34,22 +34,16 @@ export const baseOptions: BaseLayoutProps = {
   nav: {
     title: (
       <span className="inline-flex items-center gap-2 font-semibold text-base">
-        <MulticaWordmark className="h-4" />
-        Docs
+        <MulticaIcon />
+        CodeOPC 文档
       </span>
     ),
   },
   links: [
     {
-      icon: <GitHubMark />,
-      text: externalLinkText("GitHub"),
-      url: "https://github.com/multica-ai/multica",
-      external: true,
-    },
-    {
       icon: <MulticaIcon />,
-      text: externalLinkText("Multica"),
-      url: "https://multica.ai",
+      text: externalLinkText("进入 CodeOPC"),
+      url: "https://code-opc.benlai.com",
       external: true,
     },
   ],

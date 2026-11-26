@@ -90,16 +90,16 @@ export const localeLabels: Record<Lang, string> = {
 // this dict only carries TSX-rendered chrome above the MDX body.
 export const homeCopy = {
   en: {
-    eyebrow: "Multica Docs",
+    eyebrow: "CodeOPC Docs",
     titleLead: "Humans and agents,",
     titleAccent: "in one place.",
-    byline: ["Getting started", "Updated July 2026", "2 min read"],
+    byline: ["Getting started", "Updated November 2026", "2 min read"],
   },
   zh: {
-    eyebrow: "Multica 文档",
-    titleLead: "Multica 是人类与 AI 智能体",
+    eyebrow: "CodeOPC 文档",
+    titleLead: "CodeOPC 是人类与 AI 智能体",
     titleAccent: "共同工作的地方。",
-    byline: ["开始使用", "2026 年 7 月更新", "阅读约 2 分钟"],
+    byline: ["开始使用", "2026 年 11 月更新", "阅读约 2 分钟"],
   },
   "zh-Hant": {
     eyebrow: "Multica 文件",
