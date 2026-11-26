@@ -4,12 +4,12 @@ set -euo pipefail
 # Unified release script for CodeOPC desktop (test / prod / both).
 #
 # Usage:
-#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--deploy-web] [--skip-git] [--skip-upload]
+#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--skip-git] [--skip-upload]
 #
 # Examples:
-#   bash scripts/release.sh --env test --version 0.11.23 --deploy-web
+#   bash scripts/release.sh --env test --version 0.11.23
 #   bash scripts/release.sh --env prod --version 0.11.23
-#   bash scripts/release.sh --env both --version 0.11.23 --deploy-web
+#   bash scripts/release.sh --env both --version 0.11.23
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -22,7 +22,6 @@ TEST_API_BASE="${TEST_API_BASE:-http://10.101.102.116:3088}"
 
 TARGET_ENV=""
 VERSION=""
-DEPLOY_WEB=0
 SKIP_GIT=0
 SKIP_UPLOAD=0
 
@@ -33,7 +32,6 @@ Usage: $(basename "$0") --env <test|prod|both> [options]
 Options:
   --env <test|prod|both>   Release target environment (required)
   --version <X.Y.Z>        Bump desktop version before building (optional; defaults to package.json version)
-  --deploy-web             Also rebuild and restart multica-frontend on test server (test/both only)
   --skip-git               Skip git commit/tag/push
   --skip-upload            Skip scp upload to test server
   -h, --help               Show this help
@@ -49,10 +47,6 @@ while [[ $# -gt 0 ]]; do
         --version)
             VERSION="${2:-}"
             shift 2
-            ;;
-        --deploy-web)
-            DEPLOY_WEB=1
-            shift
             ;;
         --skip-git)
             SKIP_GIT=1
@@ -198,13 +192,6 @@ if [[ "${TARGET_ENV}" == "test" || "${TARGET_ENV}" == "both" ]]; then
     echo "=========================================================="
     echo " Building TEST release (v${VERSION}-test)"
     echo "=========================================================="
-
-    if [[ "${DEPLOY_WEB}" == "1" ]]; then
-        echo "==> Deploying web frontend to ${TEST_SERVER}..."
-        rsync -az --delete --exclude node_modules --exclude .next "${REPO_ROOT}/apps/web/" "${TEST_SERVER}:/tmp/codeopc-web-build/apps/web/"
-        rsync -az --delete --exclude node_modules "${REPO_ROOT}/packages/" "${TEST_SERVER}:/tmp/codeopc-web-build/packages/"
-        ssh "${TEST_SERVER}" "cd /tmp/codeopc-web-build && sudo docker build -f Dockerfile.web -t multica-web:dev . && cd /data/multica && sudo docker compose up -d frontend"
-    fi
 
     cd "${DESKTOP_DIR}"
     DESKTOP_ENV=test pnpm run package:all-native
