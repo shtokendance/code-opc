@@ -234,6 +234,20 @@ if [[ "${TARGET_ENV}" == "prod" || "${TARGET_ENV}" == "both" ]]; then
     DESKTOP_ENV=prod pnpm run package:manifest
     verify_signed_app 1
 
+    PROD_OUT_DIR="${DIST_DIR}/release"
+    echo "==> Copying production artifacts to ${PROD_OUT_DIR}/..."
+    rm -rf "${PROD_OUT_DIR}"
+    mkdir -p "${PROD_OUT_DIR}"
+    cp -R "${DIST_DIR}/CodeOPC.app" "${PROD_OUT_DIR}/"
+    cp -R "${DIST_DIR}/CodeOPC-${VERSION}-win-x64" "${PROD_OUT_DIR}/"
+    cp \
+        "${DIST_DIR}/CodeOPC-${VERSION}-arm64.dmg" \
+        "${DIST_DIR}/CodeOPC-${VERSION}-arm64.zip" \
+        "${DIST_DIR}/CodeOPC-${VERSION}-win-x64.zip" \
+        "${DIST_DIR}/latest.json" \
+        "${DIST_DIR}/latest-codeopc.json" \
+        "${PROD_OUT_DIR}/"
+
     if [[ "${SKIP_GIT}" != "1" ]]; then
         cd "${REPO_ROOT}"
         git tag -f "v${VERSION}"
@@ -244,6 +258,11 @@ fi
 
 echo "=========================================================="
 echo " Release v${VERSION} (${TARGET_ENV}) completed!"
-echo " Artifacts in ${DIST_DIR}:"
-ls -lh "${DIST_DIR}/CodeOPC-${VERSION}"* "${DIST_DIR}/latest"*.json
+if [[ "${TARGET_ENV}" == "prod" || "${TARGET_ENV}" == "both" ]]; then
+    echo " Production artifacts in ${DIST_DIR}/release:"
+    ls -lh "${DIST_DIR}/release/CodeOPC-${VERSION}"* "${DIST_DIR}/release/latest"*.json
+else
+    echo " Artifacts in ${DIST_DIR}:"
+    ls -lh "${DIST_DIR}/CodeOPC-${VERSION}"* "${DIST_DIR}/latest"*.json
+fi
 echo "=========================================================="
