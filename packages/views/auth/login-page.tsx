@@ -415,17 +415,17 @@ export function LoginPage({
 
   const weComIcon = (
     <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="15.5" cy="5.5" r="2.2" fill="#2878FF" />
-      <circle cx="20" cy="10.2" r="2.1" fill="#00B578" />
-      <circle cx="17.8" cy="16.2" r="2.1" fill="#FF8F1F" />
-      <circle cx="11.5" cy="18.2" r="2.2" fill="#FFC300" />
-      <circle cx="6.2" cy="14.5" r="2.2" fill="#4E9BFF" />
       <path
-        d="M8.5 5.2C5.4 5.2 3 7.3 3 9.9c0 1.4.7 2.7 1.9 3.6l-.5 2.1 2.2-.9c.6.2 1.2.3 1.9.3 3.1 0 5.5-2.1 5.5-4.7 0-2.8-2.4-5.1-5.5-5.1Z"
-        fill="#2878FF"
+        d="M18.3 10.2C18 6.8 14.9 4.2 11.1 4.2C6.9 4.2 3.5 7.1 3.5 10.7C3.5 12.2 4.1 13.6 5.1 14.7L4.1 17.6L7.4 16.4C8.5 16.8 9.8 17 11.1 17C11.7 17 12.3 16.95 12.9 16.85"
+        stroke="#0077FF"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <circle cx="6.7" cy="9.8" r="0.85" fill="#fff" />
-      <circle cx="10.2" cy="9.8" r="0.85" fill="#fff" />
+      <circle cx="16.8" cy="12.1" r="1.55" fill="#2FB344" />
+      <circle cx="19.8" cy="15.1" r="1.55" fill="#0077FF" />
+      <circle cx="16.8" cy="18.1" r="1.55" fill="#FF6A1A" />
+      <circle cx="13.8" cy="15.1" r="1.55" fill="#FFC300" />
     </svg>
   );
 
