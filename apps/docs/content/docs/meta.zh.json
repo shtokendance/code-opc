@@ -45,8 +45,6 @@
     "dingtalk-bot-integration",
     "weixin-bot-integration",
     "github-integration",
-    "vcs-integration",
-    "---客户端---",
-    "desktop-app"
+    "vcs-integration"
   ]
 }
