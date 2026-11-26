@@ -90,29 +90,6 @@ Telegram 会把图片、文件、视频和音频作为附件转交给智能体�
 工作区 owner 和 admin 可以连接或断开 Bot；飞书/Lark、钉钉和微信的连接和断开还对智能体所有者开放。普通成员可以查看已经连接的集成并使用自己有权调用的智能体。
 
 断开后，Bot 不再接收新消息。已有的 CodeOPC 对话和执行记录仍然保留。
-
-## 自托管
-
-自托管部署需要先为对应平台配置一个 32 字节加密密钥，CodeOPC 才会开放连接入口：
-
-```dotenv
-MULTICA_LARK_SECRET_KEY=<base64 编码的 32 字节密钥>
-MULTICA_SLACK_SECRET_KEY=<base64 编码的 32 字节密钥>
-MULTICA_DINGTALK_SECRET_KEY=<base64 编码的 32 字节密钥>
-MULTICA_WECOM_SECRET_KEY=<base64 编码的 32 字节密钥>
-MULTICA_TELEGRAM_SECRET_KEY=<base64 编码的 32 字节密钥>
-MULTICA_WEIXIN_SECRET_KEY=<base64 编码的 32 字节密钥>
-```
-
-这些密钥用于加密保存 Bot 凭据。生成、保存和轮换方法见[环境变量](/environment-variables)。CodeOPC Cloud 已完成这项配置。
-
-企业微信的回复只能经由某个进程持有的 WebSocket 发出。回复产生在其他副本上时，结果取决于实时中继（realtime relay）的模式：
-
-- **分片或双写中继模式**（配置了 `REDIS_URL`，有 Redis 时的默认）：回复会转发给持有连接的副本并送达，可以多副本部署。
-- **legacy 中继模式，或没有 Redis**：回复会被丢弃。这种配置下请把启用企业微信的后端保持单副本。
-
-任何模式下都有一个残留窗口：回复产生时没有任何副本持有活连接（全部在重连中），这条回复不会送达。转发它的副本事后会确认有没有副本认领过这次投递，没有就给 `multica_wecom_outbound_dropped_total{reason="no_live_connection"}` 加一，所以丢失的频率可以从这个指标看出来。不能接受这种丢失时，单副本仍是最保守的部署方式。
-
 ## 接下来
 
 - [飞书 / Lark Bot 接入](/lark-bot-integration)

@@ -102,17 +102,6 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 ## 保存在哪里
 
 模式、主题、主题选项和已安装的主题都保存在当前设备上，不会同步到账号。每个浏览器、每个桌面端各有一份，同一设备上的所有工作区共用。
-
-## 自托管
-
-自托管的服务端默认读取官方仓库 [code-opc/themes](https://code-opc.benlai.com-themes)。服务端从 GitHub 拉取主题和截图并缓存，应用从你的服务端下载。下载次数按服务端分别统计。
-
-| 变量 | 作用 |
-|---|---|
-| `MULTICA_THEME_REGISTRY_URL` | 让主题商店改读另一个仓库的 `index.json`，比如官方仓库的 fork。 |
-
-服务端的其他配置见[环境变量](/environment-variables)。
-
 ## 接下来
 
 - [制作主题](/developers/themes) — 主题格式、检查，以及发布到主题商店。
