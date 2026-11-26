@@ -4,12 +4,12 @@ set -euo pipefail
 # Unified release script for CodeOPC desktop (test / prod / both).
 #
 # Usage:
-#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--skip-git] [--skip-upload]
+#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--upload] [--skip-git]
 #
 # Examples:
-#   bash scripts/release.sh --env test --version 0.11.23
+#   bash scripts/release.sh --env test --version 0.11.23 --upload
 #   bash scripts/release.sh --env prod --version 0.11.23
-#   bash scripts/release.sh --env both --version 0.11.23
+#   bash scripts/release.sh --env both --version 0.11.23 --upload
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -22,8 +22,8 @@ TEST_API_BASE="${TEST_API_BASE:-http://10.101.102.116:3088}"
 
 TARGET_ENV=""
 VERSION=""
+UPLOAD=0
 SKIP_GIT=0
-SKIP_UPLOAD=0
 
 usage() {
     cat <<EOF
@@ -32,8 +32,8 @@ Usage: $(basename "$0") --env <test|prod|both> [options]
 Options:
   --env <test|prod|both>   Release target environment (required)
   --version <X.Y.Z>        Bump desktop version before building (optional; defaults to package.json version)
+  --upload                 Upload build artifacts to server (currently uploads test builds to test server; prod ignored)
   --skip-git               Skip git commit/tag/push
-  --skip-upload            Skip scp upload to test server
   -h, --help               Show this help
 EOF
 }
@@ -48,12 +48,12 @@ while [[ $# -gt 0 ]]; do
             VERSION="${2:-}"
             shift 2
             ;;
-        --skip-git)
-            SKIP_GIT=1
+        --upload)
+            UPLOAD=1
             shift
             ;;
-        --skip-upload)
-            SKIP_UPLOAD=1
+        --skip-git)
+            SKIP_GIT=1
             shift
             ;;
         -h|--help)
@@ -198,7 +198,7 @@ if [[ "${TARGET_ENV}" == "test" || "${TARGET_ENV}" == "both" ]]; then
     DESKTOP_ENV=test pnpm run package:manifest
     verify_signed_app 0
 
-    if [[ "${SKIP_UPLOAD}" != "1" ]]; then
+    if [[ "${UPLOAD}" == "1" ]]; then
         echo "==> Uploading test artifacts to ${TEST_SERVER}:${TEST_RELEASES_DIR}/..."
         scp \
             "${DIST_DIR}/CodeOPC-${VERSION}-arm64.dmg" \
