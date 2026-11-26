@@ -38,13 +38,6 @@
     "environments",
     "---自动化---",
     "autopilots",
-    "issue-wakeups",
-    "---集成---",
-    "channels",
-    "lark-bot-integration",
-    "dingtalk-bot-integration",
-    "weixin-bot-integration",
-    "github-integration",
-    "vcs-integration"
+    "issue-wakeups"
   ]
 }
