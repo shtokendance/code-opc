@@ -16,6 +16,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@multica/ui/components/ui/command";
+import { Spinner } from "@multica/ui/components/ui/spinner";
 import { StatusIcon } from "../issues/components/status-icon";
 import { useT } from "../i18n";
 
@@ -29,10 +30,14 @@ export interface IssuePickerSuggestionGroup {
 interface IssuePickerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete?: (open: boolean) => void;
   title: string;
   description: string;
   excludeIds: string[];
   onSelect: (issue: Issue) => void;
+  closeOnSelect?: boolean;
+  error?: string;
+  pending?: boolean;
   /** Shown while the query is empty; groups without issues are skipped. */
   suggestions?: IssuePickerSuggestionGroup[];
   /** Drops issues from results and suggestions alike; excludeIds always applies. */
@@ -42,11 +47,15 @@ interface IssuePickerModalProps {
 export function IssuePickerModal({
   open,
   onOpenChange,
+  onOpenChangeComplete,
   title,
   description,
   excludeIds,
   onSelect,
   suggestions,
+  closeOnSelect = true,
+  error,
+  pending = false,
   isSelectable,
 }: IssuePickerModalProps) {
   const { t } = useT("modals");
@@ -56,6 +65,9 @@ export function IssuePickerModal({
   const [isLoading, setIsLoading] = useState(false);
   const [defaultIssues, setDefaultIssues] = useState<Issue[]>([]);
   const [defaultLoading, setDefaultLoading] = useState(false);
+  // The row whose write is in flight, so a picker that stays open on select
+  // shows where the click landed until the caller closes it.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const abortRef = useRef<AbortController>(undefined);
   const selectable = useCallback(
@@ -69,6 +81,8 @@ export function IssuePickerModal({
 
   useEffect(() => {
     if (!open) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (abortRef.current) abortRef.current.abort();
       setQuery("");
       setResults([]);
       setIsLoading(false);
@@ -142,8 +156,10 @@ export function IssuePickerModal({
       key={issue.id}
       value={issue.id}
       onSelect={() => {
+        if (pending) return;
+        setSelectedId(issue.id);
         onSelect(issue);
-        onOpenChange(false);
+        if (closeOnSelect) onOpenChange(false);
       }}
     >
       <StatusIcon
@@ -155,6 +171,7 @@ export function IssuePickerModal({
       />
       <span className="text-muted-foreground shrink-0">{issue.identifier}</span>
       <span className="truncate">{issue.title}</span>
+      {pending && selectedId === issue.id && <Spinner className="ml-auto size-3.5 shrink-0 text-muted-foreground" />}
     </CommandItem>
   );
 
@@ -162,6 +179,15 @@ export function IssuePickerModal({
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
+      onOpenChangeComplete={(nextOpen) => {
+        if (!nextOpen) {
+          setQuery("");
+          setResults([]);
+          setIsLoading(false);
+          setSelectedId(null);
+        }
+        onOpenChangeComplete?.(nextOpen);
+      }}
       title={title}
       description={description}
     >
@@ -174,7 +200,8 @@ export function IssuePickerModal({
             search(v);
           }}
         />
-        <CommandList>
+        {error && <p role="alert" className="px-3 py-2 text-caption text-destructive">{error}</p>}
+        <CommandList aria-busy={pending || undefined}>
           {(isLoading || (!query.trim() && !suggestions && defaultLoading)) && (
             <div className="py-6 text-center text-body text-muted-foreground">
               {t(($) => $.issue_picker.searching)}

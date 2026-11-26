@@ -47,6 +47,8 @@ interface DesktopAPI {
   };
   /** OS-preferred locale (BCP 47) injected by main via additionalArguments. */
   systemLocale: string;
+  /** Report the resolved in-app locale to main for native dialogs and daemon errors. */
+  setLocale?: (locale: string) => void;
   /** Subscribe to OS language changes detected after boot. Returns an unsubscribe function. */
   onSystemLocaleChanged: (callback: (locale: string) => void) => () => void;
   /** Validated runtime endpoint config, or a blocking config error. */
@@ -64,6 +66,16 @@ interface DesktopAPI {
   reportAuthSession: (userId: string | null) => void;
   /** Listen for auth token delivered via deep link. Returns an unsubscribe function. */
   onAuthToken: (callback: (token: string) => void) => () => void;
+  /** Start a local loopback HTTP server to receive OAuth token from browser. */
+  startLoginOAuthServer?: () => Promise<number>;
+  /** Stop the local loopback HTTP server. */
+  stopLoginOAuthServer?: () => Promise<void>;
+  /** Get pending OAuth token if received. */
+  getPendingOAuthToken?: () => Promise<string>;
+  /** Open the OAuth login page inside the main desktop window. */
+  openLoginWindow?: (url: string, returnUrl?: string) => Promise<void>;
+  /** Close the in-app OAuth login window if open. */
+  closeLoginWindow?: () => Promise<void>;
   startLoginOAuthServer?: () => Promise<number>;
   stopLoginOAuthServer?: () => Promise<void>;
   getPendingOAuthToken?: () => Promise<string>;

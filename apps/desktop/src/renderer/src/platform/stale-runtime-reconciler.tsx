@@ -66,7 +66,9 @@ export function planStaleRuntimeReconciliation({
       !r.profile_id &&
       !!r.daemon_id &&
       r.daemon_id !== localDaemonId &&
-      ((r as any).device_name === localMachineName || (typeof r.metadata?.hostname === "string" && r.metadata.hostname === localMachineName)) &&
+      ((typeof r.metadata?.hostname === "string"
+        ? r.metadata.hostname
+        : (r as { device_name?: string }).device_name) === localMachineName) &&
       onlineByProvider.has(r.provider),
   );
 

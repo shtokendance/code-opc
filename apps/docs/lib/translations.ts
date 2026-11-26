@@ -130,8 +130,8 @@ export const homeCopy = {
 // Chrome around the interactive demos embedded in docs pages. Each demo keeps
 // its own scenario copy next to its component.
 export const demoChromeCopy = {
-  en: { label: "Try it", replay: "Replay", click: "Click" },
-  zh: { label: "动手试试", replay: "重新演示", click: "点击" },
+  en: { label: "Try it", replay: "Replay", click: "Click", play: "Play", pause: "Pause", reset: "Reset" },
+  zh: { label: "动手试试", replay: "重新演示", click: "点击", play: "播放", pause: "暂停", reset: "重置" },
   "zh-Hant": { label: "動手試試", replay: "重新播放", click: "點擊" },
   ko: { label: "직접 해보기", replay: "다시 보기", click: "클릭" },
   ja: { label: "試してみる", replay: "もう一度", click: "クリック" },
