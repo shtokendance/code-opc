@@ -3,7 +3,7 @@ import type { Lang } from "./i18n";
 
 // Fumadocs built-in UI strings (search, TOC, last-updated, etc.) per locale.
 // English uses Fumadocs defaults, so only the translated locales override them.
-export const uiTranslations: Partial<Record<Lang, Partial<Translations>>> = {
+export const uiTranslations: Partial<Record<string, Partial<Translations>>> = {
   zh: {
     "Search(search trigger)": "搜索",
     "Search(search dialog)": "搜索",
@@ -77,7 +77,7 @@ export const uiTranslations: Partial<Record<Lang, Partial<Translations>>> = {
 };
 
 // Display name shown in the LanguageToggle dropdown.
-export const localeLabels: Record<Lang, string> = {
+export const localeLabels: Record<string, string> = {
   en: "English",
   zh: "简体中文",
   "zh-Hant": "繁體中文",
@@ -125,7 +125,7 @@ export const homeCopy = {
     titleAccent: "au même endroit.",
     byline: ["Premiers pas", "Mis à jour en juillet 2026", "2 min de lecture"],
   },
-} as const satisfies Record<Lang, unknown>;
+} as const satisfies Record<string, unknown>;
 
 // Chrome around the interactive demos embedded in docs pages. Each demo keeps
 // its own scenario copy next to its component.
@@ -136,4 +136,4 @@ export const demoChromeCopy = {
   ko: { label: "직접 해보기", replay: "다시 보기", click: "클릭" },
   ja: { label: "試してみる", replay: "もう一度", click: "クリック" },
   fr: { label: "Essayez", replay: "Rejouer", click: "Cliquez" },
-} as const satisfies Record<Lang, unknown>;
+} as const satisfies Record<string, unknown>;

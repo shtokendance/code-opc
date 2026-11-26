@@ -26,27 +26,19 @@ describe("docsSlugStaticParams", () => {
     ];
 
     expect(docsSlugStaticParams(params)).toEqual([
-      { lang: "en", slug: ["agents"] },
-      { lang: "en", slug: ["cli", "reference"] },
       { lang: "zh", slug: ["agents"] },
-      { lang: "zh-Hant", slug: ["agents"] },
-      { lang: "ko", slug: ["agents"] },
-      { lang: "ko", slug: ["cli", "reference"] },
-      { lang: "ja", slug: ["agents"] },
-      { lang: "ja", slug: ["cli", "reference"] },
-      { lang: "fr", slug: ["agents"] },
     ]);
   });
 
   it("drops unknown languages and de-duplicates repeated params", () => {
     const params: RawParam[] = [
-      { lang: "ko", slug: ["agents"] },
-      { lang: "ko", slug: ["agents"] },
+      { lang: "zh", slug: ["agents"] },
+      { lang: "zh", slug: ["agents"] },
       { lang: "de", slug: ["agents"] },
     ];
 
     expect(docsSlugStaticParams(params)).toEqual([
-      { lang: "ko", slug: ["agents"] },
+      { lang: "zh", slug: ["agents"] },
     ]);
   });
 });

@@ -62,7 +62,7 @@ type Copy = {
 
 type Phase = "idle" | "start" | "opened" | "archived" | "done" | "menu" | "archivedView";
 
-const copy: { en: Copy } & Partial<Record<Lang, Copy>> = {
+const copy: { en: Copy } & Partial<Record<string, Copy>> = {
   en: {
     title: "Work",
     inbox: "Inbox",

@@ -5,12 +5,9 @@ import { searchLocaleMap, tokenizeCJK, tokenizeJapanese } from "./search-locales
 
 describe("searchLocaleMap", () => {
   it("covers every Chinese locale declared in i18n with the character-level tokenizer", () => {
-    // Latin-script locales (en, fr) can use Orama's default tokenizer; every
-    // Chinese locale needs the CJK one or search returns nothing for Han text.
     const chinese = i18n.languages.filter((lang) => lang.startsWith("zh"));
-    expect(chinese).toEqual(["zh", "zh-Hant"]);
+    expect(chinese).toEqual(["zh"]);
     expect(searchLocaleMap.zh.components.tokenizer.tokenize).toBe(tokenizeCJK);
-    expect(searchLocaleMap["zh-Hant"].components.tokenizer.tokenize).toBe(tokenizeCJK);
   });
 
   it("tokenizes Traditional Chinese character by character and keeps Latin runs whole", () => {

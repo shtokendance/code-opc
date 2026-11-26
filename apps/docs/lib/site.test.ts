@@ -41,94 +41,40 @@ beforeEach(() => {
 });
 
 describe("docsAlternates", () => {
-  it("omits Korean hreflang when no Korean MDX file exists for the page", async () => {
+  it("builds Chinese-only canonical and hreflang alternates for slug pages", async () => {
     const { docsAlternates } = await import("./site");
 
     expect(docsAlternates(["agents"])).toEqual({
-      canonical: "https://www.multica.ai/docs/agents",
+      canonical: "https://www.multica.ai/docs/zh/agents",
       languages: {
-        en: "https://www.multica.ai/docs/agents",
         zh: "https://www.multica.ai/docs/zh/agents",
-        "x-default": "https://www.multica.ai/docs/agents",
+        "x-default": "https://www.multica.ai/docs/zh/agents",
       },
     });
   });
 
-  it("omits Korean hreflang even when source.getPage returns a page for Korean", async () => {
-    const { docsAlternates } = await import("./site");
-
-    expect(docsAlternates(["agents"]).languages).not.toHaveProperty("ko");
-  });
-
-  it("includes Korean hreflang when a real *.ko.mdx page exists", async () => {
+  it("omits non-zh hreflangs even when other locale MDX files exist", async () => {
     existingDocs.add("agents.ko.mdx");
-    const { docsAlternates } = await import("./site");
-
-    expect(docsAlternates(["agents"])).toEqual({
-      canonical: "https://www.multica.ai/docs/agents",
-      languages: {
-        en: "https://www.multica.ai/docs/agents",
-        zh: "https://www.multica.ai/docs/zh/agents",
-        ko: "https://www.multica.ai/docs/ko/agents",
-        "x-default": "https://www.multica.ai/docs/agents",
-      },
-    });
-  });
-
-  it("includes Japanese hreflang when a real *.ja.mdx page exists", async () => {
     existingDocs.add("agents.ja.mdx");
-    const { docsAlternates } = await import("./site");
-
-    expect(docsAlternates(["agents"])).toEqual({
-      canonical: "https://www.multica.ai/docs/agents",
-      languages: {
-        en: "https://www.multica.ai/docs/agents",
-        zh: "https://www.multica.ai/docs/zh/agents",
-        ja: "https://www.multica.ai/docs/ja/agents",
-        "x-default": "https://www.multica.ai/docs/agents",
-      },
-    });
-  });
-
-  it("includes Traditional Chinese hreflang when a real *.zh-Hant.mdx page exists", async () => {
     existingDocs.add("agents.zh-Hant.mdx");
-    const { docsAlternates } = await import("./site");
-
-    expect(docsAlternates(["agents"])).toEqual({
-      canonical: "https://www.multica.ai/docs/agents",
-      languages: {
-        en: "https://www.multica.ai/docs/agents",
-        zh: "https://www.multica.ai/docs/zh/agents",
-        "zh-Hant": "https://www.multica.ai/docs/zh-Hant/agents",
-        "x-default": "https://www.multica.ai/docs/agents",
-      },
-    });
-  });
-
-  it("includes French hreflang when a real *.fr.mdx page exists", async () => {
     existingDocs.add("agents.fr.mdx");
     const { docsAlternates } = await import("./site");
 
-    expect(docsAlternates(["agents"])).toEqual({
-      canonical: "https://www.multica.ai/docs/agents",
-      languages: {
-        en: "https://www.multica.ai/docs/agents",
-        zh: "https://www.multica.ai/docs/zh/agents",
-        fr: "https://www.multica.ai/docs/fr/agents",
-        "x-default": "https://www.multica.ai/docs/agents",
-      },
-    });
+    const { languages } = docsAlternates(["agents"]);
+    expect(languages).not.toHaveProperty("ko");
+    expect(languages).not.toHaveProperty("ja");
+    expect(languages).not.toHaveProperty("zh-Hant");
+    expect(languages).not.toHaveProperty("fr");
   });
 
-  it("keeps the locale root alternates limited to real localized MDX pages", async () => {
+  it("builds Chinese-only alternates for the docs root", async () => {
     const { docsAlternates } = await import("./site");
 
     expect(docsAlternates([])).toEqual({
-      canonical: "https://www.multica.ai/docs",
+      canonical: "https://www.multica.ai/docs/zh",
       languages: {
-        en: "https://www.multica.ai/docs",
         zh: "https://www.multica.ai/docs/zh",
-        "x-default": "https://www.multica.ai/docs",
+        "x-default": "https://www.multica.ai/docs/zh",
       },
     });
   });

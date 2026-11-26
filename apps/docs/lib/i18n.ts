@@ -7,8 +7,8 @@ import { defineI18n } from "fumadocs-core/i18n";
 // parser: 'dot' picks up `page.<lang>.mdx` (e.g. `page.fr.mdx`, `page.zh-Hant.mdx`)
 // and `meta.<lang>.json`.
 export const i18n = defineI18n({
-  languages: ["en", "zh", "zh-Hant", "ko", "ja", "fr"],
-  defaultLanguage: "en",
+  languages: ["zh"],
+  defaultLanguage: "zh",
   hideLocale: "default-locale",
   parser: "dot",
 });

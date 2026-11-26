@@ -71,7 +71,7 @@ export default async function Layout({
     : (i18n.defaultLanguage as Lang);
   const locales = i18n.languages.map((l) => ({
     locale: l,
-    name: localeLabels[l],
+    name: localeLabels[l] ?? l,
   }));
 
   return (
