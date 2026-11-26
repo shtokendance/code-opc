@@ -180,7 +180,7 @@ import { LocalDirModeDemo } from "@/components/demos/local-dir-mode-demo";
 </Accordion>
 <Accordion title="留在你仓库里的分支和隐藏 ref" id="what-stays-in-your-repo">
 
-worktree 位于运行时的工作区目录内，会按[正常的清理周期](/daemon-runtimes#cleanup)回收。留在你仓库里的有：分支；每条分支对应的一个隐藏 ref（在 `refs/multica/local-state/` 下），记录这条分支归谁所有、以及上次续接时你目录里的内容；以及智能体自己提交后又留下未提交改动的每次运行，各对应一个隐藏 ref（在 `refs/multica/leftovers/` 下）。
+worktree 位于运行时的工作区目录内，会按正常的清理周期回收。留在你仓库里的有：分支；每条分支对应的一个隐藏 ref（在 `refs/multica/local-state/` 下），记录这条分支归谁所有、以及上次续接时你目录里的内容；以及智能体自己提交后又留下未提交改动的每次运行，各对应一个隐藏 ref（在 `refs/multica/leftovers/` 下）。
 
 隐藏 ref 不会出现在 `git branch` 里，可以用 `git for-each-ref refs/multica` 查看。CodeOPC 删除分支时会一并删掉它；你自己删掉的分支所对应的 ref，会在下一次该仓库上有运行开始时被清理。也可以用 `git for-each-ref --format='%(refname)' refs/multica | xargs -n1 git update-ref -d` 一次性清掉。
 
@@ -202,5 +202,4 @@ CodeOPC 清理执行环境时不会删除关联的本地目录。智能体对该
 ## 接下来
 
 - [项目](/projects) — 了解项目上下文、进度和负责人。
-- [守护进程与运行时](/daemon-runtimes) — 了解运行由哪台电脑领取。
 - [运行](/tasks) — 查看 `waiting_local_directory` 等执行状态。
