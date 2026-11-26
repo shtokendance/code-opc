@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { CoreProvider } from "@multica/core/platform";
 import { pickLocale, type SupportedLocale } from "@multica/core/i18n";
 import { useAuthStore } from "@multica/core/auth";
@@ -172,6 +173,8 @@ function AppContent() {
         }
       } catch (err) {
         console.error("Pending OAuth login failed:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`登录验证失败 (${runtimeConfig?.apiUrl ?? "unknown"}): ${msg}`);
       } finally {
         if (active) {
           setBootstrapping(false);
@@ -216,6 +219,8 @@ function AppContent() {
         qc.setQueryData(workspaceKeys.list(), wsList);
       } catch (err) {
         console.error("Login with token failed:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        toast.error(`登录验证失败 (${runtimeConfig?.apiUrl ?? "unknown"}): ${msg}`);
       } finally {
         setBootstrapping(false);
       }

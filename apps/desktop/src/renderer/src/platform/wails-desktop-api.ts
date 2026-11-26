@@ -433,16 +433,16 @@ export async function initWailsDesktopAPI(): Promise<void> {
   }
 
   let appInfo: { version: string; os: "macos" | "windows" | "linux" | "unknown" } = {
-    version: "0.11.21",
+    version: "0.11.22",
     os: "macos",
   };
   let runtimeConfig: RuntimeConfigResult = {
     ok: true,
     config: {
       schemaVersion: 1,
-      apiUrl: "https://code-opc.benlai.com",
-      wsUrl: "wss://code-opc.benlai.com/ws",
-      appUrl: "https://code-opc.benlai.com",
+      apiUrl: "http://10.101.102.116:3088",
+      wsUrl: "ws://10.101.102.116:3088/ws",
+      appUrl: "http://10.101.102.116:3080",
     },
   };
   let systemLocale = "en";

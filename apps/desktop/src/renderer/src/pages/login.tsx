@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { LoginPage } from "@multica/views/auth";
 import { DragStrip } from "@multica/views/platform";
 import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
@@ -42,6 +43,11 @@ export function DesktopLoginPage() {
         }
       } catch (err) {
         console.error("[DesktopLoginPage] loginWithToken error:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        const apiUrl = window.desktopAPI?.runtimeConfig?.ok
+          ? window.desktopAPI.runtimeConfig.config.apiUrl
+          : "unknown";
+        toast.error(`登录验证失败 (${apiUrl}): ${msg}`);
       }
     };
 

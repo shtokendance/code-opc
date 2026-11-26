@@ -15,9 +15,9 @@ export type RuntimeConfigResult =
 
 export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = Object.freeze({
   schemaVersion: 1,
-  apiUrl: "https://code-opc.benlai.com",
-  wsUrl: "wss://code-opc.benlai.com/ws",
-  appUrl: "https://code-opc.benlai.com",
+  apiUrl: "http://10.101.102.116:3088",
+  wsUrl: "ws://10.101.102.116:3088/ws",
+  appUrl: "http://10.101.102.116:3080",
 });
 
 const LOCAL_DEV_RUNTIME_CONFIG: RuntimeConfig = Object.freeze({

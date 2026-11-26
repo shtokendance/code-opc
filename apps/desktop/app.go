@@ -122,7 +122,7 @@ func resolveDefaultRuntimeEndpoints() (string, string) {
 	}
 
 	// 3. Default to enterprise endpoints
-	return "https://code-opc.benlai.com", "https://code-opc.benlai.com"
+	return "http://10.101.102.116:3088", "http://10.101.102.116:3080"
 }
 
 type AppService struct {
@@ -441,7 +441,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.21"
+	appVersion     = "0.11.22"
 	appProductName = "CodeOPC"
 )
 
