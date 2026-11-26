@@ -193,7 +193,8 @@
       "runtimes_online_other": "В сети: {{count}}",
       "show_fewer_agents": "Показать меньше",
       "show_more_agents": "Ещё {{count}}…",
-      "open_issue": "Открыть {{identifier}}"
+      "open_issue": "Открыть {{identifier}}",
+      "refresh": "Обновить"
     },
     "autopilots": {
       "all": "Все автопилоты",

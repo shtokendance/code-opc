@@ -413,6 +413,70 @@ export function LoginPage({
 
   // Email step
 
+  const weComIcon = (
+    <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="15.5" cy="5.5" r="2.2" fill="#2878FF" />
+      <circle cx="20" cy="10.2" r="2.1" fill="#00B578" />
+      <circle cx="17.8" cy="16.2" r="2.1" fill="#FF8F1F" />
+      <circle cx="11.5" cy="18.2" r="2.2" fill="#FFC300" />
+      <circle cx="6.2" cy="14.5" r="2.2" fill="#4E9BFF" />
+      <path
+        d="M8.5 5.2C5.4 5.2 3 7.3 3 9.9c0 1.4.7 2.7 1.9 3.6l-.5 2.1 2.2-.9c.6.2 1.2.3 1.9.3 3.1 0 5.5-2.1 5.5-4.7 0-2.8-2.4-5.1-5.5-5.1Z"
+        fill="#2878FF"
+      />
+      <circle cx="6.7" cy="9.8" r="0.85" fill="#fff" />
+      <circle cx="10.2" cy="9.8" r="0.85" fill="#fff" />
+    </svg>
+  );
+
+  if (hideEmailInput && onWeComLogin && !google && !onGoogleLogin) {
+    return (
+      <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background p-6">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--color-muted)_0%,transparent_65%)] opacity-70"
+        />
+        <Card className="relative w-full max-w-sm border-border/80 shadow-sm">
+          <CardContent className="flex flex-col items-center px-7 py-9 text-center">
+            {logo && (
+              <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-muted/40 ring-1 ring-border/60">
+                {logo}
+              </div>
+            )}
+            <h1 className="text-display-sm font-semibold tracking-tight">
+              {t(($) => $.signin.title)}
+            </h1>
+            <p className="mt-1.5 text-body text-muted-foreground">
+              使用企业微信账号登录工作区
+            </p>
+            {sessionExpired && (
+              <Alert className="mt-5 text-left">
+                <AlertDescription>
+                  {t(($) => $.errors.session_expired)}
+                </AlertDescription>
+              </Alert>
+            )}
+            {error && (
+              <p className="mt-4 text-body text-destructive">{error}</p>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="mt-7 h-11 w-full gap-2.5 rounded-xl border-border/80 bg-background font-medium shadow-xs hover:bg-muted/60"
+              onClick={onWeComLogin}
+              disabled={loading}
+            >
+              {weComIcon}
+              企业微信登录
+            </Button>
+            {extra && <div className="mt-4 w-full text-center">{extra}</div>}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-svh items-center justify-center">
       <Card className="w-full max-w-sm">
@@ -513,16 +577,7 @@ export function LoginPage({
               onClick={onWeComLogin}
               disabled={loading}
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M8.5 3C4.36 3 1 5.91 1 9.5c0 1.99 1.05 3.77 2.7 4.97L3 18l3.87-1.29c.52.14 1.06.21 1.63.21.2 0 .4-.01.6-.03-.26-.75-.4-1.55-.4-2.39 0-3.87 3.58-7 8-7 .27 0 .53.01.8.04C16.48 4.67 12.78 3 8.5 3z"
-                  fill="#07c160"
-                />
-                <path
-                  d="M16.5 8.5c-3.59 0-6.5 2.46-6.5 5.5 0 1.69.89 3.2 2.29 4.22L11.5 21l2.87-.96c.68.3 1.44.46 2.13.46 3.59 0 6.5-2.46 6.5-5.5s-2.91-5.5-6.5-5.5z"
-                  fill="#07c160"
-                />
-              </svg>
+              {weComIcon}
               企业微信登录
             </Button>
           )}

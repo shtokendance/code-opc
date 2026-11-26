@@ -201,7 +201,8 @@
       "resources": "리소스",
       "runtimes_online_other": "{{count}}대 온라인",
       "invite_member": "멤버 초대",
-      "open_issue": "{{identifier}} 열기"
+      "open_issue": "{{identifier}} 열기",
+      "refresh": "새로고침"
     },
     "autopilots": {
       "all": "전체 오토파일럿",

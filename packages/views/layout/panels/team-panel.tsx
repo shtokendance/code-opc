@@ -1,8 +1,8 @@
 "use client";
 
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, BarChart3, BookOpenText, Bot, MessageSquare, Monitor, Plus, User, UserPlus, Users } from "@multica/ui/icons";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, BarChart3, BookOpenText, Bot, MessageSquare, Monitor, Plus, RefreshCw, User, UserPlus, Users } from "@multica/ui/icons";
 import { DropdownMenuItem } from "@multica/ui/components/ui/dropdown-menu";
 import { cn } from "@multica/ui/lib/utils";
 import { ActorAvatar } from "@multica/ui/components/common/actor-avatar";
@@ -290,10 +290,31 @@ export function TeamPanel() {
   const onAgents = pathname === p.agents();
   // Member pages live under /members/:id; the list itself is a Settings tab.
   const membersRoot = p.memberDetail("").replace(/\/$/, "");
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries({ refetchType: "active" });
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   return (
     <>
       <PanelHeader title={t(($) => $.spaces.team)}>
+        <IconButton
+          label={t(($) => $.panels.team.refresh)}
+          tooltipSide="bottom"
+          className="text-muted-foreground"
+          disabled={refreshing}
+          onClick={() => void handleRefresh()}
+        >
+          <RefreshCw className={cn(refreshing && "animate-spin")} />
+        </IconButton>
         {canInvite && (
           <IconButton
             label={t(($) => $.panels.team.invite_member)}

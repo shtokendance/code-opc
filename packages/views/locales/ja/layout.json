@@ -201,7 +201,8 @@
       "resources": "リソース",
       "runtimes_online_other": "{{count}} 台オンライン",
       "invite_member": "メンバーを招待",
-      "open_issue": "{{identifier}} を開く"
+      "open_issue": "{{identifier}} を開く",
+      "refresh": "更新"
     },
     "autopilots": {
       "all": "すべてのオートパイロット",

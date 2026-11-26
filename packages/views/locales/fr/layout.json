@@ -209,7 +209,8 @@
       "runtimes_online_one": "{{count}} en ligne",
       "runtimes_online_other": "{{count}} en ligne",
       "invite_member": "Inviter un membre",
-      "open_issue": "Ouvrir {{identifier}}"
+      "open_issue": "Ouvrir {{identifier}}",
+      "refresh": "Actualiser"
     },
     "autopilots": {
       "all": "Toutes les automatisations",

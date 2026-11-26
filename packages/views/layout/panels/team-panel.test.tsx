@@ -302,4 +302,14 @@ describe("TeamPanel runtime badge", () => {
     expect(screen.getByRole("link", { name: "Runtimes" })).toBeInTheDocument();
     expect(screen.queryByText(/online|offline/)).not.toBeInTheDocument();
   });
+
+  it("invalidates active queries when clicking the refresh button in the team header", async () => {
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderPanel([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    await waitFor(() => {
+      expect(invalidateSpy).toHaveBeenCalledWith({ refetchType: "active" });
+    });
+  });
 });

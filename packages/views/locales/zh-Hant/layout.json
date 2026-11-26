@@ -201,7 +201,8 @@
       "resources": "資源",
       "runtimes_online_other": "{{count}} 台線上",
       "invite_member": "邀請成員",
-      "open_issue": "開啟 {{identifier}}"
+      "open_issue": "開啟 {{identifier}}",
+      "refresh": "重新整理"
     },
     "autopilots": {
       "all": "全部自動化",
