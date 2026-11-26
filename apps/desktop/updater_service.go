@@ -105,7 +105,7 @@ func (s *AppService) CheckForUpdates() ManualUpdateCheckResult {
 	apiURL := s.targetAPIURL
 	s.mu.RUnlock()
 	if apiURL == "" {
-		apiURL, _ = resolveDefaultRuntimeEndpoints()
+		apiURL, _, _ = resolveDefaultRuntimeEndpoints()
 	}
 
 	currentVersion := s.GetAppInfo().Version
@@ -242,7 +242,7 @@ func (s *AppService) DownloadUpdate() error {
 	apiURL := s.targetAPIURL
 	s.mu.RUnlock()
 	if apiURL == "" {
-		apiURL, _ = resolveDefaultRuntimeEndpoints()
+		apiURL, _, _ = resolveDefaultRuntimeEndpoints()
 	}
 
 	downloadURL := info.zipPath

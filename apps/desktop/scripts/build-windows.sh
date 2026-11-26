@@ -11,9 +11,23 @@ ARCH_LABEL="x64"
 if [ "${GOARCH}" = "arm64" ]; then
     ARCH_LABEL="arm64"
 fi
+DESKTOP_ENV="${DESKTOP_ENV:-prod}"
+ENDPOINTS_FILE="${DESKTOP_DIR}/config/endpoints.${DESKTOP_ENV}.json"
 
-echo "==> [1/5] Building frontend assets..."
+if [ ! -f "${ENDPOINTS_FILE}" ]; then
+    echo "Error: Endpoints template not found: ${ENDPOINTS_FILE}" >&2
+    exit 1
+fi
+
+DEFAULT_API_URL="$(node -p "require('${ENDPOINTS_FILE}').apiUrl")"
+DEFAULT_APP_URL="$(node -p "require('${ENDPOINTS_FILE}').appUrl")"
+DEFAULT_PLATFORM_URL="$(node -p "require('${ENDPOINTS_FILE}').platformUrl")"
+
+echo "==> [1/5] Building frontend assets (env=${DESKTOP_ENV}, api=${DEFAULT_API_URL})..."
 cd "${DESKTOP_DIR}"
+VITE_DEFAULT_API_URL="${DEFAULT_API_URL}" \
+VITE_DEFAULT_APP_URL="${DEFAULT_APP_URL}" \
+VITE_DEFAULT_PLATFORM_URL="${DEFAULT_PLATFORM_URL}" \
 pnpm exec electron-vite build
 
 echo "==> [2/5] Compiling Windows PE resources (manifest, icons, version)..."
@@ -27,7 +41,7 @@ rm -rf "${WIN_STAGING}" "${DIST_DIR}/${ZIP_NAME}"
 mkdir -p "${WIN_STAGING}"
 
 echo "==> [4/5] Cross-compiling native Windows binary (${GOARCH}, GUI subsystem)..."
-GOOS=windows GOARCH="${GOARCH}" CGO_ENABLED=0 go build -trimpath -ldflags="-H=windowsgui -s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME}" -o "${WIN_STAGING}/${APP_NAME}.exe" .
+GOOS=windows GOARCH="${GOARCH}" CGO_ENABLED=0 go build -trimpath -ldflags="-H=windowsgui -s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME} -X main.defaultAPIURL=${DEFAULT_API_URL} -X main.defaultAppURL=${DEFAULT_APP_URL} -X main.defaultPlatformURL=${DEFAULT_PLATFORM_URL}" -o "${WIN_STAGING}/${APP_NAME}.exe" .
 cp "${DESKTOP_DIR}/build/icon.ico" "${WIN_STAGING}/${APP_NAME}.ico"
 
 echo "==> [5/5] Creating Windows distribution archive (${ZIP_NAME})..."

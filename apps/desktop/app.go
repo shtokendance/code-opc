@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -38,6 +39,7 @@ type RuntimeConfig struct {
 	ApiURL        string `json:"apiUrl"`
 	WsURL         string `json:"wsUrl"`
 	AppURL        string `json:"appUrl"`
+	PlatformURL   string `json:"platformUrl,omitempty"`
 }
 
 type ConfigError struct {
@@ -85,24 +87,66 @@ type ProxyFetchResponse struct {
 	BodyB64    string            `json:"bodyB64,omitempty"`
 }
 
-func resolveDefaultRuntimeEndpoints() (string, string) {
+//go:embed config/endpoints.prod.json
+var embeddedDefaultEndpoints []byte
+
+var (
+	defaultAPIURL      string
+	defaultAppURL      string
+	defaultPlatformURL string
+)
+
+type endpointTemplate struct {
+	ApiURL      string `json:"apiUrl"`
+	AppURL      string `json:"appUrl"`
+	PlatformURL string `json:"platformUrl"`
+}
+
+func resolveTemplateEndpoints() (string, string, string) {
+	var tpl endpointTemplate
+	_ = json.Unmarshal(embeddedDefaultEndpoints, &tpl)
+	api := strings.TrimSpace(defaultAPIURL)
+	if api == "" {
+		api = strings.TrimSpace(tpl.ApiURL)
+	}
+	app := strings.TrimSpace(defaultAppURL)
+	if app == "" {
+		app = strings.TrimSpace(tpl.AppURL)
+	}
+	platform := strings.TrimSpace(defaultPlatformURL)
+	if platform == "" {
+		platform = strings.TrimSpace(tpl.PlatformURL)
+	}
+	return api, app, platform
+}
+
+func resolveDefaultRuntimeEndpoints() (string, string, string) {
+	tplAPI, tplApp, tplPlatform := resolveTemplateEndpoints()
+
 	// 1. Env vars override
-	apiURL := os.Getenv("MULTICA_API_URL")
-	appURL := os.Getenv("MULTICA_APP_URL")
+	apiURL := strings.TrimSpace(os.Getenv("MULTICA_API_URL"))
+	appURL := strings.TrimSpace(os.Getenv("MULTICA_APP_URL"))
+	platformURL := strings.TrimSpace(os.Getenv("MULTICA_PLATFORM_URL"))
 	if apiURL != "" {
-		return apiURL, appURL
+		if appURL == "" {
+			appURL = tplApp
+		}
+		if platformURL == "" {
+			platformURL = tplPlatform
+		}
+		return apiURL, appURL, platformURL
 	}
 
 	// 2. ~/.codeopc/desktop.json (auto-migrated from ~/.multica if needed)
 	if cfgDir := getAppConfigDir(); cfgDir != "" {
 		desktopPath := filepath.Join(cfgDir, "desktop.json")
 		if data, err := os.ReadFile(desktopPath); err == nil {
-			var rec struct {
-				ApiURL string `json:"apiUrl"`
-				AppURL string `json:"appUrl"`
-			}
+			var rec endpointTemplate
 			if json.Unmarshal(data, &rec) == nil && rec.ApiURL != "" {
-				return rec.ApiURL, rec.AppURL
+				if rec.PlatformURL == "" {
+					rec.PlatformURL = tplPlatform
+				}
+				return rec.ApiURL, rec.AppURL, rec.PlatformURL
 			}
 		}
 	}
@@ -111,31 +155,32 @@ func resolveDefaultRuntimeEndpoints() (string, string) {
 	if home != "" {
 		legacyPath := filepath.Join(home, legacyAppConfigDirName, "desktop.json")
 		if data, err := os.ReadFile(legacyPath); err == nil {
-			var rec struct {
-				ApiURL string `json:"apiUrl"`
-				AppURL string `json:"appUrl"`
-			}
+			var rec endpointTemplate
 			if json.Unmarshal(data, &rec) == nil && rec.ApiURL != "" {
-				return rec.ApiURL, rec.AppURL
+				if rec.PlatformURL == "" {
+					rec.PlatformURL = tplPlatform
+				}
+				return rec.ApiURL, rec.AppURL, rec.PlatformURL
 			}
 		}
 	}
 
-	// 3. Default to enterprise endpoints
-	return "https://code-opc.benlai.com", "https://code-opc.benlai.com"
+	// 3. Default to build-time / embedded template endpoints
+	return tplAPI, tplApp, tplPlatform
 }
 
 type AppService struct {
-	app           *application.App
-	daemonService *DaemonService
-	mu            sync.RWMutex
-	targetAPIURL  string
-	targetAppURL  string
-	daemonToken   string
-	daemonUserID  string
-	openWindows   map[string]*application.WebviewWindow
-	proxyClient   *http.Client
-	wsProxyServer *http.Server
+	app               *application.App
+	daemonService     *DaemonService
+	mu                sync.RWMutex
+	targetAPIURL      string
+	targetAppURL      string
+	targetPlatformURL string
+	daemonToken       string
+	daemonUserID      string
+	openWindows       map[string]*application.WebviewWindow
+	proxyClient       *http.Client
+	wsProxyServer     *http.Server
 	wsProxyPort       int
 	wsProxyTarget     string
 	mainWindow        *application.WebviewWindow
@@ -153,11 +198,12 @@ type AppService struct {
 }
 
 func NewAppService() *AppService {
-	defaultAPI, defaultApp := resolveDefaultRuntimeEndpoints()
+	defaultAPI, defaultApp, defaultPlatform := resolveDefaultRuntimeEndpoints()
 	return &AppService{
-		daemonService: NewDaemonService(),
-		targetAPIURL:  defaultAPI,
-		targetAppURL:  defaultApp,
+		daemonService:     NewDaemonService(),
+		targetAPIURL:      defaultAPI,
+		targetAppURL:      defaultApp,
+		targetPlatformURL: defaultPlatform,
 		openWindows:   make(map[string]*application.WebviewWindow),
 		proxyClient: &http.Client{
 			Timeout: 45 * time.Second,
@@ -468,10 +514,11 @@ func (s *AppService) GetRuntimeConfig() RuntimeConfigResult {
 	s.mu.RLock()
 	apiURL := s.targetAPIURL
 	appURL := s.targetAppURL
+	platformURL := s.targetPlatformURL
 	s.mu.RUnlock()
 
 	if apiURL == "" {
-		apiURL, appURL = resolveDefaultRuntimeEndpoints()
+		apiURL, appURL, platformURL = resolveDefaultRuntimeEndpoints()
 	}
 	wsURL := os.Getenv("MULTICA_WS_URL")
 	if wsURL == "" {
@@ -494,6 +541,7 @@ func (s *AppService) GetRuntimeConfig() RuntimeConfigResult {
 			ApiURL:        apiURL,
 			WsURL:         wsURL,
 			AppURL:        appURL,
+			PlatformURL:   platformURL,
 		},
 	}
 }

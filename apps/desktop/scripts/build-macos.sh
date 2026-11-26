@@ -8,9 +8,23 @@ APP_NAME="CodeOPC"
 BUNDLE_ID="ai.codeopc.desktop"
 VERSION="$(node -p "require('${DESKTOP_DIR}/package.json').version")"
 ARCH="$(uname -m)"
+DESKTOP_ENV="${DESKTOP_ENV:-prod}"
+ENDPOINTS_FILE="${DESKTOP_DIR}/config/endpoints.${DESKTOP_ENV}.json"
 
-echo "==> [1/6] Building frontend assets..."
+if [ ! -f "${ENDPOINTS_FILE}" ]; then
+    echo "Error: Endpoints template not found: ${ENDPOINTS_FILE}" >&2
+    exit 1
+fi
+
+DEFAULT_API_URL="$(node -p "require('${ENDPOINTS_FILE}').apiUrl")"
+DEFAULT_APP_URL="$(node -p "require('${ENDPOINTS_FILE}').appUrl")"
+DEFAULT_PLATFORM_URL="$(node -p "require('${ENDPOINTS_FILE}').platformUrl")"
+
+echo "==> [1/6] Building frontend assets (env=${DESKTOP_ENV}, api=${DEFAULT_API_URL})..."
 cd "${DESKTOP_DIR}"
+VITE_DEFAULT_API_URL="${DEFAULT_API_URL}" \
+VITE_DEFAULT_APP_URL="${DEFAULT_APP_URL}" \
+VITE_DEFAULT_PLATFORM_URL="${DEFAULT_PLATFORM_URL}" \
 pnpm exec electron-vite build
 
 echo "==> [2/6] Preparing macOS App Bundle structure..."
@@ -23,7 +37,7 @@ rm -rf "${APP_BUNDLE}" "${DIST_DIR}/${APP_NAME}-${VERSION}-${ARCH}.zip" "${DIST_
 mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
 
 echo "==> [3/6] Compiling native Go binary..."
-CGO_ENABLED=1 go build -trimpath -ldflags="-s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME}" -o "${MACOS_DIR}/${APP_NAME}" .
+CGO_ENABLED=1 go build -trimpath -ldflags="-s -w -X main.appVersion=${VERSION} -X main.appProductName=${APP_NAME} -X main.defaultAPIURL=${DEFAULT_API_URL} -X main.defaultAppURL=${DEFAULT_APP_URL} -X main.defaultPlatformURL=${DEFAULT_PLATFORM_URL}" -o "${MACOS_DIR}/${APP_NAME}" .
 chmod +x "${MACOS_DIR}/${APP_NAME}"
 
 echo "==> [4/6] Copying resources and generating metadata..."

@@ -3,6 +3,7 @@ export interface RuntimeConfig {
   apiUrl: string;
   wsUrl: string;
   appUrl: string;
+  platformUrl?: string;
 }
 
 export interface RuntimeConfigError {
@@ -13,11 +14,22 @@ export type RuntimeConfigResult =
   | { ok: true; config: RuntimeConfig }
   | { ok: false; error: RuntimeConfigError };
 
+const buildEnv =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env) ||
+  {};
+
+const defaultApiUrl = buildEnv.VITE_DEFAULT_API_URL || "https://code-opc.benlai.com";
+const defaultAppUrl = buildEnv.VITE_DEFAULT_APP_URL || "https://code-opc.benlai.com";
+const defaultPlatformUrl =
+  buildEnv.VITE_DEFAULT_PLATFORM_URL || "https://shtokendance.benlai.com";
+
 export const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = Object.freeze({
   schemaVersion: 1,
-  apiUrl: "https://code-opc.benlai.com",
-  wsUrl: "wss://code-opc.benlai.com/ws",
-  appUrl: "https://code-opc.benlai.com",
+  apiUrl: defaultApiUrl,
+  wsUrl: deriveWsUrl(defaultApiUrl),
+  appUrl: defaultAppUrl,
+  platformUrl: defaultPlatformUrl,
 });
 
 const LOCAL_DEV_RUNTIME_CONFIG: RuntimeConfig = Object.freeze({
@@ -72,6 +84,7 @@ export function parseRuntimeConfig(raw: string): RuntimeConfig {
   const apiUrl = requiredString(obj.apiUrl, "apiUrl");
   const appUrl = optionalString(obj.appUrl, "appUrl");
   const wsUrl = optionalString(obj.wsUrl, "wsUrl");
+  const platformUrl = optionalString(obj.platformUrl, "platformUrl");
 
   const normalizedApiUrl = normalizeHttpUrl(apiUrl, "apiUrl");
   return {
@@ -79,6 +92,9 @@ export function parseRuntimeConfig(raw: string): RuntimeConfig {
     apiUrl: normalizedApiUrl,
     wsUrl: wsUrl ? normalizeWsUrl(wsUrl, "wsUrl") : deriveWsUrl(normalizedApiUrl),
     appUrl: appUrl ? normalizeHttpUrl(appUrl, "appUrl") : deriveAppUrl(normalizedApiUrl),
+    ...(platformUrl
+      ? { platformUrl: normalizeHttpUrl(platformUrl, "platformUrl") }
+      : {}),
   };
 }
 

@@ -7,6 +7,7 @@ import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
 import { useAuthStore } from "@multica/core/auth";
 import { api } from "@multica/core/api";
 import { workspaceKeys } from "@multica/core/workspace/queries";
+import { DEFAULT_RUNTIME_CONFIG } from "../../../shared/runtime-config";
 
 export function DesktopLoginPage() {
   const qc = useQueryClient();
@@ -98,7 +99,12 @@ export function DesktopLoginPage() {
       }
     }
 
-    const platformUrl = "https://shtokendance.benlai.com";
+    const platformUrl =
+      (window.desktopAPI?.runtimeConfig?.ok
+        ? window.desktopAPI.runtimeConfig.config.platformUrl
+        : undefined) ||
+      DEFAULT_RUNTIME_CONFIG.platformUrl ||
+      "https://shtokendance.benlai.com";
     const openLoginTarget = (targetUrl: string) => {
       if (window.desktopAPI?.openLoginWindow) {
         const returnUrl = `${window.location.origin}/`;

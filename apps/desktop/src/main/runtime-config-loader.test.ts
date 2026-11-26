@@ -55,6 +55,7 @@ describe("loadRuntimeConfig", () => {
         apiUrl: "https://code-opc.benlai.com",
         wsUrl: "wss://code-opc.benlai.com/ws",
         appUrl: "https://code-opc.benlai.com",
+        platformUrl: "https://shtokendance.benlai.com",
       },
     });
   });

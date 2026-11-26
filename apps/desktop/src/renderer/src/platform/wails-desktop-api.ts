@@ -7,7 +7,10 @@
  * ZERO MOCKS: All methods invoke real Go OS implementations and real multica daemon processes.
  */
 
-import type { RuntimeConfigResult } from "../../../shared/runtime-config";
+import {
+  DEFAULT_RUNTIME_CONFIG,
+  type RuntimeConfigResult,
+} from "../../../shared/runtime-config";
 import type { FreezeBreadcrumb } from "../../../shared/freeze-breadcrumb";
 import { parseIssueWindowPath, type DesktopWindowContext } from "../../../shared/issue-window";
 
@@ -438,12 +441,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
   };
   let runtimeConfig: RuntimeConfigResult = {
     ok: true,
-    config: {
-      schemaVersion: 1,
-      apiUrl: "https://code-opc.benlai.com",
-      wsUrl: "wss://code-opc.benlai.com/ws",
-      appUrl: "https://code-opc.benlai.com",
-    },
+    config: { ...DEFAULT_RUNTIME_CONFIG },
   };
   let systemLocale = "en";
 
