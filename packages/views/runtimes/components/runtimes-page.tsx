@@ -349,7 +349,6 @@ export function RuntimesPage({
     localMachineName: localMachineName ?? localMachine?.title ?? null,
     qoder,
     cloudRuntimeEnabled,
-    onAddMachine: () => setShowConnectDialog(true),
     onQoder: openQoder,
     onCloudRuntime: () => setShowCloudRuntimeDialog(true),
   };
@@ -595,7 +594,6 @@ function AddRuntimeMenu({
   localMachineName,
   qoder,
   cloudRuntimeEnabled,
-  onAddMachine,
   onQoder,
   onCloudRuntime,
   trigger,
@@ -605,7 +603,6 @@ function AddRuntimeMenu({
   localMachineName: string | null;
   qoder: QoderConnection | null;
   cloudRuntimeEnabled: boolean;
-  onAddMachine: () => void;
   onQoder: () => void;
   onCloudRuntime: () => void;
   trigger?: ReactElement;
@@ -642,12 +639,6 @@ function AddRuntimeMenu({
               render={<a href="/download" target="_blank" rel="noreferrer" />}
             />
           )}
-          <AddMenuItem
-            icon={<SquareTerminal className="size-4 text-muted-foreground" />}
-            title={t(($) => $.page.add_menu.other_machine)}
-            description={t(($) => $.page.add_menu.other_machine_hint)}
-            onClick={onAddMachine}
-          />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>

@@ -113,6 +113,38 @@ if command -v codesign &>/dev/null; then
     fi
 fi
 
+NOTARY_AUTH_ARGS=()
+if [ -n "${SIGN_IDENTITY:-}" ] && command -v xcrun &>/dev/null; then
+    if [ -n "${APPLE_NOTARY_PROFILE:-}" ]; then
+        NOTARY_AUTH_ARGS=(--keychain-profile "${APPLE_NOTARY_PROFILE}")
+    elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ]; then
+        TEAM_ID="${APPLE_TEAM_ID:-}"
+        if [ -z "${TEAM_ID}" ]; then
+            TEAM_ID="$(echo "${SIGN_IDENTITY}" | sed -n 's/.*(\([A-Z0-9]\{10\}\))$/\1/p')"
+        fi
+        if [ -n "${TEAM_ID}" ]; then
+            NOTARY_AUTH_ARGS=(--apple-id "${APPLE_ID}" --password "${APPLE_APP_SPECIFIC_PASSWORD}" --team-id "${TEAM_ID}")
+        fi
+    fi
+
+    if [ ${#NOTARY_AUTH_ARGS[@]} -gt 0 ]; then
+        echo "==> [5.5/6] Notarizing .app bundle with Apple notarytool..."
+        NOTARY_TMP_ZIP="${DIST_DIR}/notary-${APP_NAME}.zip"
+        rm -f "${NOTARY_TMP_ZIP}"
+        ditto -c -k --keepParent "${APP_BUNDLE}" "${NOTARY_TMP_ZIP}"
+        xcrun notarytool submit "${NOTARY_TMP_ZIP}" "${NOTARY_AUTH_ARGS[@]}" --wait
+        rm -f "${NOTARY_TMP_ZIP}"
+        xcrun stapler staple "${APP_BUNDLE}"
+        xcrun stapler validate "${APP_BUNDLE}"
+        spctl -a -vvv -t exec "${APP_BUNDLE}"
+    elif [ "${REQUIRE_APPLE_NOTARIZATION:-0}" = "1" ]; then
+        echo "Error: Apple notarization credentials are required. Set APPLE_NOTARY_PROFILE or APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD." >&2
+        exit 1
+    else
+        echo "==> [5.5/6] Skipping Apple notarization (set APPLE_NOTARY_PROFILE or APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD to enable)."
+    fi
+fi
+
 echo "==> [6/6] Generating distribution packages (DMG & ZIP)..."
 # 1. Zip
 cd "${DIST_DIR}"
@@ -129,6 +161,18 @@ ln -s /Applications "${DMG_STAGING}/Applications"
 
 hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" -ov -format UDZO "${DMG_NAME}"
 rm -rf "${DMG_STAGING}"
+
+if [ -n "${SIGN_IDENTITY:-}" ] && command -v codesign &>/dev/null; then
+    echo "==> Signing DMG with '${SIGN_IDENTITY}'..."
+    codesign --force --timestamp --sign "${SIGN_IDENTITY}" "${DMG_NAME}"
+    codesign --verify --strict --verbose=2 "${DMG_NAME}"
+    if [ ${#NOTARY_AUTH_ARGS[@]} -gt 0 ]; then
+        echo "==> Notarizing DMG..."
+        xcrun notarytool submit "${DMG_NAME}" "${NOTARY_AUTH_ARGS[@]}" --wait
+        xcrun stapler staple "${DMG_NAME}"
+        xcrun stapler validate "${DMG_NAME}"
+    fi
+fi
 
 echo "==> Generating latest.json update manifest..."
 node "${DESKTOP_DIR}/scripts/generate-manifest.mjs"

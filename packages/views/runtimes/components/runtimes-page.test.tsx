@@ -185,7 +185,7 @@ describe("RuntimesPage", () => {
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Machines")).toBeInTheDocument();
     expect(within(menu).getByText("This computer")).toBeInTheDocument();
-    expect(within(menu).getByText("Other machine or server")).toBeInTheDocument();
+    expect(within(menu).queryByText("Other machine or server")).not.toBeInTheDocument();
     expect(within(menu).getByText("Cloud services")).toBeInTheDocument();
     expect(within(menu).getByText("Qoder Cloud Agents")).toBeInTheDocument();
     expect(within(menu).getByText("Cursor Cloud Agents")).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe("RuntimesPage", () => {
 
     await user.click(within(intro).getByRole("button", { name: "Add runtime" }));
     const menu = await screen.findByRole("menu");
-    expect(within(menu).getByText("Other machine or server")).toBeInTheDocument();
+    expect(within(menu).queryByText("Other machine or server")).not.toBeInTheDocument();
     expect(within(menu).getByText("Qoder Cloud Agents")).toBeInTheDocument();
   });
 
@@ -270,7 +270,7 @@ describe("RuntimesPage", () => {
     await user.click(screen.getByRole("button", { name: "Add runtime" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByText("Connected · Jiayuan's MacBook")).toBeInTheDocument();
-    expect(within(menu).getByText("Other machine or server")).toBeInTheDocument();
+    expect(within(menu).queryByText("Other machine or server")).not.toBeInTheDocument();
     expect(within(menu).getByText("Qoder Cloud Agents")).toBeInTheDocument();
     expect(within(menu).getByText("By Qoder")).toBeInTheDocument();
   });
