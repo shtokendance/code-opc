@@ -440,9 +440,9 @@ export async function initWailsDesktopAPI(): Promise<void> {
     ok: true,
     config: {
       schemaVersion: 1,
-      apiUrl: "http://10.101.102.116:3088",
-      wsUrl: "ws://10.101.102.116:3088/ws",
-      appUrl: "http://10.101.102.116:3080",
+      apiUrl: "https://code-opc.benlai.com",
+      wsUrl: "wss://code-opc.benlai.com/ws",
+      appUrl: "https://code-opc.benlai.com",
     },
   };
   let systemLocale = "en";
