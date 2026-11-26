@@ -292,3 +292,43 @@ func TestDownloadResourceSkillArchive_Success(t *testing.T) {
 		t.Fatalf("unexpected archive bytes: %q", string(data))
 	}
 }
+
+func TestListKnowledgeBases_IncludesShared(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/integration/v1/resources/knowledge-bases" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("include_shared") != "true" {
+			t.Errorf("expected include_shared=true, got %q", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"items": [
+				{
+					"resource_kind": "knowledge_base",
+					"tenant_id": "296492",
+					"tenant_name": "技术交付中心",
+					"knowledge_base_id": "kb-1",
+					"name": "共享知识库",
+					"availability": "available"
+				}
+			],
+			"total": 1,
+			"offset": 0,
+			"limit": 100,
+			"complete": true,
+			"failures": []
+		}`))
+	}))
+	defer ts.Close()
+
+	client := NewClient(ts.URL, "service-token", 5*time.Second)
+	resp, err := client.ListKnowledgeBases(context.Background(), "user-jwt-123", "", "", 0, 100)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Items) != 1 || resp.Items[0].KnowledgeBaseID != "kb-1" {
+		t.Fatalf("unexpected items: %+v", resp.Items)
+	}
+}

@@ -350,6 +350,7 @@ func (c *Client) ListKnowledgeBases(ctx context.Context, userToken, tenantID, q 
 
 	endpoint := fmt.Sprintf("%s/integration/v1/resources/knowledge-bases", c.baseURL)
 	params := url.Values{}
+	params.Set("include_shared", "true")
 	if tenantID != "" {
 		params.Set("tenant_id", tenantID)
 	}
