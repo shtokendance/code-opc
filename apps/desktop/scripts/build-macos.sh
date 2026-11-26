@@ -104,6 +104,9 @@ if command -v codesign &>/dev/null; then
         echo "==> [5/6] Signing .app bundle with '${SIGN_IDENTITY}'..."
         codesign --force --deep --options runtime --timestamp --sign "${SIGN_IDENTITY}" "${ENTITLEMENTS_ARGS[@]}" "${APP_BUNDLE}"
         codesign --verify --deep --strict --verbose=2 "${APP_BUNDLE}"
+    elif [ "${REQUIRE_APPLE_SIGNING:-0}" = "1" ]; then
+        echo "Error: Developer ID Application certificate is required for production release signing." >&2
+        exit 1
     else
         echo "==> [5/6] Ad-hoc code signing the .app bundle..."
         codesign --force --deep --sign - "${ENTITLEMENTS_ARGS[@]}" "${APP_BUNDLE}"

@@ -53,9 +53,7 @@ describe("CollapsibleReportContent", () => {
 
     const expandBtn = screen.getByRole("button", { name: /2\.6 万字/ });
     expect(expandBtn).toBeInTheDocument();
-
-    const drawerBtn = screen.getByRole("button", { name: /侧边抽屉/ });
-    expect(drawerBtn).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /侧边抽屉/ })).not.toBeInTheDocument();
 
     // Click to expand in-place
     fireEvent.click(expandBtn);
@@ -82,24 +80,6 @@ describe("CollapsibleReportContent", () => {
     );
 
     expect(screen.getByRole("button", { name: /26\.1k chars/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /side drawer/ })).toBeInTheDocument();
-  });
-
-  it("opens side drawer on drawer button click", () => {
-    const longContent = "Long report markdown body ".repeat(200);
-    renderWithI18n(
-      <CollapsibleReportContent
-        content={longContent}
-        threshold={500}
-        title="Custom Report Title"
-      />,
-      { locale: "zh-Hans" }
-    );
-
-    const drawerBtn = screen.getByRole("button", { name: /侧边抽屉/ });
-    fireEvent.click(drawerBtn);
-
-    // Side drawer sheet dialog opens
-    expect(screen.getByRole("heading", { name: "Custom Report Title" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /side drawer/ })).not.toBeInTheDocument();
   });
 });

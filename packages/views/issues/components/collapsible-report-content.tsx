@@ -1,14 +1,7 @@
 import { memo, useState } from "react";
 import type { Attachment } from "@multica/core/types";
 import { Button } from "@multica/ui/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@multica/ui/components/ui/sheet";
-import { ChevronDown, ChevronUp, PanelRight } from "@multica/ui/icons";
+import { ChevronDown, ChevronUp } from "@multica/ui/icons";
 import { cn } from "@multica/ui/lib/utils";
 import { ReadonlyContent } from "../../editor";
 import { useLocale, useT } from "../../i18n";
@@ -51,13 +44,11 @@ export const CollapsibleReportContent = memo(function CollapsibleReportContent({
   attachments,
   isAgentOrTask = true,
   threshold = DEFAULT_REPORT_COLLAPSE_THRESHOLD,
-  title,
   className,
 }: CollapsibleReportContentProps) {
   const { t } = useT("issues");
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const shouldCollapse = isAgentOrTask && content.length >= threshold;
 
@@ -98,41 +89,7 @@ export const CollapsibleReportContent = memo(function CollapsibleReportContent({
           </span>
           {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
         </Button>
-
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          <PanelRight className="size-3.5" />
-          <span>{t(($) => $.comment.read_in_drawer)}</span>
-        </Button>
       </div>
-
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent
-          side="right"
-          className="flex h-full w-[720px] max-w-full flex-col gap-0 p-0 sm:max-w-[720px]"
-        >
-          <SheetHeader className="border-b px-6 py-4">
-            <div className="flex items-center gap-2.5">
-              <SheetTitle className="text-h3 font-semibold">
-                {title || t(($) => $.comment.report_drawer_title)}
-              </SheetTitle>
-              <span className="rounded-sm bg-muted px-2 py-0.5 text-caption font-medium text-muted-foreground">
-                {formattedCount}
-              </span>
-            </div>
-            <SheetDescription className="sr-only">
-              {title || t(($) => $.comment.report_drawer_title)}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-6 text-body leading-relaxed">
-            <ReadonlyContent content={content} attachments={attachments} />
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 });
