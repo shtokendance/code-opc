@@ -4,7 +4,7 @@ set -euo pipefail
 # Unified release script for CodeOPC desktop (test / prod / both).
 #
 # Usage:
-#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--upload] [--skip-git]
+#   bash scripts/release.sh --env test|prod|both [--version X.Y.Z] [--upload]
 #
 # Examples:
 #   bash scripts/release.sh --env test --version 0.11.23 --upload
@@ -23,7 +23,6 @@ TEST_API_BASE="${TEST_API_BASE:-http://10.101.102.116:3088}"
 TARGET_ENV=""
 VERSION=""
 UPLOAD=0
-SKIP_GIT=0
 
 usage() {
     cat <<EOF
@@ -33,7 +32,6 @@ Options:
   --env <test|prod|both>   Release target environment (required)
   --version <X.Y.Z>        Bump desktop version before building (optional; defaults to package.json version)
   --upload                 Upload build artifacts to server (currently uploads test builds to test server; prod ignored)
-  --skip-git               Skip git commit/tag/push
   -h, --help               Show this help
 EOF
 }
@@ -50,10 +48,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --upload)
             UPLOAD=1
-            shift
-            ;;
-        --skip-git)
-            SKIP_GIT=1
             shift
             ;;
         -h|--help)
@@ -179,15 +173,6 @@ if [[ "${TARGET_ENV}" == "prod" || "${TARGET_ENV}" == "both" ]]; then
     ensure_apple_signing_cert
 fi
 
-if [[ "${SKIP_GIT}" != "1" ]]; then
-    cd "${REPO_ROOT}"
-    if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
-        echo "==> Committing tracked changes before tagging..."
-        git add -u
-        git commit -m "chore(release): prepare desktop v${VERSION}"
-    fi
-fi
-
 if [[ "${TARGET_ENV}" == "test" || "${TARGET_ENV}" == "both" ]]; then
     echo "=========================================================="
     echo " Building TEST release (v${VERSION}-test)"
@@ -215,13 +200,6 @@ if [[ "${TARGET_ENV}" == "test" || "${TARGET_ENV}" == "both" ]]; then
         curl -fsS "${TEST_API_BASE}/api/desktop/updates/check?platform=windows&arch=amd64&version=0.0.1&product=Multica"
         echo ""
     fi
-
-    if [[ "${SKIP_GIT}" != "1" ]]; then
-        cd "${REPO_ROOT}"
-        git tag -f "v${VERSION}-test"
-        git push origin release
-        git push -f origin "v${VERSION}-test"
-    fi
 fi
 
 if [[ "${TARGET_ENV}" == "prod" || "${TARGET_ENV}" == "both" ]]; then
@@ -247,13 +225,6 @@ if [[ "${TARGET_ENV}" == "prod" || "${TARGET_ENV}" == "both" ]]; then
         "${DIST_DIR}/latest.json" \
         "${DIST_DIR}/latest-codeopc.json" \
         "${PROD_OUT_DIR}/"
-
-    if [[ "${SKIP_GIT}" != "1" ]]; then
-        cd "${REPO_ROOT}"
-        git tag -f "v${VERSION}"
-        git push origin release
-        git push -f origin "v${VERSION}"
-    fi
 fi
 
 echo "=========================================================="
