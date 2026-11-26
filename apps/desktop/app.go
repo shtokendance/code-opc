@@ -247,6 +247,7 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.oauthCancel = cancel
 	s.oauthPort = port
+	s.oauthPendingToken = ""
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -309,11 +310,16 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 				}
 			}()
 
-			// Close the port once verification passes!
-			go func() {
+			// Close the port once verification passes, only if it is still this server instance!
+			go func(srv *http.Server) {
 				time.Sleep(3 * time.Second)
-				s.StopLoginOAuthServer()
-			}()
+				s.oauthMu.Lock()
+				isSame := s.oauthServer == srv
+				s.oauthMu.Unlock()
+				if isSame {
+					s.StopLoginOAuthServer()
+				}
+			}(s.oauthServer)
 			return
 		}
 
@@ -487,7 +493,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.11.24"
+	appVersion     = "0.11.25"
 	appProductName = "CodeOPC"
 )
 

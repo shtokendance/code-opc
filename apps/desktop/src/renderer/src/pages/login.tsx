@@ -89,41 +89,43 @@ export function DesktopLoginPage() {
   }, [qc]);
 
   const handleWeComLogin = async () => {
-    let port = oauthPort;
-    if (!port && window.desktopAPI?.startLoginOAuthServer) {
-      try {
+    try {
+      let port = oauthPort;
+      if (window.desktopAPI?.startLoginOAuthServer) {
         port = await window.desktopAPI.startLoginOAuthServer();
         setOauthPort(port);
-      } catch (err) {
-        console.error("Start login OAuth server failed on click:", err);
       }
-    }
 
-    const platformUrl =
-      (window.desktopAPI?.runtimeConfig?.ok
-        ? window.desktopAPI.runtimeConfig.config.platformUrl
-        : undefined) ||
-      DEFAULT_RUNTIME_CONFIG.platformUrl ||
-      "https://shtokendance.benlai.com";
-    const openLoginTarget = (targetUrl: string) => {
-      if (window.desktopAPI?.openLoginWindow) {
-        const returnUrl = `${window.location.origin}/`;
-        return window.desktopAPI.openLoginWindow(targetUrl, returnUrl);
+      const platformUrl =
+        (window.desktopAPI?.runtimeConfig?.ok
+          ? window.desktopAPI.runtimeConfig.config.platformUrl
+          : undefined) ||
+        DEFAULT_RUNTIME_CONFIG.platformUrl ||
+        "https://shtokendance.benlai.com";
+      const openLoginTarget = (targetUrl: string) => {
+        if (window.desktopAPI?.openLoginWindow) {
+          const returnUrl = `${window.location.origin}/`;
+          return window.desktopAPI.openLoginWindow(targetUrl, returnUrl);
+        }
+        return window.desktopAPI.openExternal(targetUrl);
+      };
+
+      if (port && port > 0) {
+        const redirectUri = `http://127.0.0.1:${port}/callback`;
+        const loginUrl = `${platformUrl}/wecom/login?client_id=code-desktop&redirect_uri=${encodeURIComponent(redirectUri)}`;
+        await openLoginTarget(loginUrl);
+        return;
       }
-      return window.desktopAPI.openExternal(targetUrl);
-    };
 
-    if (port && port > 0) {
-      const redirectUri = `http://127.0.0.1:${port}/callback`;
-      const loginUrl = `${platformUrl}/wecom/login?client_id=code-desktop&redirect_uri=${encodeURIComponent(redirectUri)}`;
-      await openLoginTarget(loginUrl);
-      return;
+      // 兜底方案：通过 codeopc:// / multica:// 唤起
+      await openLoginTarget(
+        `${platformUrl}/wecom/login?client_id=code-desktop&state=code-desktop`,
+      );
+    } catch (err) {
+      console.error("[DesktopLoginPage] handleWeComLogin failed:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`打开登录页面失败: ${msg}`);
     }
-
-    // 兜底方案：通过 codeopc:// / multica:// 唤起
-    await openLoginTarget(
-      `${platformUrl}/wecom/login?client_id=code-desktop&state=code-desktop`,
-    );
   };
 
   return (
