@@ -153,13 +153,56 @@ zip -r -y -q "${ZIP_NAME}" "${APP_NAME}.app"
 
 # 2. DMG
 DMG_NAME="${APP_NAME}-${VERSION}-${ARCH}.dmg"
+DMG_TEMP="${DIST_DIR}/${APP_NAME}-temp.dmg"
 DMG_STAGING="${DIST_DIR}/dmg-staging"
-rm -rf "${DMG_STAGING}"
+DMG_BG="${DESKTOP_DIR}/build/dmg-background.png"
+rm -rf "${DMG_STAGING}" "${DMG_TEMP}"
 mkdir -p "${DMG_STAGING}"
 cp -R "${APP_BUNDLE}" "${DMG_STAGING}/"
 ln -s /Applications "${DMG_STAGING}/Applications"
 
-hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" -ov -format UDZO "${DMG_NAME}"
+if [ -f "${DMG_BG}" ]; then
+    mkdir -p "${DMG_STAGING}/.background"
+    cp "${DMG_BG}" "${DMG_STAGING}/.background/dmg-background.png"
+
+    hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" -ov -fs HFS+ -format UDRW "${DMG_TEMP}"
+    MOUNT_DIR="/Volumes/${APP_NAME}"
+    # Detach any stale mount with the same volume name first
+    if [ -d "${MOUNT_DIR}" ]; then
+        hdiutil detach "${MOUNT_DIR}" -force >/dev/null 2>&1 || true
+    fi
+    DEVICE=$(hdiutil attach -readwrite -noverify -noautoopen "${DMG_TEMP}" | awk '/Apple_HFS/ {print $1; exit}')
+    sleep 1
+    if [ -n "${DEVICE}" ] && [ -d "${MOUNT_DIR}" ]; then
+        osascript <<EOF || true
+tell application "Finder"
+    tell disk "${APP_NAME}"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 880, 560}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 96
+        set text size of viewOptions to 13
+        set background picture of viewOptions to file ".background:dmg-background.png"
+        set position of item "${APP_NAME}.app" of container window to {185, 225}
+        set position of item "Applications" of container window to {495, 225}
+        update without registering applications
+        delay 2
+        close
+    end tell
+end tell
+EOF
+        sync
+        hdiutil detach "${DEVICE}" -quiet || hdiutil detach "${DEVICE}" -force || true
+    fi
+    hdiutil convert "${DMG_TEMP}" -format UDZO -imagekey zlib-level=9 -o "${DMG_NAME}"
+    rm -f "${DMG_TEMP}"
+else
+    hdiutil create -volname "${APP_NAME}" -srcfolder "${DMG_STAGING}" -ov -format UDZO "${DMG_NAME}"
+fi
 rm -rf "${DMG_STAGING}"
 
 if [ -n "${SIGN_IDENTITY:-}" ] && command -v codesign &>/dev/null; then
