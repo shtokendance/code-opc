@@ -81,7 +81,7 @@ describe("MachineCliSection", () => {
       id: "online-owned",
       metadata: {
         cli_version: "0.3.17",
-        launched_by: "desktop",
+        launched_by: "cli",
       },
     });
     const otherUsers = runtime({ id: "other-user", owner_id: "user-2" });
@@ -99,7 +99,7 @@ describe("MachineCliSection", () => {
       runtimeId: "online-owned",
       currentVersion: "0.3.17",
       isOnline: true,
-      launchedBy: "desktop",
+      launchedBy: "cli",
     });
   });
 
@@ -197,7 +197,7 @@ describe("MachineCliSection", () => {
             owner_id: "user-2",
             metadata: {
               cli_version: "0.3.17",
-              launched_by: "desktop",
+              launched_by: "cli",
             },
           }),
         ])}
@@ -213,7 +213,26 @@ describe("MachineCliSection", () => {
       runtimeId: null,
       currentVersion: "0.3.17",
       isOnline: false,
-      launchedBy: "desktop",
+      launchedBy: "cli",
     });
+  });
+
+  it("hides CLI info when managed by desktop embedded daemon", () => {
+    const { container } = render(
+      <MachineCliSection
+        machine={machine([
+          runtime({
+            metadata: {
+              cli_version: "0.11.0",
+              launched_by: "desktop",
+            },
+          }),
+        ])}
+        currentUserId="user-1"
+      />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(mockUpdateSection).not.toHaveBeenCalled();
   });
 });

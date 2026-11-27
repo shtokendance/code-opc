@@ -273,7 +273,9 @@ export function RuntimeDetailPage({
   const hasCliInfo = machineHasCliInfo(machine, updateRuntime);
   const summary = [
     machine.subtitle,
-    machine.cliVersion ? `CLI ${machine.cliVersion}` : null,
+    machine.cliVersion && machine.launchedBy !== "desktop"
+      ? `CLI ${machine.cliVersion}`
+      : null,
     healthLabel(machine.health),
   ]
     .filter(Boolean)

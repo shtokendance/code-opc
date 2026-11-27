@@ -39,6 +39,7 @@ export function machineHasCliInfo(
   machine: RuntimeMachine,
   updateRuntime: AgentRuntime | null,
 ): boolean {
+  if (machine.launchedBy === "desktop") return false;
   if (machine.mode !== "local") return !!machine.cliVersion;
   return (
     !!updateRuntime ||
