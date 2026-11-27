@@ -33,23 +33,18 @@ function slide(name: string) {
 }
 
 describe("FeatureIntro", () => {
-  it("names the section by its headline and offers create plus docs", () => {
+  it("names the section by its headline and omits the external docs link", () => {
     renderIntro();
 
     expect(screen.getByRole("region", { name: "Work as a team" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Work as a team" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New squad" })).toBeInTheDocument();
-    const docs = screen.getByRole("link", { name: "Read the docs" });
-    expect(docs).toHaveAttribute("href", "https://multica.ai/docs/squads");
-    expect(docs).toHaveAttribute("target", "_blank");
+    expect(screen.queryByRole("link", { name: "Read the docs" })).not.toBeInTheDocument();
   });
 
-  it("links to the docs in the reader's language", () => {
+  it("does not render a docs link in localized views either", () => {
     renderIntro("zh-Hans");
-    expect(screen.getByRole("link", { name: "阅读文档" })).toHaveAttribute(
-      "href",
-      "https://multica.ai/docs/zh/squads",
-    );
+    expect(screen.queryByRole("link", { name: "阅读文档" })).not.toBeInTheDocument();
   });
 
   it("keeps the faded list out of the accessibility tree", () => {

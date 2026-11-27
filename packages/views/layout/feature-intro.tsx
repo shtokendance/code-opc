@@ -9,13 +9,12 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   type IconComponent,
 } from "@multica/ui/icons";
-import { Button, buttonVariants } from "@multica/ui/components/ui/button";
+import { Button } from "@multica/ui/components/ui/button";
 import { cn } from "@multica/ui/lib/utils";
 import { docsLocalePrefix } from "../common/docs-locale";
-import { useLocale, useT } from "../i18n";
+import { useT } from "../i18n";
 
 export type FeatureDocsSlug =
   | "squads"
@@ -60,15 +59,13 @@ export function FeatureIntro({
   title,
   description,
   action,
-  docs,
+  docs: _docs,
   secondaryAction,
   footer,
   columns,
   aside = "card",
   children,
 }: FeatureIntroProps) {
-  const { t } = useT("layout");
-  const locale = useLocale();
   const titleId = useId();
 
   return (
@@ -102,19 +99,7 @@ export function FeatureIntro({
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               {action}
-              {secondaryAction === undefined ? (
-                <a
-                  href={featureDocsHref(docs, locale)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={buttonVariants({ variant: "outline" })}
-                >
-                  <BookOpen aria-hidden="true" />
-                  {t(($) => $.feature_intro.read_docs)}
-                </a>
-              ) : (
-                secondaryAction
-              )}
+              {secondaryAction}
             </div>
             {footer && <div className="mt-6 w-full">{footer}</div>}
           </div>
