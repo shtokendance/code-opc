@@ -102,7 +102,7 @@ export function FeatureIntro({
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               {action}
-              {secondaryAction ?? (
+              {secondaryAction === undefined ? (
                 <a
                   href={featureDocsHref(docs, locale)}
                   target="_blank"
@@ -112,6 +112,8 @@ export function FeatureIntro({
                   <BookOpen aria-hidden="true" />
                   {t(($) => $.feature_intro.read_docs)}
                 </a>
+              ) : (
+                secondaryAction
               )}
             </div>
             {footer && <div className="mt-6 w-full">{footer}</div>}
