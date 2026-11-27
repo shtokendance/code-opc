@@ -12,7 +12,6 @@ import "C"
 import (
 	"net/url"
 	"strings"
-	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -43,7 +42,7 @@ func dispatchCustomProtocolURL(app *application.App, rawURL string) {
 	if u.Host == "auth" && strings.HasPrefix(u.Path, "/callback") {
 		token := u.Query().Get("token")
 		if token != "" {
-			app.EmitEvent("auth:token", token)
+			app.Event.Emit("auth:token", token)
 		}
 		return
 	}
@@ -51,7 +50,7 @@ func dispatchCustomProtocolURL(app *application.App, rawURL string) {
 	if u.Host == "open" && strings.HasPrefix(u.Path, "/issue") {
 		issueURL := u.Query().Get("url")
 		if issueURL != "" {
-			app.EmitEvent("issue:open", issueURL)
+			app.Event.Emit("issue:open", issueURL)
 		}
 		return
 	}
@@ -59,7 +58,7 @@ func dispatchCustomProtocolURL(app *application.App, rawURL string) {
 	if u.Host == "invite" {
 		invitationID := strings.TrimPrefix(u.Path, "/")
 		if invitationID != "" {
-			app.EmitEvent("invite:open", invitationID)
+			app.Event.Emit("invite:open", invitationID)
 		}
 		return
 	}
@@ -71,11 +70,11 @@ func attachWebviewUIDelegate(window *application.WebviewWindow) {
 	if window == nil {
 		return
 	}
-	handle, err := window.NativeWindowHandle()
-	if err != nil || handle == 0 {
+	handle := window.NativeWindow()
+	if handle == nil {
 		return
 	}
-	C.SetupWebviewUIDelegate(unsafe.Pointer(handle))
+	C.SetupWebviewUIDelegate(handle)
 }
 
 func setupDarwinURLHandler(app *application.App) {

@@ -101,7 +101,7 @@ func (s *AppService) setDownloadState(st UpdaterDownloadState) {
 	s.updaterMu.Unlock()
 
 	if s.app != nil {
-		s.app.EmitEvent("updater:download-state", st)
+		s.app.Event.Emit("updater:download-state", st)
 	}
 }
 
@@ -308,7 +308,7 @@ func (s *AppService) DownloadUpdate() error {
 				lastReport = time.Now()
 				percent := int(float64(downloaded) / float64(contentLength) * 100)
 				if s.app != nil {
-					s.app.EmitEvent("updater:download-progress", map[string]any{
+					s.app.Event.Emit("updater:download-progress", map[string]any{
 						"percent": percent,
 					})
 				}
@@ -350,7 +350,7 @@ func (s *AppService) DownloadUpdate() error {
 	})
 
 	if s.app != nil {
-		s.app.EmitEvent("updater:update-downloaded", map[string]any{
+		s.app.Event.Emit("updater:update-downloaded", map[string]any{
 			"version":      info.version,
 			"releaseNotes": info.releaseNotes,
 		})

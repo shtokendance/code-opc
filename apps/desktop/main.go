@@ -94,17 +94,17 @@ func main() {
 	})
 
 	// Setup macOS native Application & Edit menu to enable standard clipboard shortcuts (⌘C, ⌘V, ⌘A, ⌘Z)
-	menu := app.NewMenu()
+	menu := app.Menu.New()
 	if runtime.GOOS == "darwin" {
 		menu.AddRole(application.AppMenu)
 	}
 	menu.AddRole(application.FileMenu)
 	menu.AddRole(application.EditMenu)
 	menu.AddRole(application.WindowMenu)
-	app.SetMenu(menu)
+	app.Menu.SetApplicationMenu(menu)
 
 	// Create primary workspace tab window
-	mainWindow := app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:                      "CodeOPC",
 		Width:                      1280,
 		Height:                     900,

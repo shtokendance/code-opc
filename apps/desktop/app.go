@@ -289,7 +289,7 @@ func (s *AppService) StartLoginOAuthServer() (int, error) {
 
 			// Emit token to frontend via Wails event
 			if s.app != nil {
-				s.app.EmitEvent("auth:token", token)
+				s.app.Event.Emit("auth:token", token)
 			}
 			if s.mainWindow != nil {
 				s.mainWindow.EmitEvent("auth:token", token)
@@ -482,12 +482,12 @@ func (s *AppService) SetApp(app *application.App) {
 	s.app = app
 	if app != nil {
 		initNativeNotifications(func(payload map[string]interface{}) {
-			if win := app.CurrentWindow(); win != nil {
+			if win := app.Window.Current(); win != nil {
 				win.Show()
 				win.Focus()
 			}
 			if len(payload) > 0 {
-				app.EmitEvent("inbox:open", payload)
+				app.Event.Emit("inbox:open", payload)
 			}
 		})
 		s.StartAutoUpdateLoop(context.Background())
@@ -657,7 +657,7 @@ func (s *AppService) GetHostName() (string, error) {
 // OpenExternal opens a URL in the user's default browser.
 func (s *AppService) OpenExternal(rawURL string) error {
 	if s.app != nil {
-		return s.app.BrowserOpenURL(rawURL)
+		return s.app.Browser.OpenURL(rawURL)
 	}
 	return nil
 }
@@ -724,7 +724,7 @@ func (s *AppService) OpenIssueWindow(req IssueWindowRequest) error {
 		winTitle = "Issue Details"
 	}
 
-	win := s.app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	win := s.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:                      winTitle,
 		Width:                      1050,
 		Height:                     850,
@@ -762,7 +762,7 @@ func (s *AppService) OpenWorkspaceWindow(slug string) error {
 		return nil
 	}
 
-	win := s.app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	win := s.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:                      slug,
 		Width:                      1280,
 		Height:                     900,
@@ -792,11 +792,12 @@ func (s *AppService) OpenWorkspaceWindow(slug string) error {
 
 // PickDirectory shows an OS directory picker dialog.
 func (s *AppService) PickDirectory(defaultPath string) (string, error) {
-	dialog := application.OpenFileDialog().CanChooseDirectories(true).CanChooseFiles(false)
-	if s.app != nil {
-		if win := s.app.CurrentWindow(); win != nil {
-			dialog.AttachToWindow(win)
-		}
+	if s.app == nil {
+		return "", fmt.Errorf("application is not initialized")
+	}
+	dialog := s.app.Dialog.OpenFile().CanChooseDirectories(true).CanChooseFiles(false)
+	if win := s.app.Window.Current(); win != nil {
+		dialog.AttachToWindow(win)
 	}
 	if defaultPath != "" {
 		dialog.SetDirectory(defaultPath)
@@ -813,7 +814,10 @@ type PickedFile struct {
 
 // PickFiles opens a native OS file picker dialog and returns the selected files.
 func (s *AppService) PickFiles(multiple bool, accept string) ([]PickedFile, error) {
-	dialog := application.OpenFileDialog().CanChooseFiles(true).CanChooseDirectories(false)
+	if s.app == nil {
+		return nil, fmt.Errorf("application is not initialized")
+	}
+	dialog := s.app.Dialog.OpenFile().CanChooseFiles(true).CanChooseDirectories(false)
 	if strings.Contains(accept, "image") {
 		dialog.AddFilter("Images", "*.png;*.jpg;*.jpeg;*.gif;*.webp;*.svg;*.bmp;*.ico")
 	}
@@ -933,7 +937,7 @@ func (s *AppService) ShowNotification(payload map[string]interface{}) error {
 	}
 
 	if s.app != nil {
-		s.app.EmitEvent("notification:received", payload)
+		s.app.Event.Emit("notification:received", payload)
 	}
 	return nil
 }
@@ -941,7 +945,7 @@ func (s *AppService) ShowNotification(payload map[string]interface{}) error {
 // CloseCurrentWindow closes the calling window.
 func (s *AppService) CloseCurrentWindow() {
 	if s.app != nil {
-		if win := s.app.CurrentWindow(); win != nil {
+		if win := s.app.Window.Current(); win != nil {
 			win.Close()
 		}
 	}
@@ -950,7 +954,7 @@ func (s *AppService) CloseCurrentWindow() {
 // ToggleMaximizeCurrentWindow toggles maximize/restore on the calling window.
 func (s *AppService) ToggleMaximizeCurrentWindow() {
 	if s.app != nil {
-		if win := s.app.CurrentWindow(); win != nil {
+		if win := s.app.Window.Current(); win != nil {
 			win.ToggleMaximise()
 		}
 	}
@@ -1002,7 +1006,7 @@ func (s *AppService) StartDaemon() error {
 	err := s.daemonService.StartDaemon(targetURL)
 	if err == nil && s.app != nil {
 		status := s.daemonService.GetStatus(targetURL)
-		s.app.EmitEvent("daemon:status-changed", status)
+		s.app.Event.Emit("daemon:status-changed", status)
 	}
 	return err
 }
@@ -1014,7 +1018,7 @@ func (s *AppService) StopDaemon() error {
 
 	err := s.daemonService.StopDaemon(targetURL)
 	if err == nil && s.app != nil {
-		s.app.EmitEvent("daemon:status-changed", DaemonStatus{State: "stopped", ServerURL: targetURL})
+		s.app.Event.Emit("daemon:status-changed", DaemonStatus{State: "stopped", ServerURL: targetURL})
 	}
 	return err
 }

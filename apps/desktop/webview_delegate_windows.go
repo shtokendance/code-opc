@@ -16,8 +16,8 @@ func attachWebviewUIDelegate(window *application.WebviewWindow) {
 	if window == nil {
 		return
 	}
-	handle, err := window.NativeWindowHandle()
-	if err != nil || handle == 0 {
+	handle := window.NativeWindow()
+	if handle == nil {
 		return
 	}
 	hwnd := w32.HWND(handle)

@@ -53,6 +53,13 @@ if (import.meta.env.DEV && import.meta.env.VITE_REACT_GRAB) {
 // installUserTimingCap.
 if (import.meta.env.DEV) installUserTimingCap();
 
+// Wails v3 alpha.9 only honors DefaultContextMenuDisabled on Windows, not macOS
+// WKWebView. Suppress the default Reload / Inspect Element context menu in the
+// bubble phase so custom React contextmenu handlers still run first.
+window.addEventListener("contextmenu", (event) => {
+  event.preventDefault();
+});
+
 async function bootstrap() {
   await initWailsDesktopAPI();
   registerEE();
