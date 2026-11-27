@@ -7,7 +7,6 @@ import {
   CreditCard,
   FolderGit2,
   Keyboard,
-  KeyRound,
   ListPlus,
   Lock,
   MessagesSquare,
@@ -40,7 +39,6 @@ import { useRestoredScrollRef } from "../../platform/scroll-restoration";
 import { AccountTab } from "./account-tab";
 import { PreferencesTab } from "./preferences-tab";
 import { AppearanceTab } from "./appearance-tab";
-import { TokensTab } from "./tokens-tab";
 import { WorkspaceTab } from "./workspace-tab";
 import { MembersTab } from "./members-tab";
 import { CodeTab } from "./code-tab";
@@ -185,7 +183,6 @@ export function SettingsPage({ extraDeviceTabs = [] }: SettingsPageProps = {}) {
             ...(voiceInputAvailable
               ? [entry("voice-input", t(($) => $.page.tabs.voice_input), Mic, <VoiceInputTab />)]
               : []),
-            entry("tokens", t(($) => $.page.tabs.tokens), KeyRound, <TokensTab />),
           ],
         },
       ],

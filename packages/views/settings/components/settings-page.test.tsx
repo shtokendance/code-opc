@@ -353,7 +353,7 @@ describe("SettingsPage information architecture", () => {
     ]);
     const personal = within(nav()).getByRole("region", { name: "Personal" });
     expect(within(personal).getByRole("link", { name: "Preferences" })).toBeInTheDocument();
-    expect(within(personal).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
+    expect(within(personal).queryByRole("link", { name: "API tokens" })).not.toBeInTheDocument();
 
     const workspace = within(nav()).getByRole("region", { name: "Workspace" });
     expect(within(workspace).getByRole("link", { name: "Members" })).toBeInTheDocument();
