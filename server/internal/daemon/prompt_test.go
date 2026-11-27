@@ -2326,3 +2326,17 @@ func TestPromptPointsSubIssueRunsAtTheirParent(t *testing.T) {
 		}
 	}
 }
+
+func TestPreloadedAttachmentFilenameUniqueForDuplicateNames(t *testing.T) {
+	first := preloadedAttachmentFilename("019ec09d-6222-722b-bdfa-427b105d80be", "image.png")
+	second := preloadedAttachmentFilename("019ec09e-1111-722b-bdfa-427b105d80bf", "image.png")
+	if first == second {
+		t.Fatalf("duplicate attachment filenames must map to distinct local files: %q == %q", first, second)
+	}
+	if first != "019ec09d-6222-722b-bdfa-427b105d80be.png" {
+		t.Fatalf("unexpected filename: got %q", first)
+	}
+	if noExt := preloadedAttachmentFilename("019ec09d-6222-722b-bdfa-427b105d80be", "README"); noExt != "019ec09d-6222-722b-bdfa-427b105d80be" {
+		t.Fatalf("unexpected filename without ext: got %q", noExt)
+	}
+}

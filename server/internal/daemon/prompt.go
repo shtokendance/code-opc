@@ -152,6 +152,21 @@ type PreloadedIssueContext struct {
 	LocalAttachments []LocalAttachment
 }
 
+// preloadedAttachmentFilename derives a collision-free local filename from the
+// attachment UUID while preserving the original extension so agents and tools
+// can still infer media type.
+func preloadedAttachmentFilename(attID, origFilename string) string {
+	baseID := filepath.Base(strings.TrimSpace(attID))
+	if baseID == "" || baseID == "." || baseID == ".." {
+		baseID = "attachment"
+	}
+	ext := filepath.Ext(filepath.Base(strings.TrimSpace(origFilename)))
+	if ext == "." {
+		ext = ""
+	}
+	return baseID + ext
+}
+
 // promptOpts carries per-run facts the claimed Task does not: things only the
 // daemon's own execution context can answer. Kept behind PromptOption so the
 // common BuildPrompt(task, provider) call sites stay unchanged.

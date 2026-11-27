@@ -9299,15 +9299,12 @@ func (d *Daemon) runTask(ctx context.Context, task Task, provider string, slot i
 						taskLog.Debug("preload attachment download failed (non-fatal)", "attachment_id", att.ID, "error", dlErr)
 						continue
 					}
-					safeName := filepath.Base(att.Filename)
-					if safeName == "" || safeName == "." || safeName == ".." {
-						safeName = att.ID
-					}
-					destPath := filepath.Join(attachmentsDir, safeName)
+					localName := preloadedAttachmentFilename(att.ID, att.Filename)
+					destPath := filepath.Join(attachmentsDir, localName)
 					if writeErr := os.WriteFile(destPath, data, 0o644); writeErr == nil {
 						preloaded.LocalAttachments = append(preloaded.LocalAttachments, LocalAttachment{
 							Filename:  att.Filename,
-							LocalPath: "./attachments/" + safeName,
+							LocalPath: "./attachments/" + localName,
 						})
 					}
 				}
