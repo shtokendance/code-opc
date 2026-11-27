@@ -105,11 +105,12 @@ func main() {
 
 	// Create primary workspace tab window
 	mainWindow := app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
-		Title:     "CodeOPC",
-		Width:     1280,
-		Height:    900,
-		MinWidth:  900,
-		MinHeight: 600,
+		Title:                      "CodeOPC",
+		Width:                      1280,
+		Height:                     900,
+		MinWidth:                   900,
+		MinHeight:                  600,
+		DefaultContextMenuDisabled: true,
 		Mac: application.MacWindow{
 			TitleBar:                application.MacTitleBarHiddenInset,
 			InvisibleTitleBarHeight: 50,
