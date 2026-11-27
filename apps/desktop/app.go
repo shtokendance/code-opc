@@ -191,8 +191,9 @@ type AppService struct {
 	oauthCancel       context.CancelFunc
 	oauthMu           sync.Mutex
 
-	updaterMu     sync.RWMutex
-	downloadState UpdaterDownloadState
+	updaterMu       sync.RWMutex
+	updaterLoopOnce sync.Once
+	downloadState   UpdaterDownloadState
 	downloadPkg   *downloadedPackageInfo
 	lastCheckInfo *downloadedPackageInfo
 }
@@ -489,11 +490,12 @@ func (s *AppService) SetApp(app *application.App) {
 				app.EmitEvent("inbox:open", payload)
 			}
 		})
+		s.StartAutoUpdateLoop(context.Background())
 	}
 }
 
 var (
-	appVersion     = "0.13.4"
+	appVersion     = "0.13.5"
 	appProductName = "CodeOPC"
 )
 

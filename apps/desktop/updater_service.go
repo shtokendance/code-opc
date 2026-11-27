@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -75,6 +76,11 @@ func (s *AppService) SetUpdatePreferences(enabled bool) UpdaterPreferences {
 		if data, err := json.MarshalIndent(p, "", "  "); err == nil {
 			_ = os.WriteFile(prefPath, data, 0644)
 		}
+	}
+	if enabled {
+		go func() {
+			s.CheckForUpdates()
+		}()
 	}
 	return p
 }
@@ -435,4 +441,41 @@ func unzipArchive(srcZip, destDir string) error {
 	}
 
 	return nil
+}
+
+// StartAutoUpdateLoop checks for updates shortly after startup and once every
+// hour while automatic updates remain enabled.
+func (s *AppService) StartAutoUpdateLoop(ctx context.Context) {
+	s.updaterLoopOnce.Do(func() {
+		go s.runAutoUpdateLoop(ctx, 5*time.Second, 1*time.Hour)
+	})
+}
+
+func (s *AppService) runAutoUpdateLoop(ctx context.Context, initialDelay, interval time.Duration) {
+	if initialDelay > 0 {
+		timer := time.NewTimer(initialDelay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+	}
+
+	if s.GetUpdatePreferences().AutomaticUpdates {
+		s.CheckForUpdates()
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if s.GetUpdatePreferences().AutomaticUpdates {
+				s.CheckForUpdates()
+			}
+		}
+	}
 }
