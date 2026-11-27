@@ -1703,6 +1703,7 @@ func runGitCommandContext(parent context.Context, barePath string, timeout time.
 
 	cmdArgs := append([]string{"-C", barePath}, args...)
 	cmd := exec.Command("git", cmdArgs...)
+	hideSubprocessWindow(cmd)
 	out, err := processtree.CombinedOutput(ctx, cmd, 5*time.Second)
 	return strings.TrimSpace(string(out)), err
 }

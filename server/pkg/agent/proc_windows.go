@@ -14,62 +14,25 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var (
-	kernel32          = syscall.NewLazyDLL("kernel32.dll")
-	user32            = syscall.NewLazyDLL("user32.dll")
-	procAllocConsole  = kernel32.NewProc("AllocConsole")
-	procGetConsoleWnd = kernel32.NewProc("GetConsoleWindow")
-	procShowWindow    = user32.NewProc("ShowWindow")
-)
-
 const (
-	createNewConsole = 0x00000010
-	swHide           = 0
+	createNoWindow = 0x08000000
 )
 
 // createSuspended starts the child with its initial thread suspended, so it can
 // be placed in a Job Object before it executes a single instruction.
 const createSuspended = 0x00000004
 
-// ensureProcessHiddenConsole guarantees this process owns a console on Windows.
-// If the process already has a console, it returns immediately.
-// If no console is attached (e.g. GUI app), AllocConsole is called and immediately
-// hidden with SW_HIDE. Child processes will inherit this hidden console automatically.
-func ensureProcessHiddenConsole() {
-	if hwnd, _, _ := procGetConsoleWnd.Call(); hwnd != 0 {
-		return
-	}
-	if r, _, _ := procAllocConsole.Call(); r == 0 {
-		return
-	}
-	if hwnd, _, _ := procGetConsoleWnd.Call(); hwnd != 0 {
-		procShowWindow.Call(hwnd, swHide)
-	}
-}
-
 // hideAgentWindow configures cmd to suppress the console window on Windows
-// while still giving descendant processes a hidden console to inherit.
+// using CREATE_NO_WINDOW + HideWindow so neither conhost.exe nor Windows
+// Terminal pops up a visible black console window when launching agent CLIs.
 // Stdio pipes set via cmd.StdoutPipe/StdinPipe keep working because
-// STARTF_USESTDHANDLES takes precedence over the new console's stdio.
-//
-// By ensuring the parent process has an allocated hidden console, child
-// processes inherit the hidden console automatically without CREATE_NEW_CONSOLE.
-// Omitting CREATE_NEW_CONSOLE prevents the brief black CMD console window flash
-// on Windows 10/11 when launching agent CLI commands or tool processes.
+// STARTF_USESTDHANDLES takes precedence over console handles.
 func hideAgentWindow(cmd *exec.Cmd) {
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 	cmd.SysProcAttr.HideWindow = true
-
-	ensureProcessHiddenConsole()
-
-	hwnd, _, _ := procGetConsoleWnd.Call()
-	if hwnd == 0 {
-		// Only allocate a new console if AllocConsole failed and this process
-		// still has no console attached. Fallback to prevent grandchild popup storms (#1521).
-		cmd.SysProcAttr.CreationFlags |= createNewConsole
-	}
+	cmd.SysProcAttr.CreationFlags |= createNoWindow
 }
 
 // configureProcessGroup is a no-op on Windows: there is no Setpgid equivalent,

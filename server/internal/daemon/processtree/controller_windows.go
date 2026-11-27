@@ -49,6 +49,7 @@ func newController(cmd *exec.Cmd) (*controller, error) {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 	cmd.SysProcAttr.HideWindow = true
+	cmd.SysProcAttr.CreationFlags |= 0x08000000
 	return &controller{job: job}, nil
 }
 

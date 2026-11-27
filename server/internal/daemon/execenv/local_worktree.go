@@ -2505,6 +2505,7 @@ func runGitEnv(dir string, extraEnv []string, args ...string) (string, error) {
 
 	full := append([]string{"-C", dir}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
+	hideSubprocessWindow(cmd)
 	if len(extraEnv) > 0 {
 		cmd.Env = append(os.Environ(), extraEnv...)
 	}
@@ -2543,6 +2544,7 @@ func runGitStdout(dir string, args ...string) (string, error) {
 
 	full := append([]string{"-C", dir}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...)
+	hideSubprocessWindow(cmd)
 	cmd.WaitDelay = 5 * time.Second
 	out, err := cmd.Output()
 	if err != nil {

@@ -24,6 +24,7 @@ var (
 // Indirection so tests never fork a real process.
 var detectSelfVersion = func(ctx context.Context, path string) (string, error) {
 	cmd := exec.CommandContext(ctx, path, "--version")
+	hideSubprocessWindow(cmd)
 	// Context cancellation only kills the direct child; a descendant that
 	// inherited our stdout pipe keeps Output() blocked past the deadline.
 	// WaitDelay force-closes the pipes after the kill — without it a replaced

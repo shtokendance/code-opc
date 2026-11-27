@@ -20,10 +20,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// TestHideAgentWindowSuppressesConsoleWindow guards against a regression where
-// hideAgentWindow reverts to CREATE_NO_WINDOW (which strips the console entirely,
-// causing grandchild popups as in #1521), while ensuring child processes inherit
-// a hidden console without flashing a new visible CMD window on screen.
+// TestHideAgentWindowSuppressesConsoleWindow ensures child processes suppress
+// any visible console window via HideWindow + CREATE_NO_WINDOW without
+// allocating a new console (which would flash Windows Terminal on Windows 11).
 func TestHideAgentWindowSuppressesConsoleWindow(t *testing.T) {
 	cmd := exec.Command("cmd.exe", "/c", "echo", "hi")
 	hideAgentWindow(cmd)
@@ -35,23 +34,14 @@ func TestHideAgentWindowSuppressesConsoleWindow(t *testing.T) {
 		t.Error("HideWindow should be true")
 	}
 	const createNoWindow = 0x08000000
-	if cmd.SysProcAttr.CreationFlags&createNoWindow != 0 {
-		t.Errorf("CreationFlags must NOT include CREATE_NO_WINDOW (0x%x), got 0x%x — "+
-			"see #1521 for why this causes grandchild popups",
+	if cmd.SysProcAttr.CreationFlags&createNoWindow == 0 {
+		t.Errorf("CreationFlags must include CREATE_NO_WINDOW (0x%x), got 0x%x",
 			createNoWindow, cmd.SysProcAttr.CreationFlags)
 	}
-
-	hwnd, _, _ := procGetConsoleWnd.Call()
-	if hwnd == 0 {
-		if cmd.SysProcAttr.CreationFlags&createNewConsole == 0 {
-			t.Errorf("CreationFlags should include CREATE_NEW_CONSOLE (0x%x) when hwnd == 0, got 0x%x",
-				createNewConsole, cmd.SysProcAttr.CreationFlags)
-		}
-	} else {
-		if cmd.SysProcAttr.CreationFlags&createNewConsole != 0 {
-			t.Errorf("CreationFlags should NOT include CREATE_NEW_CONSOLE when console already exists, got 0x%x",
-				cmd.SysProcAttr.CreationFlags)
-		}
+	const createNewConsole = 0x00000010
+	if cmd.SysProcAttr.CreationFlags&createNewConsole != 0 {
+		t.Errorf("CreationFlags must NOT include CREATE_NEW_CONSOLE (0x%x), got 0x%x",
+			createNewConsole, cmd.SysProcAttr.CreationFlags)
 	}
 }
 

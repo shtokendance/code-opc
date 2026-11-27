@@ -10,7 +10,6 @@ import (
 var (
 	kernel32                  = syscall.NewLazyDLL("kernel32.dll")
 	user32                    = syscall.NewLazyDLL("user32.dll")
-	procAllocConsole          = kernel32.NewProc("AllocConsole")
 	procGetConsoleWnd         = kernel32.NewProc("GetConsoleWindow")
 	procGetConsoleProcessList = kernel32.NewProc("GetConsoleProcessList")
 	procShowWindow            = user32.NewProc("ShowWindow")
@@ -18,27 +17,15 @@ var (
 
 const swHide = 0
 
-// ensureHiddenConsole guarantees the desktop GUI application process owns a
-// hidden console on Windows. Because GUI applications compiled with -H=windowsgui
-// start without an attached console, any subprocess (agent CLIs, git, cmd shims,
-// node) would otherwise cause Windows to allocate and display a visible console
-// window (conhost.exe) that flashes briefly on screen.
-//
-// By allocating a console and hiding it immediately at application startup,
-// every child and grandchild process inherits this hidden console automatically,
-// eliminating visible console popups and CMD window flashes completely.
+// ensureHiddenConsole hides an attached console window if the GUI process
+// somehow inherited one, without calling AllocConsole (which flashes or spawns
+// a visible Windows Terminal window on Windows 11). Subprocesses suppress their
+// own console windows via CREATE_NO_WINDOW.
 func ensureHiddenConsole() {
 	if hwnd, _, _ := procGetConsoleWnd.Call(); hwnd != 0 {
 		if consoleProcessCount() == 1 {
 			procShowWindow.Call(hwnd, swHide)
 		}
-		return
-	}
-	if r, _, _ := procAllocConsole.Call(); r == 0 {
-		return
-	}
-	if hwnd, _, _ := procGetConsoleWnd.Call(); hwnd != 0 {
-		procShowWindow.Call(hwnd, swHide)
 	}
 }
 

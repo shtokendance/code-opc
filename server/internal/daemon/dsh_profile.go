@@ -327,6 +327,7 @@ func dshProfileRepair() agent.ExecFormatRepair {
 // for a package manager.
 func dshProvisionCommand(dshPath, spec string) *exec.Cmd {
 	cmd := exec.Command(dshPath, "plugin", "--profile", dshMulticaProfileName, "add", spec)
+	hideSubprocessWindow(cmd)
 	cmd.Env = dshPluginEnv()
 	return cmd
 }

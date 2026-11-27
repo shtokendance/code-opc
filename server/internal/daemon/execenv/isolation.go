@@ -135,6 +135,7 @@ func runPreparationProcess(ctx context.Context, command []string, request prepar
 	}
 
 	cmd := exec.Command(command[0], command[1:]...)
+	hideSubprocessWindow(cmd)
 	controller, err := newPreparationProcessController(cmd)
 	if err != nil {
 		return nil, fmt.Errorf("execenv: create preparation process controller: %w", err)

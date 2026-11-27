@@ -9,7 +9,14 @@ import (
 
 const supported = false
 
-func shellCommand(script string) *exec.Cmd { return exec.Command("cmd", "/C", script) }
+func shellCommand(script string) *exec.Cmd {
+	cmd := exec.Command("cmd", "/C", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		HideWindow:    true,
+		CreationFlags: 0x08000000,
+	}
+	return cmd
+}
 
 func setProcessGroup(*exec.Cmd) {}
 

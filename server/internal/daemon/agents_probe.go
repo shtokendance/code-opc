@@ -505,6 +505,7 @@ func probeDshMulticaProfile(ctx context.Context, executablePath string) dshProbe
 	ctx, cancel := context.WithTimeout(parent, dshProbeTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, executablePath, "--profile", dshMulticaProfileName, "--probe")
+	hideSubprocessWindow(cmd)
 	// processtree, not cmd.Output: `--probe` boots a whole DSH profile, so the
 	// process it starts is a tree. Killing only the direct child leaves
 	// grandchildren holding the stdout pipe open — which is both a leaked
