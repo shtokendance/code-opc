@@ -8,7 +8,7 @@ const STORAGE_KEY = "multica-locale";
 //     (read from preload, exposed on window.desktopAPI.systemLocale).
 //   - Persist: localStorage. The Settings switcher additionally PATCHes
 //     /api/me when logged in so user.language follows the user across devices.
-export function createDesktopLocaleAdapter(systemLocale: string): LocaleAdapter {
+export function createDesktopLocaleAdapter(_systemLocale: string): LocaleAdapter {
   return {
     getUserChoice() {
       try {
@@ -18,7 +18,8 @@ export function createDesktopLocaleAdapter(systemLocale: string): LocaleAdapter 
       }
     },
     getSystemPreferences() {
-      return systemLocale ? [systemLocale] : [];
+      // Default to Simplified Chinese on initial launch even if OS locale is English.
+      return ["zh-Hans"];
     },
     persist(locale: SupportedLocale) {
       try {

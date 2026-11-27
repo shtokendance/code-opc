@@ -32,27 +32,21 @@ describe("locale routing", () => {
     ).toBe("en");
   });
 
-  it("falls back to Accept-Language when no cookie is set", () => {
+  it("defaults to zh-Hans when no cookie is set regardless of Accept-Language", () => {
     expect(
       resolveLocaleFromSignals({
-        acceptLanguage: "zh-CN,zh;q=0.9,en;q=0.8",
+        acceptLanguage: "en-US,en;q=0.9",
       }),
     ).toBe("zh-Hans");
-  });
-
-  it("matches Korean browser language signals", () => {
     expect(
       resolveLocaleFromSignals({
         acceptLanguage: "ko-KR,ko;q=0.9,en;q=0.8",
       }),
-    ).toBe("ko");
-  });
-
-  it("matches Japanese browser language signals", () => {
+    ).toBe("zh-Hans");
     expect(
       resolveLocaleFromSignals({
         acceptLanguage: "ja-JP,ja;q=0.9,en;q=0.8",
       }),
-    ).toBe("ja");
+    ).toBe("zh-Hans");
   });
 });

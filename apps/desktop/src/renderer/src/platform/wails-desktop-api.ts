@@ -443,7 +443,7 @@ export async function initWailsDesktopAPI(): Promise<void> {
     ok: true,
     config: { ...DEFAULT_RUNTIME_CONFIG },
   };
-  let systemLocale = "en";
+  let systemLocale = "zh-Hans";
 
   try {
     const [fetchedInfo, fetchedConfig, fetchedLocale] = await Promise.all([
