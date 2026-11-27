@@ -22,6 +22,7 @@ import { useWorkspacePaths, issueRouteRef } from "@multica/core/paths";
 import { useActorName } from "@multica/core/workspace/hooks";
 import { useLocale, useT, useTimeAgo } from "../../i18n";
 import { ProjectIcon } from "../../projects/components/project-icon";
+import { projectTitleTintStyle } from "../../projects/components/project-colors";
 import { PriorityIcon } from "./priority-icon";
 import { PriorityPicker, AssigneePicker, StartDatePicker, DueDatePicker } from "./pickers";
 import { useViewStore } from "@multica/core/issues/stores/view-store-context";
@@ -220,9 +221,21 @@ export const BoardCardContent = memo(function BoardCardContent({
       </div>
 
       {/* Row 2: Title */}
-      <p className="mt-1 text-body font-medium leading-snug cjk:leading-normal line-clamp-2">
-        {issue.title}
-      </p>
+      {(() => {
+        const titleTintStyle = projectTitleTintStyle(project?.color);
+        return (
+          <p
+            className={
+              titleTintStyle
+                ? "mt-1 rounded px-1.5 py-0.5 text-body font-medium leading-snug cjk:leading-normal line-clamp-2"
+                : "mt-1 text-body font-medium leading-snug cjk:leading-normal line-clamp-2"
+            }
+            style={titleTintStyle}
+          >
+            {issue.title}
+          </p>
+        );
+      })()}
 
       {showDescription && (() => {
         const preview = descriptionPreview(issue.description!);

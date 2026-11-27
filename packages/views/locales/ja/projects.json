@@ -22,7 +22,9 @@
     "no_archived": "アーカイブ済みのプロジェクトはありません",
     "search": "プロジェクトを検索",
     "group_none": "グループ化なし",
-    "board_column_empty": "プロジェクトなし"
+    "board_column_empty": "プロジェクトなし",
+    "color": "カラー",
+    "clear_color": "カラーを解除"
   },
   "table": {
     "name": "名前",

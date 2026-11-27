@@ -29,6 +29,7 @@ type ProjectResponse struct {
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
 	Icon        *string `json:"icon"`
+	Color       *string `json:"color"`
 	Status      string  `json:"status"`
 	Priority    string  `json:"priority"`
 	LeadType    *string `json:"lead_type"`
@@ -75,6 +76,7 @@ func projectToResponse(p db.Project) ProjectResponse {
 		Title:       p.Title,
 		Description: textToPtr(p.Description),
 		Icon:        textToPtr(p.Icon),
+		Color:       textToPtr(p.Color),
 		Status:      p.Status,
 		Priority:    p.Priority,
 		LeadType:    textToPtr(p.LeadType),
@@ -236,6 +238,7 @@ type CreateProjectRequest struct {
 	Title       string                                `json:"title"`
 	Description *string                               `json:"description"`
 	Icon        *string                               `json:"icon"`
+	Color       *string                               `json:"color"`
 	Status      string                                `json:"status"`
 	Priority    string                                `json:"priority"`
 	LeadType    *string                               `json:"lead_type"`
@@ -267,6 +270,7 @@ type UpdateProjectRequest struct {
 	Title       *string `json:"title"`
 	Description *string `json:"description"`
 	Icon        *string `json:"icon"`
+	Color       *string `json:"color"`
 	Status      *string `json:"status"`
 	Priority    *string `json:"priority"`
 	LeadType    *string `json:"lead_type"`
@@ -593,6 +597,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: ptrToText(req.Description),
 		Icon:        ptrToText(req.Icon),
+		Color:       ptrToText(req.Color),
 		Status:      status,
 		LeadType:    leadType,
 		LeadID:      leadID,
@@ -759,6 +764,7 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	params := db.UpdateProjectParams{ID: prevProject.ID}
 	_, params.DescriptionSet = rawFields["description"]
 	_, params.IconSet = rawFields["icon"]
+	_, params.ColorSet = rawFields["color"]
 	_, params.LeadTypeSet = rawFields["lead_type"]
 	_, params.LeadIDSet = rawFields["lead_id"]
 	_, params.StartDateSet = rawFields["start_date"]
@@ -790,6 +796,13 @@ func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 			params.Icon = pgtype.Text{String: *req.Icon, Valid: true}
 		} else {
 			params.Icon = pgtype.Text{Valid: false}
+		}
+	}
+	if _, ok := rawFields["color"]; ok {
+		if req.Color != nil && strings.TrimSpace(*req.Color) != "" {
+			params.Color = pgtype.Text{String: strings.TrimSpace(*req.Color), Valid: true}
+		} else {
+			params.Color = pgtype.Text{Valid: false}
 		}
 	}
 	if _, ok := rawFields["lead_type"]; ok {
@@ -1098,7 +1111,7 @@ func buildProjectSearchQuery(phrase string, terms []string, includeClosed, inclu
 	limitParam := nextArg(nil)
 	offsetParam := nextArg(nil)
 
-	query := fmt.Sprintf(`SELECT p.id, p.workspace_id, p.title, p.description, p.icon,
+	query := fmt.Sprintf(`SELECT p.id, p.workspace_id, p.title, p.description, p.icon, p.color,
 		p.status, p.priority, p.lead_type, p.lead_id,
 		p.start_date, p.due_date,
 		p.created_at, p.updated_at, p.visibility, p.creator_type, p.creator_id,
@@ -1179,6 +1192,7 @@ func (h *Handler) SearchProjects(w http.ResponseWriter, r *http.Request) {
 				&row.project.Title,
 				&row.project.Description,
 				&row.project.Icon,
+				&row.project.Color,
 				&row.project.Status,
 				&row.project.Priority,
 				&row.project.LeadType,

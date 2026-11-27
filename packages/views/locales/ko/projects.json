@@ -22,7 +22,9 @@
     "no_archived": "보관된 프로젝트가 없습니다",
     "search": "프로젝트 검색",
     "group_none": "그룹 없음",
-    "board_column_empty": "프로젝트 없음"
+    "board_column_empty": "프로젝트 없음",
+    "color": "색상",
+    "clear_color": "색상 지우기"
   },
   "table": {
     "name": "이름",

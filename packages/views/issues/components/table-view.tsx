@@ -53,6 +53,7 @@ import {
   X,
 } from "@multica/ui/icons";
 import { toast } from "sonner";
+import { projectTitleTintStyle } from "../../projects/components/project-colors";
 import { DataTable } from "@multica/ui/components/ui/data-table";
 import { Button } from "@multica/ui/components/ui/button";
 import { IconButton } from "@multica/ui/components/common/icon-button";
@@ -665,6 +666,7 @@ export function InlineTitle({
   toggleLabel,
   renameLabel,
   createSubIssueLabel,
+  projectColor,
 }: {
   row: Extract<IssueTableDisplayRow, { kind: "issue" }>;
   /** Rename state is owned by the table (one editor at a time) so it also
@@ -680,6 +682,7 @@ export function InlineTitle({
   toggleLabel: string;
   renameLabel: string;
   createSubIssueLabel: string;
+  projectColor?: string | null;
 }) {
   const [draft, setDraft] = useState(row.issue.title);
   const editingRef = useRef(editing);
@@ -776,16 +779,26 @@ export function InlineTitle({
         />
       ) : (
         <>
-          <button
-            type="button"
-            className="min-w-0 flex-1 truncate text-left hover:underline"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpen(event);
-            }}
-          >
-            {row.issue.title}
-          </button>
+          {(() => {
+            const titleTintStyle = projectTitleTintStyle(projectColor);
+            return (
+              <button
+                type="button"
+                className={
+                  titleTintStyle
+                    ? "min-w-0 truncate rounded px-1.5 py-0.5 text-left hover:underline"
+                    : "min-w-0 flex-1 truncate text-left hover:underline"
+                }
+                style={titleTintStyle}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpen(event);
+                }}
+              >
+                {row.issue.title}
+              </button>
+            );
+          })()}
           <IssueBlockedMarker issue={row.issue} />
           <IssueDuplicateOfMarker issue={row.issue} />
           {/* Lifted out of the flex flow, the way SidebarMenuAction is. Laid
@@ -988,6 +1001,7 @@ function propertyDisplayValue(
  */
 type TableViewMeta = {
   childProgressMap: Map<string, ChildProgress>;
+  projectMap?: Map<string, Project>;
   propertyById: Map<string, IssueProperty>;
   properties: IssueProperty[];
   visibleIssueIds: string[];
@@ -1205,6 +1219,7 @@ function IssueTableBodyCell({
           toggleLabel={t(($) => $.table.toggle_sub_issues)}
           renameLabel={t(($) => $.table.rename_title)}
           createSubIssueLabel={t(($) => $.actions.create_sub_issue)}
+          projectColor={issue.project_id ? meta.projectMap?.get(issue.project_id)?.color : null}
         />
       );
     case "identifier":
@@ -1460,7 +1475,6 @@ export function TableView({
   // render and churn every consumer of the map below (MUL-5477).
   const groupProjectsQuery = useQuery({
     ...projectListOptions(wsId),
-    enabled: serverGroupSpec.kind === "project",
   });
   const groupProjectMap = useMemo(
     () =>
@@ -2266,6 +2280,7 @@ export function TableView({
   // the column defs' component identities below.
   const viewMeta: TableViewMeta = {
     childProgressMap,
+    projectMap: groupProjectMap,
     propertyById,
     properties,
     visibleIssueIds,

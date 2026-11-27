@@ -46,11 +46,11 @@ FOR UPDATE;
 
 -- name: CreateProject :one
 INSERT INTO project (
-    workspace_id, title, description, icon, status,
+    workspace_id, title, description, icon, color, status,
     lead_type, lead_id, priority, start_date, due_date, workflow_id,
     creator_type, creator_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 ) RETURNING *;
 
 -- name: UpdateProject :one
@@ -58,6 +58,7 @@ UPDATE project SET
     title = COALESCE(sqlc.narg('title'), title),
     description = CASE WHEN sqlc.arg('description_set')::boolean THEN sqlc.narg('description') ELSE description END,
     icon = CASE WHEN sqlc.arg('icon_set')::boolean THEN sqlc.narg('icon') ELSE icon END,
+    color = CASE WHEN sqlc.arg('color_set')::boolean THEN sqlc.narg('color') ELSE color END,
     status = COALESCE(sqlc.narg('status'), status),
     priority = COALESCE(sqlc.narg('priority'), priority),
     lead_type = CASE WHEN sqlc.arg('lead_type_set')::boolean THEN sqlc.narg('lead_type') ELSE lead_type END,

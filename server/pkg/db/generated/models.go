@@ -1787,6 +1787,7 @@ type Project struct {
 	ArchivedByType pgtype.Text        `json:"archived_by_type"`
 	ArchivedByID   pgtype.UUID        `json:"archived_by_id"`
 	FolderID       pgtype.UUID        `json:"folder_id"`
+	Color          pgtype.Text        `json:"color"`
 }
 
 type ProjectFolder struct {

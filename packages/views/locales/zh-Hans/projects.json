@@ -22,7 +22,9 @@
     "no_archived": "没有已归档的项目",
     "search": "搜索项目",
     "group_none": "不分组",
-    "board_column_empty": "暂无项目"
+    "board_column_empty": "暂无项目",
+    "color": "项目颜色",
+    "clear_color": "清除颜色"
   },
   "table": {
     "name": "名称",

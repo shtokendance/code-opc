@@ -22,7 +22,9 @@
     "no_archived": "No archived projects",
     "search": "Search projects",
     "group_none": "No grouping",
-    "board_column_empty": "No projects"
+    "board_column_empty": "No projects",
+    "color": "Color",
+    "clear_color": "Clear color"
   },
   "table": {
     "name": "Name",

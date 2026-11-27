@@ -18,6 +18,7 @@ import { useWorkspaceId } from "@multica/core/hooks";
 import { propertyListOptions } from "@multica/core/properties";
 import { CustomPropertyValueDisplay } from "./pickers/custom-property-picker";
 import { ProjectIcon } from "../../projects/components/project-icon";
+import { projectTitleTintStyle } from "../../projects/components/project-colors";
 import { PriorityIcon } from "./priority-icon";
 import { ProgressRing } from "./progress-ring";
 import { IssueActionsContextMenu } from "../actions";
@@ -156,7 +157,19 @@ function ListRowContent({
           <IssueAgentActivityIndicator issueId={issue.id} />
 
           <span className="flex min-w-0 flex-1 items-center gap-1.5">
-            <span className="truncate">{issue.title}</span>
+            {(() => {
+              const titleTintStyle = projectTitleTintStyle(project?.color);
+              return (
+                <span
+                  className={
+                    titleTintStyle ? "truncate rounded px-1.5 py-0.5" : "truncate"
+                  }
+                  style={titleTintStyle}
+                >
+                  {issue.title}
+                </span>
+              );
+            })()}
             {/* Keep custom names visible when this row appears outside a status section. */}
             <CustomStatusChip status={issue.status} className="shrink-0" />
             <IssueBlockedMarker issue={issue} />

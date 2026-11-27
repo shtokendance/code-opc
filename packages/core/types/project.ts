@@ -126,6 +126,7 @@ export interface Project {
   visibility?: ProjectVisibility;
   description: string | null;
   icon: string | null;
+  color?: string | null;
   status: ProjectStatus;
   priority: ProjectPriority;
   lead_type: "member" | "agent" | null;
@@ -176,6 +177,7 @@ export interface CreateProjectRequest {
   member_ids?: string[];
   description?: string;
   icon?: string;
+  color?: string | null;
   status?: ProjectStatus;
   priority?: ProjectPriority;
   lead_type?: "member" | "agent";
@@ -195,6 +197,7 @@ export interface UpdateProjectRequest {
   member_ids?: string[];
   description?: string | null;
   icon?: string | null;
+  color?: string | null;
   status?: ProjectStatus;
   priority?: ProjectPriority;
   lead_type?: "member" | "agent" | null;

@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Archive, ArchiveRestore, ExternalLink, Link2, Pencil, Pin, PinOff, Trash2, Type } from "@multica/ui/icons";
+import { Archive, ArchiveRestore, Check, ExternalLink, Link2, Palette, Pencil, Pin, PinOff, Trash2, Type, X } from "@multica/ui/icons";
 import { copyText, copyTextAndHtml } from "@multica/ui/lib/clipboard";
 import { Button } from "@multica/ui/components/ui/button";
 import { Spinner } from "@multica/ui/components/ui/spinner";
@@ -18,13 +18,16 @@ import {
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@multica/ui/components/ui/dropdown-menu";
 import { useAuthStore } from "@multica/core/auth";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useModalStore } from "@multica/core/modals";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { pinListOptions, useCreatePin, useDeletePin } from "@multica/core/pins";
-import { ProjectDeletionOfflineError, useDeleteProject } from "@multica/core/projects";
+import { ProjectDeletionOfflineError, useDeleteProject, useUpdateProject } from "@multica/core/projects";
 import { canDeleteProject } from "@multica/core/projects/deletion-permissions";
 import type { Project } from "@multica/core/types";
 import { agentListOptions, memberListOptions } from "@multica/core/workspace/queries";
@@ -33,6 +36,7 @@ import { useIntentNavigate, useNavigation } from "../../navigation";
 import { CollectionRowMenu } from "../../layout/collection-list";
 import { titleLinkPayload } from "../../common/title-link";
 import { useArchiveProjects, useRestoreProjects } from "./project-archive";
+import { PROJECT_COLORS } from "./project-colors";
 import { getProjectFoldersExtension } from "../../extensions";
 
 export function DeleteProjectsDialog({
@@ -173,6 +177,7 @@ export function ProjectRowActions({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const { requestArchive, dialog: archiveDialog } = useArchiveProjects();
   const restore = useRestoreProjects();
+  const updateProject = useUpdateProject();
 
   const togglePin = () => {
     if (pinned) deletePin.mutate({ itemType: "project", itemId: project.id });
@@ -219,6 +224,58 @@ export function ProjectRowActions({
           <Pencil className="size-3.5" />
           {t(($) => $.page.rename)}
         </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Palette className="size-3.5" />
+            <span className="flex flex-1 items-center justify-between gap-2">
+              {t(($) => $.page.color)}
+              {project.color && (
+                <span
+                  className="size-2.5 shrink-0 rounded-full border border-border/60"
+                  style={{ backgroundColor: project.color }}
+                />
+              )}
+            </span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="w-44 p-2">
+            <div className="grid grid-cols-5 gap-1.5">
+              {PROJECT_COLORS.map((option) => {
+                const selected = project.color?.toLowerCase() === option.value.toLowerCase();
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-label={option.labelKey}
+                    aria-pressed={selected}
+                    onClick={() =>
+                      updateProject.mutate({
+                        id: project.id,
+                        color: selected ? null : option.value,
+                      })
+                    }
+                    className="flex size-6 items-center justify-center rounded-full border border-black/10 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-white/15"
+                    style={{ backgroundColor: option.value }}
+                  >
+                    {selected && <Check className="size-3.5 text-white drop-shadow-xs" />}
+                  </button>
+                );
+              })}
+            </div>
+            {project.color && (
+              <>
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem
+                  onClick={() =>
+                    updateProject.mutate({ id: project.id, color: null })
+                  }
+                >
+                  <X className="size-3.5" />
+                  {t(($) => $.page.clear_color)}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuItem
           onClick={() =>
             intentNavigate(

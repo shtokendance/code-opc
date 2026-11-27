@@ -1836,6 +1836,7 @@ export const ProjectSchema = z.object({
   visibility: z.enum(["workspace", "private"]).default("workspace").catch("private"),
   description: z.string().nullable(),
   icon: z.string().nullable(),
+  color: z.string().nullable().default(null).catch(null),
   status: z.string(),
   priority: z.string(),
   lead_type: z.string().nullable(),

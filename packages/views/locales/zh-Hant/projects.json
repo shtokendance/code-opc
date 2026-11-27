@@ -22,7 +22,9 @@
     "no_archived": "沒有已歸檔的專案",
     "search": "搜尋專案",
     "group_none": "不分組",
-    "board_column_empty": "暫無專案"
+    "board_column_empty": "暫無專案",
+    "color": "專案顏色",
+    "clear_color": "清除顏色"
   },
   "table": {
     "name": "名稱",

@@ -22,7 +22,9 @@
     "scope_archived": "Proyectos archivados",
     "archive": "Archivar",
     "restore": "Restaurar",
-    "no_archived": "No hay proyectos archivados"
+    "no_archived": "No hay proyectos archivados",
+    "color": "Color",
+    "clear_color": "Quitar color"
   },
   "table": {
     "name": "Nombre",

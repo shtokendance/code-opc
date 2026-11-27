@@ -22,7 +22,9 @@
     "no_archived": "Нет архивных проектов",
     "search": "Поиск проектов",
     "group_none": "Без группировки",
-    "board_column_empty": "Нет проектов"
+    "board_column_empty": "Нет проектов",
+    "color": "Цвет",
+    "clear_color": "Сбросить цвет"
   },
   "table": {
     "name": "Название",
