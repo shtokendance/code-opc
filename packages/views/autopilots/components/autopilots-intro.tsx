@@ -37,6 +37,7 @@ export function AutopilotsIntro({
           {t(($) => $.page.new_autopilot)}
         </Button>
       }
+      secondaryAction={null}
     >
       <div className="text-caption font-medium text-muted-foreground">
         {t(($) => $.intro.templates)}
