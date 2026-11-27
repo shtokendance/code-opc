@@ -1,7 +1,7 @@
 {
   "name": "@multica/desktop",
   "productName": "CodeOPC",
-  "version": "0.13.6",
+  "version": "0.13.7",
   "private": true,
   "description": "CodeOPC Desktop — native desktop client for the CodeOPC platform.",
   "homepage": "https://multica.ai",
