@@ -495,7 +495,7 @@ func (s *AppService) SetApp(app *application.App) {
 }
 
 var (
-	appVersion     = "0.13.7"
+	appVersion     = "0.13.8"
 	appProductName = "CodeOPC"
 )
 
