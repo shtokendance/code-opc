@@ -39,7 +39,7 @@ describe("resolvePrimary", () => {
   it("offers the installer for the detected platform", () => {
     expect(resolvePrimary(detectFromUserAgent(SAFARI_MAC), ASSETS)).toEqual({ key: "macArm64Dmg", href: ASSETS.macArm64Dmg });
     expect(resolvePrimary({ os: "mac", arch: "x64", archConfident: true }, ASSETS)?.key).toBe("macX64Dmg");
-    expect(resolvePrimary(detectFromUserAgent(FIREFOX_LINUX_ARM), ASSETS)?.key).toBe("linuxArm64AppImage");
+    expect(resolvePrimary(detectFromUserAgent(FIREFOX_LINUX_ARM), ASSETS)).toBeNull();
   });
 
   it("offers nothing to phones, unknown systems or a release without the file", () => {

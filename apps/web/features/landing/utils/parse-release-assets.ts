@@ -25,7 +25,9 @@ export interface DownloadAssets {
   macX64Dmg?: string;
   macX64Zip?: string;
   winX64Exe?: string;
+  winX64Zip?: string;
   winArm64Exe?: string;
+  winArm64Zip?: string;
   linuxAmd64AppImage?: string;
   linuxAmd64Deb?: string;
   linuxAmd64Rpm?: string;

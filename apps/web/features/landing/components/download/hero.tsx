@@ -51,7 +51,8 @@ export function DownloadHero({
               className={actionClassName("primary", "lg")}
             >
               <OSIcon os={os} size={16} aria-hidden />
-              {d.primary[primary.key]}
+              {(d.primary as Record<string, string>)[primary.key] ??
+                d.primary[os === "mac" ? "macArm64Dmg" : "winX64Exe"]}
             </DownloadLink>
             {alternate && alternateHref ? (
               <DownloadLink

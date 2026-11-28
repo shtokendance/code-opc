@@ -73,18 +73,7 @@ function routeLandingLocale(
   }
   if (!isLandingPath(pathname)) return null;
 
-  // A remembered language choice goes to that language's URL. Without one the
-  // root URL stays English — the same page crawlers index — and the page
-  // offers the browser's language rather than switching to it.
-  const cookie = req.cookies.get(LOCALE_COOKIE)?.value ?? null;
-  const chosen = isSupportedLocale(cookie) ? landingPathLocale(cookie) : "en";
-  if (chosen !== "en") {
-    const url = req.nextUrl.clone();
-    url.pathname = localizeHref(chosen, pathname);
-    return NextResponse.redirect(url);
-  }
-  const resolved = resolveLocale(req);
-  return nextWithLocale(req, landingPathLocale(resolved) === "en" ? resolved : "en");
+  return nextWithLocale(req, "zh-Hans");
 }
 
 /** Root files AI crawlers read; they pass through untouched and are only observed. */

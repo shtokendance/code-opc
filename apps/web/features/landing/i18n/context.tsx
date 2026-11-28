@@ -28,12 +28,12 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 function localeForPath(pathname: string, current: Locale): Locale {
   const prefixed = splitLandingLocale(pathname);
   if (prefixed) return prefixed.locale;
-  return landingPathLocale(current) === "en" ? current : "en";
+  return landingPathLocale(current) === "zh-Hans" ? current : "zh-Hans";
 }
 
 export function LocaleProvider({
   children,
-  initialLocale = "en",
+  initialLocale = "zh-Hans",
 }: {
   children: React.ReactNode;
   initialLocale?: Locale;

@@ -1,32 +1,4 @@
-import {
-  hasCompleteAssetSet,
-  parseReleaseAssets,
-  parseReleaseAssetSizes,
-  type DownloadAssets,
-  type DownloadSizes,
-  type GitHubAsset,
-} from "./parse-release-assets";
-
-/**
- * Server-side fetcher for the latest downloadable Multica release,
- * designed to run inside a Next.js server component. Response is cached
- * by the Next.js fetch cache for 5 minutes (Vercel ISR) so hitting
- * /download costs at most one GitHub API call per region per 5 minutes.
- *
- * Desktop assets don't all land at the same time: CI uploads Linux and
- * Windows within a minute of each other, but macOS is packaged manually
- * (notarization credentials aren't wired into CI yet) and lands tens of
- * minutes later. A packaging job can also fail outright and leave a
- * release permanently short of some platforms. Either way the newest
- * release is not always the newest *downloadable* one, so we pull a
- * short window of recent releases and show the newest whose desktop
- * asset set is complete — every button on the page then resolves to a
- * real file.
- *
- * On any failure (network, timeout, rate limit, malformed payload) returns a
- * `null`-shaped result and logs — the page degrades to a "version
- * unavailable" view rather than 500ing.
- */
+import type { DownloadAssets, DownloadSizes } from "./parse-release-assets";
 
 export interface LatestRelease {
   version: string | null;
@@ -36,77 +8,75 @@ export interface LatestRelease {
   sizes: DownloadSizes;
 }
 
-// Five candidates tolerates four consecutive incomplete releases before
-// the page has to fall back to showing the newest one as-is. Releases
-// ship roughly daily, so that is days of head room — while staying one
-// cheap request.
-const GITHUB_RELEASES_URL =
-  "https://api.github.com/repos/multica-ai/multica/releases?per_page=5";
-
 const REVALIDATE_SECONDS = 300;
-
-// The homepage hero awaits this on a cold cache, so a GitHub that accepts
-// the connection but never answers would hold the whole page. Past this,
-// the page renders with the empty release instead.
 export const RELEASE_TIMEOUT_MS = 3000;
 
-interface GitHubReleasePayload {
-  tag_name?: string;
-  published_at?: string;
-  html_url?: string;
-  prerelease?: boolean;
-  draft?: boolean;
-  assets?: GitHubAsset[];
+interface DesktopUpdateCheckPayload {
+  available?: boolean;
+  latest_version?: string;
+  pub_date?: string;
+  download_url?: string;
+  filename?: string;
+  size?: number;
+}
+
+function getReleaseApiBase(): string {
+  return (
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://code-opc.benlai.com"
+  ).replace(/\/+$/, "");
+}
+
+async function fetchPlatformRelease(
+  platform: "darwin" | "windows",
+  arch: "arm64" | "amd64",
+  signal: AbortSignal,
+): Promise<DesktopUpdateCheckPayload | null> {
+  const url = `${getReleaseApiBase()}/api/desktop/updates/check?platform=${platform}&arch=${arch}&version=0.0.1&product=CodeOPC`;
+  const res = await fetch(url, {
+    next: { revalidate: REVALIDATE_SECONDS },
+    signal,
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as DesktopUpdateCheckPayload;
 }
 
 export async function fetchLatestRelease(): Promise<LatestRelease> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-  // Optional PAT for local development and self-hosted deploys where
-  // the shared outbound IP keeps hitting the 60-requests/hour
-  // unauthenticated limit. Vercel's fetch cache is shared across all
-  // regions so production rarely needs this — but the env var lets
-  // anyone running the site locally avoid the rate-limit dance. Never
-  // prefix this with `NEXT_PUBLIC_`; the token must stay server-side.
-  const token = process.env.GITHUB_TOKEN;
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const controller = new AbortController();
   const timer = setTimeout(
-    () => controller.abort(new Error(`GitHub API timed out after ${RELEASE_TIMEOUT_MS}ms`)),
+    () => controller.abort(new Error(`Desktop release check timed out after ${RELEASE_TIMEOUT_MS}ms`)),
     RELEASE_TIMEOUT_MS,
   );
   try {
-    const res = await fetch(GITHUB_RELEASES_URL, {
-      next: { revalidate: REVALIDATE_SECONDS },
-      headers,
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(`GitHub API responded ${res.status}`);
-    }
-    const data = (await res.json()) as GitHubReleasePayload[];
+    const [mac, win] = await Promise.all([
+      fetchPlatformRelease("darwin", "arm64", controller.signal),
+      fetchPlatformRelease("windows", "amd64", controller.signal),
+    ]);
 
-    // Defensive filter — Multica doesn't publish prereleases or drafts
-    // today, but the endpoint returns them if that ever changes. A
-    // prerelease shadowing a stable version on /download would be a
-    // regression.
-    const stable = data.filter((r) => !r.prerelease && !r.draft);
-    const chosen = pickRelease(stable);
-    if (!chosen) {
-      return emptyRelease();
+    const assets: DownloadAssets = {};
+    const sizes: DownloadSizes = {};
+
+    if (mac?.download_url) {
+      const isDmg = (mac.filename ?? mac.download_url).toLowerCase().endsWith(".dmg");
+      const key = isDmg ? "macArm64Dmg" : "macArm64Zip";
+      assets[key] = mac.download_url;
+      if (mac.size) sizes[key] = mac.size;
+    }
+
+    if (win?.download_url) {
+      const isExe = (win.filename ?? win.download_url).toLowerCase().endsWith(".exe");
+      const key = isExe ? "winX64Exe" : "winX64Zip";
+      assets[key] = win.download_url;
+      if (win.size) sizes[key] = win.size;
     }
 
     return {
-      version: chosen.release.tag_name ?? null,
-      publishedAt: chosen.release.published_at ?? null,
-      htmlUrl: chosen.release.html_url ?? null,
-      assets: chosen.assets,
-      sizes: parseReleaseAssetSizes(chosen.release.assets ?? []),
+      version: mac?.latest_version ?? win?.latest_version ?? null,
+      publishedAt: mac?.pub_date ?? win?.pub_date ?? null,
+      htmlUrl: null,
+      assets,
+      sizes,
     };
   } catch (err) {
     console.warn("[download] fetchLatestRelease failed:", err);
@@ -114,40 +84,6 @@ export async function fetchLatestRelease(): Promise<LatestRelease> {
   } finally {
     clearTimeout(timer);
   }
-}
-
-interface PickedRelease {
-  release: GitHubReleasePayload;
-  assets: DownloadAssets;
-}
-
-/**
- * Newest release whose desktop assets are all present. Falls back to the
- * newest release overall when no candidate is complete — the page then
- * shows what does exist plus its "all releases" escape hatch, which
- * still beats reporting no version at all.
- */
-function pickRelease(
-  candidates: GitHubReleasePayload[],
-): PickedRelease | undefined {
-  const parsed = candidates.map((release) => ({
-    release,
-    assets: parseReleaseAssets(release.assets ?? []),
-  }));
-
-  const complete = parsed.find((c) => hasCompleteAssetSet(c.assets));
-  if (complete) {
-    if (complete !== parsed[0]) {
-      // Worth a line in the logs: a release that never completes its
-      // asset set is invisible on /download until someone notices.
-      console.warn(
-        `[download] skipping ${parsed[0]?.release.tag_name ?? "latest release"}` +
-          ` — incomplete desktop assets; showing ${complete.release.tag_name}`,
-      );
-    }
-    return complete;
-  }
-  return parsed[0];
 }
 
 function emptyRelease(): LatestRelease {

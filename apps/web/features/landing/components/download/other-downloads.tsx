@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "@/features/landing/components/landing-link";
-import { ChevronDown, ChevronRight } from "@multica/ui/icons";
+import { ChevronDown } from "@multica/ui/icons";
 import { cn } from "@multica/ui/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@multica/ui/components/ui/dropdown-menu";
 import { useLocale } from "../../i18n";
@@ -17,16 +15,17 @@ import type { DownloadAssets, DownloadSizes } from "../../utils/parse-release-as
 import { DownloadLink } from "./download-link";
 import { OSIcon, OS_NAMES } from "./os-icons";
 
-/** One installer per platform, in menu order. ARM builds and other formats live on /download. */
-const MENU_KEYS: PrimaryDownloadKey[] = ["macArm64Dmg", "macX64Dmg", "winX64Exe", "linuxAmd64AppImage"];
+const MENU_KEYS: PrimaryDownloadKey[] = ["macArm64Dmg", "macArm64Zip", "macX64Dmg", "winX64Exe", "winX64Zip"];
 
 const FORMAT: Record<PrimaryDownloadKey, string> = {
   macArm64Dmg: ".dmg",
+  macArm64Zip: ".zip",
   macX64Dmg: ".dmg",
+  macX64Zip: ".zip",
   winX64Exe: ".exe",
+  winX64Zip: ".zip",
   winArm64Exe: ".exe",
-  linuxAmd64AppImage: ".AppImage",
-  linuxArm64AppImage: ".AppImage",
+  winArm64Zip: ".zip",
 };
 
 const ITEM = "gap-3 rounded-site-inner px-2.5 py-2 text-site-ink focus:bg-site-hover focus:text-site-ink";
@@ -83,7 +82,7 @@ export function OtherDownloads({
             <DropdownMenuItem
               key={key}
               className={ITEM}
-              render={<DownloadLink downloadKey={key} href={assets[key]!} handoff />}
+              render={<DownloadLink downloadKey={key} href={assets[key]!} download />}
             >
               <span className="flex size-8 shrink-0 items-center justify-center rounded-site-inner bg-site-sunken text-site-ink-secondary">
                 <OSIcon os={osOf(key)} size={16} aria-hidden />
@@ -100,12 +99,6 @@ export function OtherDownloads({
             </DropdownMenuItem>
           );
         })}
-        <DropdownMenuSeparator className="mx-1 my-1 bg-site-rule" />
-        <DropdownMenuItem className={cn(ITEM, "py-1.5 text-site-small")} render={<Link href="/download" />}>
-          <span className="flex-1">{t.download.allPlatforms.title}</span>
-          {version ? <span className="text-site-muted">{version}</span> : null}
-          <ChevronRight className="size-3.5 text-site-muted" aria-hidden />
-        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

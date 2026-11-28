@@ -16,7 +16,14 @@ export type PlatformKey = "macArm64" | "macX64" | "winX64" | "winArm64" | "linux
 /** The installers a platform gets by default. */
 export type PrimaryDownloadKey = Extract<
   DownloadKey,
-  "macArm64Dmg" | "macX64Dmg" | "winX64Exe" | "winArm64Exe" | "linuxAmd64AppImage" | "linuxArm64AppImage"
+  | "macArm64Dmg"
+  | "macArm64Zip"
+  | "macX64Dmg"
+  | "macX64Zip"
+  | "winX64Exe"
+  | "winX64Zip"
+  | "winArm64Exe"
+  | "winArm64Zip"
 >;
 
 export const DOWNLOAD_KEYS = [
@@ -25,7 +32,9 @@ export const DOWNLOAD_KEYS = [
   "macX64Dmg",
   "macX64Zip",
   "winX64Exe",
+  "winX64Zip",
   "winArm64Exe",
+  "winArm64Zip",
   "linuxAmd64AppImage",
   "linuxAmd64Deb",
   "linuxAmd64Rpm",
@@ -45,12 +54,12 @@ export function osOf(key: DownloadKey): DesktopOS {
 export function platformOf(key: DownloadKey): PlatformKey {
   if (key.startsWith("macArm64")) return "macArm64";
   if (key.startsWith("macX64")) return "macX64";
-  if (key === "winArm64Exe") return "winArm64";
-  if (key === "winX64Exe") return "winX64";
+  if (key.startsWith("winArm64")) return "winArm64";
+  if (key.startsWith("winX64")) return "winX64";
   return key.startsWith("linuxArm64") ? "linuxArm64" : "linuxX64";
 }
 
-/** The installer a detected platform gets by default, or null for phones and unknown systems. */
+/** The installer a detected platform gets by default, or null for unsupported systems. */
 export function primaryKey(detected: DetectResult): PrimaryDownloadKey | null {
   const arm = detected.arch === "arm64";
   switch (detected.os) {
@@ -58,8 +67,6 @@ export function primaryKey(detected: DetectResult): PrimaryDownloadKey | null {
       return detected.arch === "x64" ? "macX64Dmg" : "macArm64Dmg";
     case "windows":
       return arm ? "winArm64Exe" : "winX64Exe";
-    case "linux":
-      return arm ? "linuxArm64AppImage" : "linuxAmd64AppImage";
     default:
       return null;
   }
@@ -74,9 +81,22 @@ export function alternateKey(key: DownloadKey): "macArm64Dmg" | "macX64Dmg" | nu
 
 /** The primary download for a platform, when the release has it. */
 export function resolvePrimary(detected: DetectResult, assets: DownloadAssets) {
-  const key = primaryKey(detected);
-  const href = key ? assets[key] : undefined;
-  return key && href ? { key, href } : null;
+  const candidates: PrimaryDownloadKey[] =
+    detected.os === "mac"
+      ? detected.arch === "x64"
+        ? ["macX64Dmg", "macX64Zip", "macArm64Dmg", "macArm64Zip"]
+        : ["macArm64Dmg", "macArm64Zip"]
+      : detected.os === "windows"
+        ? detected.arch === "arm64"
+          ? ["winArm64Exe", "winArm64Zip", "winX64Exe", "winX64Zip"]
+          : ["winX64Exe", "winX64Zip"]
+        : [];
+
+  for (const key of candidates) {
+    const href = assets[key];
+    if (href) return { key, href };
+  }
+  return null;
 }
 
 export function fileName(href: string): string {

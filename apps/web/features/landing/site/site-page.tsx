@@ -11,7 +11,6 @@ import {
   focusRing,
 } from "./primitives";
 import { CtaBand } from "./cta-band";
-import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
 import type { PageGroup, SitePage as SitePageEntry } from "./sitemap";
 
@@ -22,7 +21,6 @@ export function SitePage({ children }: { children: ReactNode }) {
     <>
       <SiteHeader />
       <main className="bg-site-canvas text-site-ink">{children}</main>
-      <SiteFooter />
     </>
   );
 }

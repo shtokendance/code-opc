@@ -6,8 +6,6 @@ import { cn } from "@multica/ui/lib/utils";
 import { useAuthStore } from "@multica/core/auth";
 import { useLocale } from "../i18n";
 import { useDashboardCtaHref } from "../utils/use-dashboard-cta";
-import { formatStarCount, useGithubStars } from "../utils/use-github-stars";
-import { GitHubMark, githubUrl } from "../components/shared";
 import { MulticaWordmark } from "@multica/ui/components/common/multica-wordmark";
 import { ActionLink, focusRing } from "./primitives";
 
@@ -16,7 +14,6 @@ export function SiteHeader() {
   const labels = t.site.header;
   const user = useAuthStore((s) => s.user);
   const ctaHref = useDashboardCtaHref();
-  const stars = useGithubStars();
 
   const [scrolled, setScrolled] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -50,21 +47,6 @@ export function SiteHeader() {
           </Link>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Link
-              href={githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={stars != null ? labels.githubStars.replace("{count}", formatStarCount(stars)) : "GitHub"}
-              className={cn(
-                "hidden h-site-control-sm items-center gap-1 rounded-site-control px-3 text-site-small text-site-ink transition-colors hover:bg-site-hover md:inline-flex",
-                focusRing,
-              )}
-            >
-              <GitHubMark className="size-4" />
-              {stars != null ? (
-                <span className="text-site-muted tabular-nums">{formatStarCount(stars)}</span>
-              ) : null}
-            </Link>
             {user ? null : (
               <ActionLink href="/login" tone="secondary">
                 {labels.logIn}

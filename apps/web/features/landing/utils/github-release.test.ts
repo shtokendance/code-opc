@@ -1,59 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchLatestRelease, RELEASE_TIMEOUT_MS } from "./github-release";
-
-/** The twelve desktop artifacts a finished release carries. */
-function completeAssets(version: string) {
-  return [
-    `multica-desktop-${version}-mac-arm64.dmg`,
-    `multica-desktop-${version}-mac-arm64.zip`,
-    `multica-desktop-${version}-mac-x64.dmg`,
-    `multica-desktop-${version}-mac-x64.zip`,
-    `multica-desktop-${version}-windows-x64.exe`,
-    `multica-desktop-${version}-windows-arm64.exe`,
-    `multica-desktop-${version}-linux-x86_64.AppImage`,
-    `multica-desktop-${version}-linux-amd64.deb`,
-    `multica-desktop-${version}-linux-x86_64.rpm`,
-    `multica-desktop-${version}-linux-arm64.AppImage`,
-    `multica-desktop-${version}-linux-arm64.deb`,
-    `multica-desktop-${version}-linux-aarch64.rpm`,
-  ].map((name) => ({
-    name,
-    browser_download_url: `https://github.test/download/v${version}/${name}`,
-  }));
-}
-
-/** What a release looks like before the Windows/Linux jobs upload. */
-function macOnlyAssets(version: string) {
-  return completeAssets(version).filter((a) => a.name.includes("-mac-"));
-}
-
-function releasePayload(overrides: {
-  tag: string;
-  assets?: { name: string; browser_download_url: string }[];
-  prerelease?: boolean;
-  draft?: boolean;
-}) {
-  return {
-    tag_name: overrides.tag,
-    published_at: "2026-08-17T10:00:00Z",
-    html_url: `https://github.com/multica-ai/multica/releases/tag/${overrides.tag}`,
-    prerelease: overrides.prerelease ?? false,
-    draft: overrides.draft ?? false,
-    assets: overrides.assets ?? [],
-  };
-}
-
-function mockFetchWithReleases(releases: unknown[]) {
-  const fetchMock = vi.fn().mockResolvedValue(
-    new Response(JSON.stringify(releases), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }),
-  );
-  vi.stubGlobal("fetch", fetchMock);
-  return fetchMock;
-}
+import { fetchLatestRelease } from "./github-release";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -61,96 +8,47 @@ afterEach(() => {
 });
 
 describe("fetchLatestRelease", () => {
-  it("uses the latest release when its desktop assets are complete", async () => {
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.2.14", assets: completeAssets("0.2.14") }),
-      releasePayload({ tag: "v0.2.13", assets: completeAssets("0.2.13") }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.2.14");
-    expect(result.assets.winX64Exe).toContain("0.2.14");
-  });
-
-  // MUL-6313: v0.4.28's Windows packaging job failed and its Linux job
-  // never finished, so the newest release carried Mac builds only and
-  // /download rendered every Windows and Linux button as disabled.
-  it("steps back to the newest complete release when the latest is missing platforms", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.4.28", assets: macOnlyAssets("0.4.28") }),
-      releasePayload({ tag: "v0.4.27", assets: completeAssets("0.4.27") }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.4.27");
-    expect(result.htmlUrl).toContain("v0.4.27");
-    expect(result.assets.winX64Exe).toContain("0.4.27");
-    expect(result.assets.linuxArm64Rpm).toContain("0.4.27");
-  });
-
-  // The old implementation only stepped back for the first hour after
-  // publish, so a permanently broken release started showing dead
-  // buttons once that window elapsed. Completeness carries no clock.
-  it("keeps stepping back regardless of how old the incomplete release is", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockFetchWithReleases([
-      {
-        ...releasePayload({
-          tag: "v0.4.28",
-          assets: macOnlyAssets("0.4.28"),
+  it("fetches macOS and Windows desktop release URLs from the updates check API", async () => {
+    const fetchMock = vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.includes("platform=darwin")) {
+        return new Response(
+          JSON.stringify({
+            available: true,
+            latest_version: "0.13.7",
+            pub_date: "2026-11-27T11:33:51.550Z",
+            download_url: "/api/desktop/updates/download/CodeOPC-0.13.7-arm64.zip",
+            filename: "CodeOPC-0.13.7-arm64.zip",
+            size: 16580146,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          available: true,
+          latest_version: "0.13.7",
+          pub_date: "2026-11-27T11:33:51.550Z",
+          download_url: "/api/desktop/updates/download/CodeOPC-0.13.7-win-x64.zip",
+          filename: "CodeOPC-0.13.7-win-x64.zip",
+          size: 17449009,
         }),
-        published_at: "2020-01-01T00:00:00Z",
-      },
-      releasePayload({ tag: "v0.4.27", assets: completeAssets("0.4.27") }),
-    ]);
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.4.27");
-  });
-
-  it("searches past several incomplete releases", async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.5.2", assets: macOnlyAssets("0.5.2") }),
-      releasePayload({ tag: "v0.5.1", assets: [] }),
-      releasePayload({ tag: "v0.5.0", assets: macOnlyAssets("0.5.0") }),
-      releasePayload({ tag: "v0.4.9", assets: completeAssets("0.4.9") }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.4.9");
-  });
-
-  it("falls back to the latest release when no candidate is complete", async () => {
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.4.28", assets: macOnlyAssets("0.4.28") }),
-      releasePayload({ tag: "v0.4.27", assets: macOnlyAssets("0.4.27") }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.4.28");
-    expect(result.assets.macArm64Dmg).toContain("0.4.28");
-    expect(result.assets.winX64Exe).toBeUndefined();
-  });
-
-  it("skips prereleases and drafts in the candidate list", async () => {
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.2.15-rc.1", prerelease: true }),
-      releasePayload({ tag: "v0.2.14-draft", draft: true }),
-      releasePayload({ tag: "v0.2.14", assets: completeAssets("0.2.14") }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBe("v0.2.14");
+    expect(result.version).toBe("0.13.7");
+    expect(result.assets.macArm64Zip).toBe("/api/desktop/updates/download/CodeOPC-0.13.7-arm64.zip");
+    expect(result.assets.winX64Zip).toBe("/api/desktop/updates/download/CodeOPC-0.13.7-win-x64.zip");
+    expect(result.sizes.macArm64Zip).toBe(16580146);
+    expect(result.sizes.winX64Zip).toBe(17449009);
   });
 
   it("returns an empty release shape when the API errors", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response("rate limited", { status: 403 }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     const result = await fetchLatestRelease();
     expect(result).toEqual({
@@ -161,63 +59,5 @@ describe("fetchLatestRelease", () => {
       sizes: {},
     });
     expect(warnSpy).toHaveBeenCalled();
-  });
-
-  // The homepage awaits this on a cold cache; a GitHub that accepts the
-  // connection and then stalls must not hold the page.
-  it("gives up on a stalled request and returns the empty release", async () => {
-    vi.useFakeTimers();
-    try {
-      const fetchMock = vi.fn(
-        (_url: string, init: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init.signal?.addEventListener("abort", () => reject(init.signal?.reason));
-          }),
-      );
-      vi.stubGlobal("fetch", fetchMock);
-      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      const pending = fetchLatestRelease();
-      await vi.advanceTimersByTimeAsync(RELEASE_TIMEOUT_MS);
-
-      await expect(pending).resolves.toMatchObject({ version: null, assets: {} });
-      expect(warnSpy).toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("gives up when the response body stalls after the headers arrive", async () => {
-    vi.useFakeTimers();
-    try {
-      const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
-        const body = new ReadableStream({
-          start(controller) {
-            init.signal?.addEventListener("abort", () => controller.error(init.signal?.reason));
-          },
-        });
-        return new Response(body, { status: 200 });
-      });
-      vi.stubGlobal("fetch", fetchMock);
-      vi.spyOn(console, "warn").mockImplementation(() => {});
-
-      const pending = fetchLatestRelease();
-      await vi.advanceTimersByTimeAsync(RELEASE_TIMEOUT_MS);
-
-      await expect(pending).resolves.toMatchObject({ version: null, assets: {} });
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("returns an empty release shape when all candidates are filtered out", async () => {
-    mockFetchWithReleases([
-      releasePayload({ tag: "v0.2.15-rc.1", prerelease: true }),
-      releasePayload({ tag: "v0.2.14-draft", draft: true }),
-    ]);
-
-    const result = await fetchLatestRelease();
-    expect(result.version).toBeNull();
-    expect(result.assets).toEqual({});
   });
 });

@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type ComponentType, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "@/features/landing/components/landing-link";
-import { ArrowRight, ArrowUpRight, ChevronRight } from "@multica/ui/icons";
+import { ArrowRight, ArrowUpRight } from "@multica/ui/icons";
 import { cn } from "@multica/ui/lib/utils";
 import { BorderBeam } from "@multica/ui/components/common/border-beam";
-import { FAQSection } from "../components/faq-section";
-import { anchorId } from "../components/changelog-page-client";
 import {
   ActionLink,
   Container,
   actionClassName,
-  Eyebrow,
   Section,
   SectionHeader,
   focusRing,
@@ -25,7 +22,6 @@ import { OtherDownloads } from "../components/download/other-downloads";
 import { useDetectedPlatform } from "../components/download/use-detected-platform";
 import { osOf, resolvePrimary } from "../utils/download-target";
 import type { HomeDownload } from "../utils/home-download";
-import { CUSTOMER_LOGOS, type CustomerLogo } from "./customer-logos";
 import { AutopilotsVisual, ChatVisual, RuntimesVisual, SkillsVisual, WorkflowVisual } from "./demo/feature-visuals";
 import { HeroDemo } from "./demo/hero-demo";
 import { PROVIDER_MARKS, useStoryLoop } from "./demo/mock-kit";
@@ -36,12 +32,9 @@ export function HomePage({ download }: { download: HomeDownload }) {
   return (
     <SitePage>
       <Hero download={download} />
-      <LogoWall />
       <div className="site-rails">
         <Features />
         <Agents />
-        <Updates />
-        <FAQSection />
         <CtaBand />
       </div>
     </SitePage>
@@ -79,18 +72,15 @@ function Hero({ download }: { download: HomeDownload }) {
         <p className="mt-3 max-w-[38rem] text-site-body text-site-muted text-pretty">{copy.lead}</p>
         <div className="mt-6 flex flex-wrap gap-2.5">
           {primary && os ? (
-            <DownloadLink downloadKey={primary.key} href={primary.href} handoff className={actionClassName("primary", "lg")}>
+            <DownloadLink downloadKey={primary.key} href={primary.href} download className={actionClassName("primary", "lg")}>
               <OSIcon os={os} size={16} aria-hidden />
               {copy.downloadFor.replace("{os}", OS_NAMES[os])}
             </DownloadLink>
           ) : (
-            <ActionLink href="/download" size="lg">
-              {copy.download}
+            <ActionLink href="/login" size="lg">
+              {t.site.header.getStarted}
             </ActionLink>
           )}
-          <ActionLink href="/contact-sales" size="lg" tone="secondary">
-            {copy.bookDemo}
-          </ActionLink>
         </div>
         {primary ? (
           <OtherDownloads primary={primary.key} assets={download.assets} sizes={download.sizes} version={download.version} />
@@ -181,58 +171,6 @@ function ProviderMark({ name }: { name: string }) {
   return Mark ? <Mark className="size-[0.72em] shrink-0" /> : null;
 }
 
-/** Logos share one visual area, so wide wordmarks and square seals read at the same weight. */
-const LOGO_AREA = 2600;
-
-function logoMaskStyle({ logo, ratio }: CustomerLogo): CSSProperties {
-  const height = Math.min(40, Math.max(18, Math.sqrt(LOGO_AREA / ratio)));
-  const mask = `url(/images/logos/${logo}.webp) center / 100% 100% no-repeat`;
-  return {
-    "--logo-h": `calc(${height.toFixed(1)}px * var(--logo-scale))`,
-    aspectRatio: ratio,
-    mask,
-    WebkitMask: mask,
-  } as CSSProperties;
-}
-
-function LogoWall() {
-  const { t } = useLocale();
-  return (
-    <section aria-labelledby="logo-wall-title" className="pb-site-section">
-      <Container className="max-w-site-wide">
-        <h2 id="logo-wall-title" className="text-center text-site-small text-site-muted">
-          {t.home.logoWall.title}
-        </h2>
-        <div className="group/wall mt-6 overflow-hidden mask-x-from-85% mask-x-to-100% motion-reduce:mask-none">
-          <div className="flex w-max animate-site-marquee group-hover/wall:[animation-play-state:paused] motion-reduce:w-auto motion-reduce:animate-none">
-            {[0, 1].map((copy) => (
-              <ul
-                key={copy}
-                aria-hidden={copy === 1 || undefined}
-                className={cn(
-                  "flex shrink-0 items-center gap-x-8 pr-8 sm:gap-x-12 sm:pr-12 motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-y-4 motion-reduce:pr-0 sm:motion-reduce:gap-y-6",
-                  copy === 1 && "motion-reduce:hidden",
-                )}
-              >
-                {CUSTOMER_LOGOS.map((logo) => (
-                  <li key={logo.name} className="flex h-10 items-center">
-                    <span
-                      role="img"
-                      aria-label={logo.name}
-                      style={logoMaskStyle(logo)}
-                      className="block h-(--logo-h) bg-site-muted transition-colors duration-200 [--logo-scale:0.8] hover:bg-site-ink sm:[--logo-scale:1]"
-                    />
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </div>
-      </Container>
-    </section>
-  );
-}
-
 type FeatureId = keyof HomeDict["features"]["items"];
 
 const FEATURES: { id: FeatureId; visual: ComponentType }[] = [
@@ -300,86 +238,6 @@ function Agents() {
           {copy.all}
           <ArrowUpRight className="size-4" aria-hidden />
         </ActionLink>
-      </Container>
-    </Section>
-  );
-}
-
-const UPDATE_COUNT = 7;
-
-/**
- * Release titles list their changes ("A, B, and C", or "A、B、C"); the home
- * page leads with the first and counts the rest.
- */
-function releaseHeadline(title: string) {
-  const [headline = title, ...rest] = title.split(/, (?:and )?|、/);
-  return { headline, more: rest.length };
-}
-
-function Updates() {
-  const { t, locale } = useLocale();
-  const copy = t.home.updates;
-  const releases = t.changelog.entries.slice(0, UPDATE_COUNT);
-  const latest = releases[0];
-  const day = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" });
-  const dateLabel = (date: string) => day.format(new Date(`${date}T00:00:00Z`));
-  if (!latest) return null;
-
-  return (
-    <Section>
-      <Container className="grid gap-site-block lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:gap-16">
-        <div className="flex flex-col justify-between gap-site-block">
-          <SectionHeader eyebrow={copy.eyebrow} title={copy.title} />
-          <Link
-            href={`/changelog#${anchorId(latest.version)}`}
-            data-frost="changelog"
-            className={cn(
-              "site-frost group hidden max-w-[20rem] flex-col gap-8 rounded-site-card p-5 lg:flex",
-              focusRing,
-            )}
-          >
-            <span className="relative text-site-small text-site-ink-secondary">{copy.latest} · {dateLabel(latest.date)}</span>
-            <span className="relative">
-              <span className="block font-site-display text-site-heading text-site-ink">v{latest.version}</span>
-              <span className="mt-1 block text-site-body text-site-ink-secondary">{releaseHeadline(latest.title).headline}</span>
-            </span>
-          </Link>
-        </div>
-        <div>
-          <ul className="divide-y divide-site-line border-y border-site-line">
-            {releases.map((release) => (
-              <li key={release.version}>
-                <Link
-                  href={`/changelog#${anchorId(release.version)}`}
-                  className={cn(
-                    "group grid grid-cols-[4rem_minmax(0,1fr)_auto] items-baseline gap-4 py-4 text-site-body sm:grid-cols-[5rem_minmax(0,1fr)_4rem_auto]",
-                    focusRing,
-                  )}
-                >
-                  <span className="text-site-muted tabular-nums">{dateLabel(release.date)}</span>
-                  <span className="line-clamp-2 text-site-ink sm:truncate">
-                    {releaseHeadline(release.title).headline}
-                    {releaseHeadline(release.title).more > 0 ? (
-                      <span className="text-site-muted">
-                        {" "}
-                        {copy.more.replace("{count}", String(releaseHeadline(release.title).more))}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="text-site-small text-site-muted tabular-nums max-sm:hidden">v{release.version}</span>
-                  <ChevronRight
-                    aria-hidden
-                    className="size-4 self-center text-site-muted transition-transform group-hover:translate-x-0.5"
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <ActionLink href="/changelog" tone="ghost" className="mt-6 -ml-3">
-            {copy.all}
-            <ArrowRight className="size-4" aria-hidden />
-          </ActionLink>
-        </div>
       </Container>
     </Section>
   );
