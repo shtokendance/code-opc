@@ -47,8 +47,9 @@ const ANNOUNCEMENT: { label: string; href: string } | null = SITE_PREVIEW
   : null;
 
 function Hero({ download }: { download: HomeDownload }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.home.hero;
+  const docsHref = docsHrefForLocale(locale);
   const primary = resolvePrimary(useDetectedPlatform(download.platform), download.assets);
   const os = primary ? osOf(primary.key) : null;
 
@@ -77,7 +78,7 @@ function Hero({ download }: { download: HomeDownload }) {
               {copy.downloadFor.replace("{os}", OS_NAMES[os])}
             </DownloadLink>
           ) : (
-            <ActionLink href="/login" size="lg">
+            <ActionLink href={docsHref} size="lg">
               {t.site.header.getStarted}
             </ActionLink>
           )}

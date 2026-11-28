@@ -4,16 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "@/features/landing/components/landing-link";
 import { cn } from "@multica/ui/lib/utils";
 import { useAuthStore } from "@multica/core/auth";
-import { useLocale } from "../i18n";
+import { docsHrefForLocale, useLocale } from "../i18n";
 import { useDashboardCtaHref } from "../utils/use-dashboard-cta";
 import { MulticaWordmark } from "@multica/ui/components/common/multica-wordmark";
 import { ActionLink, focusRing } from "./primitives";
 
 export function SiteHeader() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const labels = t.site.header;
   const user = useAuthStore((s) => s.user);
   const ctaHref = useDashboardCtaHref();
+  const docsHref = docsHrefForLocale(locale);
 
   const [scrolled, setScrolled] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,7 @@ export function SiteHeader() {
                 {labels.logIn}
               </ActionLink>
             )}
-            <ActionLink href={ctaHref}>{user ? labels.dashboard : labels.getStarted}</ActionLink>
+            <ActionLink href={user ? ctaHref : docsHref}>{user ? labels.dashboard : labels.getStarted}</ActionLink>
           </div>
         </div>
       </header>
