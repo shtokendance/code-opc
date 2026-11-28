@@ -4,14 +4,10 @@ import { createLandingDict } from "./i18n/dictionary";
 import { faqPageJsonLd, jsonLdScript, plainInlineText, siteJsonLd } from "./structured-data";
 
 describe("siteJsonLd", () => {
-  it("lists every platform and official profile", () => {
+  it("lists supported platforms and CodeOPC brand", () => {
     const [organization, app] = siteJsonLd["@graph"];
-    expect(app).toMatchObject({ operatingSystem: "Web, macOS, Windows, Linux, iOS" });
-    expect(organization?.sameAs).toEqual([
-      "https://github.com/multica-ai/multica",
-      "https://x.com/MulticaAI",
-      "https://discord.gg/W8gYBn226t",
-    ]);
+    expect(organization).toMatchObject({ name: "CodeOPC", url: "https://code-opc.benlai.com" });
+    expect(app).toMatchObject({ name: "CodeOPC", operatingSystem: "Web, macOS, Windows" });
   });
 });
 

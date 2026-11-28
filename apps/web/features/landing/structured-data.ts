@@ -1,8 +1,7 @@
 import { parseInlineLinks } from "./components/inline-links";
-import { discordUrl, githubUrl, twitterUrl } from "./components/shared";
 import type { LandingDict } from "./i18n/types";
 
-export const SITE_ORIGIN = "https://www.multica.ai";
+export const SITE_ORIGIN = "https://code-opc.benlai.com";
 
 /** Organization and product facts shared by every marketing page. */
 export const siteJsonLd = {
@@ -10,17 +9,16 @@ export const siteJsonLd = {
   "@graph": [
     {
       "@type": "Organization",
-      name: "Multica",
+      name: "CodeOPC",
       url: SITE_ORIGIN,
-      sameAs: [githubUrl, twitterUrl, discordUrl],
     },
     {
       "@type": "SoftwareApplication",
-      name: "Multica",
+      name: "CodeOPC",
       applicationCategory: "ProjectManagement",
-      operatingSystem: "Web, macOS, Windows, Linux, iOS",
+      operatingSystem: "Web, macOS, Windows",
       description:
-        "Source-available project management platform that turns coding agents into real teammates.",
+        "Project management platform that turns coding agents into real teammates.",
       offers: {
         "@type": "Offer",
         price: "0",

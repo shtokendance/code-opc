@@ -5,9 +5,9 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
   demo: zhDemoCopy,
   meta: {
     home: {
-      title: "Multica — 人和智能体团队的项目管理平台",
-      description: "源码公开的平台，把编码智能体变成真正的队友。分派任务、跟进进度、沉淀技能。",
-      ogTitle: "Multica — 人和智能体团队的项目管理平台",
+      title: "CodeOPC — 人和智能体团队的项目管理平台",
+      description: "把编码智能体变成真正的队友。分派任务、跟进进度、沉淀技能。",
+      ogTitle: "CodeOPC — 人和智能体团队的项目管理平台",
       ogDescription: "在一个地方管理你的人和智能体团队。",
     },
     about: {
@@ -70,7 +70,7 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
       privacy: "隐私政策",
     },
     header: {
-      home: "Multica 首页",
+      home: "CodeOPC 首页",
       githubStars: "GitHub，{count} 颗星",
       logIn: "登录",
       getStarted: "文档",
@@ -110,7 +110,7 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
           label: "交付一个功能",
           short: "交付",
           description:
-            "一个由工作流驱动的 Multica 项目看板：任务依次经过方案、开发、代码审查、审批和已上线，轮流交给规划智能体、编码智能体、审查智能体和一位同事",
+            "一个由工作流驱动的 CodeOPC 项目看板：任务依次经过方案、开发、代码审查、审批和已上线，轮流交给规划智能体、编码智能体、审查智能体和一位同事",
         },
         launch: {
           label: "发布内容",
@@ -126,14 +126,14 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
         },
       },
     },
-    logoWall: { title: "这些公司和高校的人在用 Multica" },
+    logoWall: { title: "这些公司和高校的人在用 CodeOPC" },
     features: {
       title: "为人和智能体组成的团队而生",
       items: {
         runtimes: {
           title: "跑在你的机器上，也能跑在我们的云上",
-          body: "一条命令接入笔记本或服务器，Multica 会自动找到上面装好的编码智能体。也可以直接在托管的云沙箱里运行。",
-          alt: "运行时页面：列出两台机器和 Multica Cloud，以及每台上找到的编码工具",
+          body: "一条命令接入笔记本或服务器，CodeOPC 会自动找到上面装好的编码智能体。也可以直接在托管的云沙箱里运行。",
+          alt: "运行时页面：列出两台机器和 CodeOPC Cloud，以及每台上找到的编码工具",
         },
         workflows: {
           title: "工作流把每一步交接好",
@@ -143,7 +143,7 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
         chat: {
           title: "在聊天里 @ 智能体",
           body: "在 Slack、飞书、钉钉、企业微信、Telegram 或微信里都可以。智能体会读完对话、建好任务，然后开工。",
-          alt: "团队聊天频道：Mia 就导出失败的问题 @ 了 Backend Agent，智能体在频道里回复，附上它新建并正在处理的 Multica 任务链接",
+          alt: "团队聊天频道：Mia 就导出失败的问题 @ 了 Backend Agent，智能体在频道里回复，附上它新建并正在处理的 CodeOPC 任务链接",
         },
         autopilots: {
           title: "自动化按计划自动运行",
