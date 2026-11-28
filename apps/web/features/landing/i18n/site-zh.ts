@@ -73,7 +73,7 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
       home: "Multica 首页",
       githubStars: "GitHub，{count} 颗星",
       logIn: "登录",
-      getStarted: "开始使用",
+      getStarted: "文档",
       dashboard: "进入工作台",
     },
     footer: {
@@ -91,7 +91,7 @@ export const zhSiteCopy: Pick<LandingDict, "site" | "home" | "demo" | "meta"> = 
     cta: {
       title: "今天就让第一个智能体开工",
       lead: "接入你已经在用的智能体，给它指派第一个任务。",
-      getStarted: "开始使用",
+      getStarted: "文档",
       bookDemo: "预约演示",
     },
   },
