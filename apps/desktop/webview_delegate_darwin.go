@@ -10,9 +10,6 @@ package main
 */
 import "C"
 import (
-	"net/url"
-	"strings"
-
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -25,43 +22,6 @@ func handleMacURL(cURL *C.char) {
 	}
 	rawURL := C.GoString(cURL)
 	dispatchCustomProtocolURL(globalApp, rawURL)
-}
-
-func dispatchCustomProtocolURL(app *application.App, rawURL string) {
-	if rawURL == "" || app == nil {
-		return
-	}
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return
-	}
-	if u.Scheme != "multica" && u.Scheme != "onepc" && u.Scheme != "codeopc" {
-		return
-	}
-	// multica://auth/callback?token=<jwt>
-	if u.Host == "auth" && strings.HasPrefix(u.Path, "/callback") {
-		token := u.Query().Get("token")
-		if token != "" {
-			app.Event.Emit("auth:token", token)
-		}
-		return
-	}
-	// multica://open/issue?url=...
-	if u.Host == "open" && strings.HasPrefix(u.Path, "/issue") {
-		issueURL := u.Query().Get("url")
-		if issueURL != "" {
-			app.Event.Emit("issue:open", issueURL)
-		}
-		return
-	}
-	// multica://invite/<invitationId>
-	if u.Host == "invite" {
-		invitationID := strings.TrimPrefix(u.Path, "/")
-		if invitationID != "" {
-			app.Event.Emit("invite:open", invitationID)
-		}
-		return
-	}
 }
 
 // attachWebviewUIDelegate ensures the underlying WKWebView has a WKUIDelegate configured

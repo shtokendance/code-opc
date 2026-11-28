@@ -152,6 +152,10 @@ func IsCLIInvocation(args []string) bool {
 	if strings.HasPrefix(first, "-psn_") {
 		return false
 	}
+	// Custom URL schemes (e.g. codeopc://, onepc://, multica://) launch the GUI
+	if strings.HasPrefix(first, "codeopc://") || strings.HasPrefix(first, "onepc://") || strings.HasPrefix(first, "multica://") {
+		return false
+	}
 	return true
 }
 

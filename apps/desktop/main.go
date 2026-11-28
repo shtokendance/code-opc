@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/multica-ai/multica/server/pkg/embeddeddaemon"
+	"github.com/multica-ai/multica/server/pkg/multicacli"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -61,13 +63,61 @@ func cleanupOldExecutable() {
 	}
 }
 
+func dispatchCustomProtocolURL(app *application.App, rawURL string) {
+	if rawURL == "" || app == nil {
+		return
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return
+	}
+	if u.Scheme != "multica" && u.Scheme != "onepc" && u.Scheme != "codeopc" {
+		return
+	}
+	// multica://auth/callback?token=<jwt>
+	if u.Host == "auth" && strings.HasPrefix(u.Path, "/callback") {
+		token := u.Query().Get("token")
+		if token != "" {
+			app.Event.Emit("auth:token", token)
+		}
+		return
+	}
+	// multica://open/issue?url=...
+	if u.Host == "open" && strings.HasPrefix(u.Path, "/issue") {
+		issueURL := u.Query().Get("url")
+		if issueURL != "" {
+			app.Event.Emit("issue:open", issueURL)
+		}
+		return
+	}
+	// multica://invite/<invitationId>
+	if u.Host == "invite" {
+		invitationID := strings.TrimPrefix(u.Path, "/")
+		if invitationID != "" {
+			app.Event.Emit("invite:open", invitationID)
+		}
+		return
+	}
+}
+
 func main() {
+	// When the desktop executable is invoked by the embedded daemon or an agent
+	// as MULTICA_CLI_PATH / execenv helper / hook relay, run the CLI handler
+	// directly instead of launching another GUI client window.
+	if multicacli.IsCLIInvocation(os.Args) {
+		multicacli.SetVersionInfo(appVersion, "desktop", "", "")
+		os.Exit(multicacli.Execute(os.Args[1:]))
+	}
+
 	ensureHiddenConsole()
 	cleanupOldExecutable()
 	fixProcessPath()
 	service := NewAppService()
 
-	app := application.New(application.Options{
+	var app *application.App
+	var mainWindow *application.WebviewWindow
+
+	app = application.New(application.Options{
 		Name:        "CodeOPC",
 		Description: "CodeOPC Desktop Native Client",
 		Icon:        appIcon,
@@ -79,6 +129,18 @@ func main() {
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,
+		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "ai.codeopc.desktop",
+			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				for _, arg := range data.Args {
+					dispatchCustomProtocolURL(app, arg)
+				}
+				if mainWindow != nil {
+					mainWindow.Show()
+					mainWindow.Focus()
+				}
+			},
 		},
 	})
 
@@ -104,7 +166,7 @@ func main() {
 	app.Menu.SetApplicationMenu(menu)
 
 	// Create primary workspace tab window
-	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	mainWindow = app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:                      "CodeOPC",
 		Width:                      1280,
 		Height:                     900,
